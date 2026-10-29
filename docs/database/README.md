@@ -4,7 +4,7 @@ Documentação do modelo de dados do projeto Imoventures.
 
 **Versão atual: v1**
 
-![Diagrama ER v1](v1/er.png)
+![Diagrama ER v1](v1/ER.png)
 
 ## Ficheiros
 
