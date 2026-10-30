@@ -1,8 +1,7 @@
 # ImoVentures — Project Management
 
 ImoVentures is a work-in-progress Flask application for managing property
-investment projects. The current application is an authentication and data-access
-prototype; it is not yet a complete property-management product.
+investment projects.
 
 ## Current scope
 
@@ -32,10 +31,10 @@ the running application; do not apply `database/schema.sql` to its database.
 
 ## Local setup with Docker
 
-Requirements: Docker Desktop with Docker Compose.
+Requirements: Docker Desktop with Docker Compose(https://www.docker.com/products/docker-desktop/)
 
 1. Copy the example environment file and replace every placeholder password and
-   secret with a local value (See more details in [Configuration](#Configuration)). Do not commit `.env`.
+   secret with a local value (See more details in the [Configuration](#Configuration) section). Do not commit `.env`.
 
    ```powershell
    Copy-Item .env.example .env
@@ -76,7 +75,7 @@ Requirements: Docker Desktop with Docker Compose.
    docker compose run --rm web flask --app app create-user username owner
    ```
 
-   Where `username` is the username and `owner` is the role.To create an investor, replace `owner` with `investor`.
+   `username` is the username and `owner` is the role.To create an investor profile, replace `owner` with `investor`.
 
 The Compose setup mounts the project into the web container and enables
 Gunicorn's development reload. This setup is intended for development. The Dockerfile's default Gunicorn command is intended for deployment; configure production secrets, database access, rate-limit storage, and HTTPS at deployment time.
@@ -115,6 +114,9 @@ docker compose up --build -d
 # Check running containers
 docker compose ps
 
+# Migrations, as app_owner
+docker compose run --rm -e RUN_MIGRATIONS=1 web flask db upgrade
+
 # Check application and database connectivity
 Invoke-RestMethod http://localhost:8000/health
 
@@ -126,9 +128,6 @@ docker compose down
 
 # Stop services and remove the local database volume
 docker compose down --volumes
-
-# Migrations, as app_owner
-docker compose run --rm -e RUN_MIGRATIONS=1 web flask db upgrade
 ```
 
 The last command permanently deletes the local Compose database data.
