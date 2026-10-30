@@ -1,0 +1,10 @@
+flask
+flask-sqlalchemy
+flask-migrate
+flask-login
+flask-wtf
+flask-limiter
+argon2-cffi
+psycopg[binary]
+python-dotenv
+gunicorn

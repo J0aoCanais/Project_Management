@@ -1,0 +1,40 @@
+services:
+  db:
+    image: postgres:16
+    env_file: .env
+    environment:
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: ${POSTGRES_ADMIN_PASSWORD}
+      POSTGRES_DB: postgres
+    ports:
+      - "127.0.0.1:5432:5432"   # still reachable from your PC (psql, flask on host)
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+      - ./docker/init:/docker-entrypoint-initdb.d:ro
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  web:
+    build: .
+    depends_on:
+      db:
+        condition: service_healthy   # wait until Postgres accepts connections
+    env_file: .env
+    environment:
+      # Inside the Docker network the database host is the service name "db",
+      # not localhost. These override the values from .env.
+      DATABASE_URL: postgresql+psycopg://app_user:${APP_USER_PASSWORD}@db:5432/propdb
+      MIGRATION_DATABASE_URL: postgresql+psycopg://app_owner:${APP_OWNER_PASSWORD}@db:5432/propdb
+    ports:
+      - "127.0.0.1:8000:8000"
+    volumes:
+      - .:/app                      # development only: code changes appear instantly
+    # Dev only: one worker with auto-reload. Remove this line (and the volume
+    # above) to use the Dockerfile's production CMD.
+    command: gunicorn --reload -w 1 -b 0.0.0.0:8000 app:app
+
+volumes:
+  pgdata:
