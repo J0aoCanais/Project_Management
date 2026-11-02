@@ -27,7 +27,7 @@ from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from .models import Investment, Property, User, db
+from .models import User, db
 from .extensions import ph, hash_password, verify_password
 from .cli import register_cli
 
@@ -142,6 +142,8 @@ PUBLIC_ENDPOINTS = {"login", "health", "static"}
 
 @app.before_request
 def require_login_everywhere():
+    """Validate that an user is authenticated before accessing a private endpoint"""
+    
     if request.endpoint is None or request.endpoint in PUBLIC_ENDPOINTS:
         return None
     if not current_user.is_authenticated:
@@ -168,7 +170,7 @@ def login():
         password = request.form.get("password", "")
 
         user = db.session.execute(
-            db.select(User).filter_by(username=username)
+            db.select(User).filter_by(email=username)
         ).scalar_one_or_none()
 
         # Always run one verification, even for unknown users (timing).
@@ -199,28 +201,16 @@ def logout():
 
 
 def owner_required(view):
+    """Wrapper function for endpoint that require owner level permissions"""
     from functools import wraps
 
     @wraps(view)
     def wrapper(*args, **kwargs):
-        if current_user.role != "owner":
+        if current_user.access_level != "owner":
             abort(403)
         return view(*args, **kwargs)
 
     return wrapper
-
-
-# Example of an returning only the information a user can get access to
-def visible_properties_query():
-    """Owner: every property. Investor: only properties they have invested in.
-    This takes into account the demo example for the database. TO BE CHANGED"""
-    query = db.select(Property)
-    if current_user.role != "owner":
-        query = query.join(
-            Investment, Investment.property_id == Property.id
-        ).where(Investment.investor_id == current_user.id)
-    return query
-
 
 # ----------------------------------------------------------------------------
 # Routes
@@ -245,21 +235,12 @@ def account():
     """Demo endpoint to allow session account view and logout"""
     return render_template("account.html")
 
-@app.get("/properties")
-def list_properties():
-    """Example endpoint"""
-    props = db.session.execute(
-        visible_properties_query().order_by(Property.name)
-    ).scalars().all()
-    # Swap for render_template("properties.html", properties=props) when you have a UI.
-    return jsonify([p.to_dict() for p in props])
-
 @app.get("/admin/investors")
 @owner_required
 def list_investors():
     """Example of a restricted endpoint accessible only to owner"""
     investors = db.session.execute(
-        db.select(User).where(User.role == "investor").order_by(User.username)
+        db.select(User).where(User.access_level == "investor").order_by(User.username)
     ).scalars().all()
     return jsonify([{"id": u.id, "username": u.username} for u in investors])
 

@@ -9,8 +9,8 @@ from .models import User, db
 def register_cli(app):
     @app.cli.command("create-user")
     @click.argument("username")
-    @click.argument("role", type=click.Choice(["owner", "investor"]))
-    def create_user(username, role):
+    @click.argument("access_level", type=click.Choice(["owner", "investor"]))
+    def create_user(username, access_level):
         """Create a user:  flask create-user alice owner"""
         if db.session.execute(
             db.select(User).filter_by(username=username)
@@ -22,7 +22,7 @@ def register_cli(app):
             raise click.ClickException("Password must be at least 12 characters.")
 
         db.session.add(
-            User(username=username, password_hash=hash_password(password), role=role)
+            User(username=username, password_hash=hash_password(password), access_level=access_level, email=username)
         )
         db.session.commit()
-        click.echo(f"Created {role} '{username}'.")
+        click.echo(f"Created {access_level} '{username}'.")
