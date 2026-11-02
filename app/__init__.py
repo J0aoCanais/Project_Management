@@ -27,7 +27,7 @@ from flask_wtf.csrf import CSRFProtect
 from sqlalchemy import text
 from werkzeug.middleware.proxy_fix import ProxyFix
 
-from .models import Investment, Property, User, db
+from .models import User, db
 from .extensions import ph, hash_password, verify_password
 from .cli import register_cli
 
