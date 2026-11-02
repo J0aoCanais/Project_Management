@@ -168,7 +168,7 @@ def login():
         password = request.form.get("password", "")
 
         user = db.session.execute(
-            db.select(User).filter_by(username=username)
+            db.select(User).filter_by(email=username)
         ).scalar_one_or_none()
 
         # Always run one verification, even for unknown users (timing).
