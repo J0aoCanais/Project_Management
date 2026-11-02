@@ -2,17 +2,17 @@
 
 Documentação do modelo de dados do projeto Imoventures.
 
-**Versão atual: v1**
+**Versão atual: v2**
 
-![Diagrama ER v1](v1/ER.png)
+![Diagrama ER v1](v2/ER.png)
 
 ## Ficheiros
 
 | Ficheiro | Descrição |
 |---|---|
-| `v1/er.png` | Diagrama entidade-relação |
-| `v1/model.json` | Modelo editável em https://onda.dei.uc.pt/v4/ |
-| `v1/schema.sql` | Cópia de referência do SQL. O código em uso está em [`database/schema.sql`](../../database/schema.sql) |
+| `v2/er.png` | Diagrama entidade-relação |
+| `v2/model.json` | Modelo editável em https://onda.dei.uc.pt/v4/ |
+| `v2/schema.sql` | Cópia de referência do SQL. O código em uso está em [`database/schema.sql`](../../database/schema.sql) |
 
 ## Entidades
 
@@ -42,3 +42,4 @@ Documentação do modelo de dados do projeto Imoventures.
 | Versão | Estado | Notas |
 |---|---|---|
 | v1 | atual | Modelo inicial |
+| v2 | atual | Modelo ampliado com novas entidades de documentação, auditoria e financiamento 
