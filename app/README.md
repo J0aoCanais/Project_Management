@@ -15,17 +15,15 @@ The application currently includes:
 
 - Login and logout; users are created through a Flask CLI command, not public
   registration.
-- `owner` and `investor` user roles.
+- `owner` and `investor` access-levels.
 - An account page showing the signed-in user's name and role.
-- A property JSON endpoint that returns all properties to owners and only
-  invested properties to investors.
 - An owner-only JSON endpoint listing investor usernames.
 - A public health endpoint that checks the PostgreSQL connection.
 
 These are examples and scaffolding for ongoing development. There is no complete
 property, investment, opportunity, or project-management workflow yet.
 
-## Package structure today
+## Current package structure 
 
 ```text
 app/
@@ -41,8 +39,7 @@ app/
 ```
 
 The current implementation places most application setup and routes in
-`__init__.py`. Keep changes consistent with the existing code for now; avoid
-introducing a larger architecture before the application needs it.
+`__init__.py`. That is to be changed as the application grows.
 
 ## Routes and illustrative mocks
 
@@ -58,7 +55,6 @@ they are not seeded data or a promise that matching records exist.
 | `POST /logout` | Authenticated | Clears the session and redirects to login. |
 | `GET /` | Authenticated | Redirects to `/account`. |
 | `GET /account` | Authenticated | Displays the current username and role. |
-| `GET /properties` | Authenticated | Returns properties visible to the current user. |
 | `GET /admin/investors` | Owner only | Lists investor IDs and usernames. |
 
 ### `GET /health`
@@ -81,24 +77,6 @@ Database unavailable response (`503`):
 }
 ```
 
-### `GET /properties`
-
-Example response:
-
-```json
-[
-  {
-    "id": 1,
-    "name": "Sample apartment",
-    "address": "10 Example Street",
-    "status": "under_review"
-  }
-]
-```
-
-An empty result is `[]`. The current `Property` model does not validate or
-enumerate status values.
-
 ### `GET /admin/investors`
 
 Example response:
@@ -118,16 +96,35 @@ requires its rendered CSRF token when submitted.
 
 ## Data models
 
-The active SQLAlchemy models in `models.py` are intentionally small:
+The database, as shown in the most recent version available at [Database](../docs/database/), is modeled using SQLAlchemy models in `models.py`. Some exaples for this are:
 
-- **User**: unique username, password hash, and `owner` or `investor` role.
-- **Property**: name, optional address, and optional status.
-- **Investment**: association between an investor and a property, with a
-  positive amount. The investor/property pair is the composite primary key.
+- **User**: unique username and email, password hash, `owner` or `investor` access_level and last access. This table is related to the Audit logs and Contacts table. 
+- **Property**: address, typology, zone, area_m2, etc. Related to documents and opportunity.
 
-These models are the application's current ORM schema. The larger domain model
-in the repository's database documentation is future design/reference material;
-it should not be assumed to be available through this package.
+These models are defined using the conventions for SQLAlchemy. When updated we can update the database using the flask migrate. The necessary commands are:
+
+```powershell
+docker compose run --rm -e RUN_MIGRATIONS=1 web flask db migrate -m "message"
+docker compose run --rm -e RUN_MIGRATIONS=1 web flask db upgrade
+```
+
+Before upgrading the generated migration file should  be reviewd and changed if necessary.
+
+## Examples of database queries
+
+By using SQLAlcuemy, databse queries can be made through predifined methods for the object database, an instance of SQLAlchemy. Some examples follow on how to query the database through this methods:
+
+```
+#Returns one user with the provided email
+user = db.session.execute(
+            db.select(User).filter_by(email=email)
+        ).scalar_one_or_none()
+
+#Returns all users with access level equal to investor ordered by username
+investors = db.session.execute(
+        db.select(User).where(User.access_level == "investor").order_by(User.username)
+    ).scalars().all()
+```
 
 ## Authentication and authorization conventions
 

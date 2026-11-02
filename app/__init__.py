@@ -142,6 +142,8 @@ PUBLIC_ENDPOINTS = {"login", "health", "static"}
 
 @app.before_request
 def require_login_everywhere():
+    """Validate that an user is authenticated before accessing a private endpoint"""
+    
     if request.endpoint is None or request.endpoint in PUBLIC_ENDPOINTS:
         return None
     if not current_user.is_authenticated:
@@ -199,6 +201,7 @@ def logout():
 
 
 def owner_required(view):
+    """Wrapper function for endpoint that require owner level permissions"""
     from functools import wraps
 
     @wraps(view)
