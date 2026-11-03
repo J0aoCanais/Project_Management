@@ -19,4 +19,4 @@ USER appuser
 EXPOSE 8000
 
 # Production command. docker-compose.yml overrides it for local development.
-CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:8000", "app:app"]
+CMD ["gunicorn", "-w", "3", "-b", "0.0.0.0:8000", "app:create_app()"]

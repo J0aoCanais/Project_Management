@@ -1,7 +1,14 @@
+"""CLI command allowing to create users for the application
+
+Run locally:    flask create-user <username> <access-level>
+With docker:    docker compose run --rm web flask create-user <username> <access-level>
+
+"""
 
 import click
-from .extensions import hash_password
-from .models import User, db
+from .security import hash_password
+from .models import User
+from .extensions import db
 
 # ----------------------------------------------------------------------------
 # CLI: there is no public signup, so accounts are created from the terminal
