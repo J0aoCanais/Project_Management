@@ -24,8 +24,6 @@ from flask_login import UserMixin
 class Base(DeclarativeBase):
     pass
 
-db = SQLAlchemy(model_class=Base)
-
 # ---------------------------------------------------------------------------
 # Association tables
 #

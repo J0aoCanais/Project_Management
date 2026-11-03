@@ -34,7 +34,7 @@ services:
       - .:/app                      # development only: code changes appear instantly
     # Dev only: one worker with auto-reload. Remove this line (and the volume
     # above) to use the Dockerfile's production CMD.
-    command: gunicorn --reload -w 1 -b 0.0.0.0:8000 app:app
+    command: gunicorn --reload -w 1 -b 0.0.0.0:8000 "app:create_app()"
 
 volumes:
   pgdata:
