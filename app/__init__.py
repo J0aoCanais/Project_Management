@@ -30,6 +30,7 @@ from werkzeug.middleware.proxy_fix import ProxyFix
 from .models import User, db
 from .extensions import ph, hash_password, verify_password
 from .cli import register_cli
+from .contacts.contacts import contacts_bp
 
 # Reads .env in development. In production there is no .env file and the
 # variables come from the host's environment, so this does nothing.
