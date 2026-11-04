@@ -35,7 +35,7 @@ def create_app(config_class=Config):
  
     app.register_blueprint(demos_bp)                                # /, /health, /account
     app.register_blueprint(auth_bp)                                 # /login, /logout
-    app.register_blueprint(contacts_bp, url_prefix="/contacts")     # /contacts
+    app.register_blueprint(contacts_bp, url_prefix="/api/contacts")     # /contacts
  
     register_security_hooks(app)
  

@@ -8,3 +8,6 @@ argon2-cffi
 psycopg[binary]
 python-dotenv
 gunicorn
+marshmallow 
+flask-marshmallow
+marshmallow-sqlalchemy
