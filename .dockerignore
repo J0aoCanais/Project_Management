@@ -2,7 +2,7 @@
 .env
 .env.*
 !.env.example
-
+ 
 # Not needed in the image
 .git
 .gitignore
@@ -13,3 +13,7 @@ __pycache__/
 *.dump
 docker-compose*.yml
 Dockerfile
+ 
+# Frontend: dependencies are installed and the bundle is built inside the image
+frontend/node_modules
+app/static/dist

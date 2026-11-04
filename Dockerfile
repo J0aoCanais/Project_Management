@@ -1,3 +1,14 @@
+# ---- Stage 1: build the React bundle ---------------------------------------
+FROM node:22-alpine AS frontend
+WORKDIR /frontend
+COPY frontend/package*.json ./
+# `npm ci` once package-lock.json is committed (reproducible); `npm install` before that
+RUN if [ -f package-lock.json ]; then npm ci; else npm install; fi
+COPY frontend/ ./
+# vite.config.ts writes to ../app/static/dist, which is /app/static/dist in this stage
+RUN npm run build
+
+
 FROM python:3.12-slim
 
 ENV PYTHONDONTWRITEBYTECODE=1 \
