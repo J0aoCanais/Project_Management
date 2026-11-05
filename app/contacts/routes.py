@@ -3,6 +3,7 @@ from datetime import datetime
 from sqlalchemy import or_
 from marshmallow import ValidationError
 from flask_login import current_user
+from http import HTTPStatus
 
 from ..extensions import db
 from ..models import Contact
@@ -11,9 +12,11 @@ from ..security import owner_required
 from ..schemas.contacts_schema import (
     ContactCreateSchema,
     ContactResponseSchema,
-    ContactSearchSchema
+    ContactSearchSchema,
+    ContactListSchema
 )
 
+contact_list_schema = ContactListSchema()
 contact_create_schema = ContactCreateSchema()
 contact_response_schema = ContactResponseSchema()
 search_schema = ContactSearchSchema()
@@ -23,39 +26,61 @@ contacts_bp = Blueprint("contacts", __name__)
 @contacts_bp.get("/")
 @owner_required
 def get_contacts():
-    contacts = db.session.execute(
-        db.select(Contact)
-    ).scalars().all()
+    try:
+        params = contact_list_schema.load(request.args)
+    except ValidationError as error:
+        return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST
+    
+    page = params["page"]
+    per_page = params["per_page"]
+    
+    stmt = db.select(Contact).order_by(Contact.name.asc())
+    pagination = db.paginate(
+        stmt,
+        page=page,
+        per_page=per_page,
+        error_out=False
+    )    
+    
+    return jsonify({
+        "success": True,
+        "data": [contact_response_schema.dump(c) for c in pagination.items],
+        "pagination": {
+            "page": pagination.page,
+            "per_page": pagination.per_page,
+            "total": pagination.total,
+            "pages": pagination.pages,
+            "has_next": pagination.has_next,
+            "has_prev": pagination.has_prev
+        }
+    }), HTTPStatus.OK
 
-    return jsonify(
-                [contact_response_schema.dump(contact) for contact in contacts]
-            ), 200
 
 @contacts_bp.route("/add", methods=["POST"])
 def create_contact():
-
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
+    
     try:
-        data = contact_create_schema.load(request.get_json())
+        data = contact_create_schema.load(payload)
 
         contact = Contact(**data)
-
         db.session.add(contact)
         db.session.commit()
 
-        return jsonify(
-            contact_response_schema.dump(contact)
-        ), 201
+        return jsonify(contact_response_schema.dump(contact)), HTTPStatus.CREATED
 
     except ValidationError as err:
-        return jsonify({"errors": err.messages}), 400
+        return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
 
     except Exception:
         db.session.rollback()
-        return jsonify({"error": "Internal server error"}), 500
+        return jsonify({"error": "Internal server error"}),HTTPStatus.INTERNAL_SERVER_ERROR
+
 
 @contacts_bp.route("/search", methods=["GET"])
 def search_contacts():
-
     try:
         # Validate query parameters
         params = search_schema.load(request.args)
@@ -65,7 +90,7 @@ def search_contacts():
         per_page = params["per_page"]
 
         if len(search_term) < 2:
-            return jsonify({"error": "Search term must contain at least 2 characters"}), 400
+            return jsonify({"error": "Search term must contain at least 2 characters"}), HTTPStatus.BAD_REQUEST
 
         # Escape SQL LIKE wildcard characters
         search_term = (
@@ -85,12 +110,9 @@ def search_contacts():
             Contact.nif.ilike(pattern, escape="\\")
         )
 
-        # Only return contacts belonging to the logged-in user
         stmt = (
             db.select(Contact)
-            .where(
-                conditions
-            )
+            .where(conditions)
             .order_by(Contact.name.asc())
         )
 
@@ -102,11 +124,9 @@ def search_contacts():
             error_out=False
         )
 
-        contacts = pagination.items
-
         return jsonify({
             "success": True,
-            "data": [contact_response_schema.dump(c) for c in contacts],
+            "data": [contact_response_schema.dump(c) for c in pagination.items],
             "pagination": {
                 "page": pagination.page,
                 "per_page": pagination.per_page,
@@ -115,7 +135,7 @@ def search_contacts():
                 "has_next": pagination.has_next,
                 "has_prev": pagination.has_prev
             }
-        }), 200
+        }), HTTPStatus.OK
 
     except ValidationError as error:
-        return jsonify({"error": "Invalid search parameters"}), 400
+        return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST
