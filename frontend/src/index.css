@@ -31,13 +31,20 @@
   --color-avatar: #d5ecea;
   --color-backdrop: rgb(17 28 28 / 0.35);
 
+  /* Cartão escuro de resultados (.results-card) */
+  --color-results: #113f41;
+  --color-results-raised: #174b4d;
+  --color-results-line: #386a6b;
+  --color-results-muted: #a9c2c0;
+  --color-results-accent: #89d2b6;
+
   --radius-control: 3px;
   --radius-panel: 4px;
 }
 
 @layer base {
   body {
-    @apply m-0 bg-surface font-sans text-[13px] text-ink antialiased;
+    @apply m-0 bg-surface font-sans text-[13px] text-ink antialiased print:bg-white;
   }
   button,
   input,
@@ -50,6 +57,11 @@
   button {
     cursor: pointer;
   }
+}
+
+/* Margens da folha ao imprimir (não há variante Tailwind para @page). */
+@page {
+  margin: 16mm;
 }
 
 /* ---- Página de teste da API (HealthPage) ---- */

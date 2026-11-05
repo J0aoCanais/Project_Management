@@ -1,9 +1,17 @@
+import type { ReactNode } from "react";
 import { Route, Routes } from "react-router-dom";
 
 import AppLayout from "./components/layout/AppLayout";
 import { navItems } from "./components/layout/navigation";
 import HealthPage from "./pages/HealthPage";
+import OpportunitiesPage from "./pages/OpportunitiesPage";
+import OpportunityDetailPage from "./pages/OpportunityDetailPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
+
+// Páginas do menu já implementadas.
+const pages: Record<string, ReactNode> = {
+  "/oportunidades": <OpportunitiesPage />,
+};
 
 function App() {
   return (
@@ -14,9 +22,12 @@ function App() {
           item.path === "/" ? (
             <Route key={item.path} index element={<PlaceholderPage title={item.label} />} />
           ) : (
-            <Route key={item.path} path={item.path.slice(1)} element={<PlaceholderPage title={item.label} />} />
+            <Route key={item.path} path={item.path.slice(1)} element={pages[item.path] ?? <PlaceholderPage title={item.label} />} />
           ),
         )}
+        <Route path="oportunidades/:id" element={<OpportunityDetailPage />} />
+        {/* TODO: trocar pelo detalhe da operação; é para aqui que "Converter em operação" navega. */}
+        <Route path="operacoes/:id" element={<PlaceholderPage title="Operação" />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
       </Route>
