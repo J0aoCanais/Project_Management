@@ -1,0 +1,114 @@
+# Tarefa 02 · Leads
+
+> Segue **todas** as regras de [`../prompt.md`](../prompt.md). Este ficheiro só descreve o que é específico desta tarefa.
+> Os componentes genéricos de `src/components/ui/` e `lib/csv.ts` **já estão criados**. Não os voltes a criar: lê as props no ficheiro de cada um e usa-os. Se faltar alguma coisa, alarga-os com uma prop opcional.
+
+## Tarefa
+
+- **O que fazer:** lista de leads com pesquisa e filtros, criação de lead num painel lateral, importação por Excel/CSV e página de detalhe com histórico de contactos, mudança de estado, descarte com motivo e conversão em oportunidade.
+- **Página(s) afetada(s):** Leads (`/leads`) e Detalhe de lead (`/leads/:id`)
+- **Endpoint(s) da API:** ainda não existem → fixtures. Previstos: `GET/POST /api/v1/leads`, `GET/PATCH /api/v1/leads/:id`, `POST /api/v1/leads/import`, `POST /api/v1/leads/:id/contacts`, `POST /api/v1/leads/:id/convert`, `GET /api/v1/lead-sources`
+- **Referência no mockup:** `Leads`, `LeadDrawer`, `LeadDetail`, `importConfigs.Leads` em `mockup/src/App.tsx`
+
+---
+
+## 1. Âmbito
+
+### Lista (`/leads`)
+- `PageHeading` "Leads" com ações **Importar de Excel** (secundário) e **Nova lead** (primário).
+- `Filters`: pesquisa ("Pesquisar por nome, referência ou telemóvel...") + 3 selects:
+  - Estado: Todos os estados, Nova, Contactada, Qualificada, Convertida, Descartada
+  - Origem: Todas as origens + origens de lead (vêm da API/fixture `lead-sources`)
+  - Zona: Todas as zonas, Baixa, Alta, Celas, Solum, Santa Clara, Olivais
+- Os filtros **funcionam de verdade** (filtragem no cliente sobre a lista; guardar os valores em `?q=&estado=&origem=&zona=` para o link ser partilhável).
+- `Table` com as colunas: Nome, Referenciado por, Zona, Telemóvel, Origem, Estado, Data. Estado em `Pill` (Descartada → `red`; restantes → `green`, como no mockup). Clicar numa linha abre `/leads/:id`. Em telemóvel, a tabela mostra a primeira, a segunda e a última coluna; define a ordem das colunas de forma a que isso faça sentido.
+- Em telemóvel, `FloatingActionButton` com `label="Nova lead"`.
+
+### Nova lead (painel lateral)
+- `Drawer` com título "Nova lead" e subtítulo "Novo registo comercial".
+- Fieldset **Contacto**: `SegmentedChoice` "Escolher existente" / "Criar novo". Existente → select de contactos; novo → Nome e Telemóvel.
+- Fieldset **Origem**: Origem (select), Referenciado por, Mensagem recebida (textarea).
+- Rodapé: Cancelar / Criar lead. Validação mínima: contacto (ou nome + telemóvel) e origem obrigatórios, com o erro passado ao `FormField`.
+- Campos com `FormField` e `inputClasses`.
+- Ao criar: `useMutation` → invalida `["leads"]` → fecha o painel.
+
+### Importar de Excel
+- Usar `ImportExcel` com uma `ImportConfig` para as leads, baseada em `importConfigs.Leads` do mockup:
+  - `title`: "Importar leads"; `templateName`: `template_leads.csv`
+  - `columns`: `Nome, Referenciado por, Zona, Telemóvel, Origem, Estado, Data`
+  - `sample`: as 5 linhas de exemplo do mockup
+- Passar em `existingNames` os nomes das leads existentes (duplicados ignorados e contados pelo componente). No `onImport`, chamar a mutation de importação.
+
+### Detalhe (`/leads/:id`)
+- `EntityHeader`: `backTo` para `/leads` (mantendo os filtros), `type="Lead"`, nome; ações: select de estado (Nova / Contactada / Qualificada), **Descartar** (perigo) e **Converter em oportunidade** (primário).
+- `RecordFields` "Dados do registo": Referenciado por, Zona, Telemóvel, Origem, Data, Estado, Mensagem.
+- `Panel` "Histórico de contactos" com botão **Registar contacto** e `Table` (Data, Canal, Responsável, Resultado, Nota). Registar contacto abre um `Dialog` com esses campos.
+- **Descartar** abre `Dialog` com motivo **obrigatório** (Sem interesse do proprietário / Fora dos critérios de investimento / Preço não negociável); o botão Confirmar fica desativado até haver motivo. Grava em `discardReason`.
+- **Converter em oportunidade**: mutation que devolve o id da oportunidade criada e navega para `/oportunidades/:id`. Leads `Convertida` ou `Descartada` não mostram estas ações.
+
+### Fora do âmbito
+- Importação real de `.xlsx` (só CSV é lido; `.xlsx` mostra as linhas de exemplo, como no mockup).
+- Badge com o número de leads novas na sidebar (fica como está).
+
+## 2. Componentes
+
+### Reutilizar (já existem, não criar)
+Em `components/ui/`: `Button`, `PageHeading`, `Panel`, `PanelHeader`, `Pill`, `Icon`, `LoadingState`, `ErrorState`, `EmptyState`, `Filters`, `Table`, `Drawer`, `Dialog`, `FormField`, `inputClasses`, `SegmentedChoice`, `RecordFields`, `EntityHeader`, `FloatingActionButton`, `ImportExcel`. Também `lib/format.ts` e `lib/csv.ts`.
+
+### Criar em `components/leads/`
+`LeadFilters.tsx` (configura `Filters` com as opções das leads), `LeadsTable.tsx` (configura `Table` e o `Pill` do estado), `LeadStatusPill.tsx`, `NewLeadDrawer.tsx`, `LeadActions.tsx` (select de estado + descartar + converter), `DiscardLeadDialog.tsx`, `LeadContactHistory.tsx`, `RegisterContactDialog.tsx`.
+
+### Páginas
+- `pages/LeadsPage.tsx` — `PageHeading` + `LeadFilters` + `LeadsTable` + `NewLeadDrawer` + `ImportExcel` + `FloatingActionButton`.
+- `pages/LeadDetailPage.tsx` — lê `:id` com `useParams`.
+- Em `App.tsx`: rotas `leads` e `leads/:id`.
+
+## 3. Dados
+
+`src/api/leadsApi.ts` (tipos alinhados com o modelo `Lead` do backend em `app/models.py`):
+
+```ts
+export type LeadStatus = "Nova" | "Contactada" | "Qualificada" | "Convertida" | "Descartada";
+
+export interface Lead {
+  id: number;
+  contactName: string;
+  phone: string;
+  referredBy: string;     // contacto "referenciado por"
+  zone: string;
+  source: string;         // nome da lead_source
+  status: LeadStatus;
+  message?: string;
+  discardReason?: string;
+  createdAt: string;      // ISO; formatar com formatDate
+}
+
+export interface LeadContactEntry {
+  id: number; date: string; channel: string; owner: string; result: string; note: string;
+}
+
+export function listLeads(): Promise<Lead[]>;
+export function getLead(id: number): Promise<Lead & { contacts: LeadContactEntry[] }>;
+export function createLead(input: NewLeadInput): Promise<Lead>;
+export function updateLeadStatus(id: number, status: LeadStatus, discardReason?: string): Promise<Lead>;
+export function addLeadContact(id: number, entry: Omit<LeadContactEntry, "id">): Promise<LeadContactEntry>;
+export function importLeads(rows: NewLeadInput[]): Promise<{ created: number; skipped: number }>;
+export function convertLead(id: number): Promise<{ opportunityId: number }>;
+```
+
+- Fixtures em `src/api/fixtures/leads.ts` e `src/api/fixtures/leadSources.ts` com as 5 leads do mockup (Marta Ribeiro, João Noronha, Carla Mendes, Rui Valente, Sofia Matos), pessoas fictícias e `// TODO: trocar pelo endpoint quando existir`. As mutations alteram a fixture em memória para a UI se comportar como real.
+- Hooks: `useLeads`, `useLead(id)`, `useLeadSources`, `useCreateLead`, `useUpdateLeadStatus`, `useAddLeadContact`, `useImportLeads`, `useConvertLead`. Todas as mutations invalidam `["leads"]` e `["lead", id]`.
+- Datas na API em ISO; na tabela e nos campos com `formatDate` (`dd/mm/aaaa`). No CSV aceitar `dd/mm/aaaa`.
+
+## 4. Critérios de aceitação
+
+- [ ] `/leads` lista as leads; pesquisa e os 3 filtros combinam-se e ficam no URL.
+- [ ] Sem resultados → `EmptyState` "Nenhuma lead corresponde aos filtros." com botão para limpar filtros.
+- [ ] "Nova lead" abre o painel, valida e cria; a nova lead aparece na lista sem recarregar.
+- [ ] Importar: template descarregado tem as colunas certas; CSV válido importa; duplicados por nome são ignorados e contados.
+- [ ] `/leads/:id` mostra dados e histórico; id inexistente → `EmptyState` "Lead não encontrada" com link para `/leads`.
+- [ ] Descartar exige motivo; mudar estado atualiza a `Pill`; converter navega para a oportunidade.
+- [ ] Todos os campos têm `<label>` (via `FormField`).
+- [ ] Em 390px: tabela em linhas compactas, botão flutuante visível, drawer ocupa o ecrã inteiro.
+- [ ] Nenhum componente de `ui/` foi duplicado, e nada específico de leads entrou neles.
+- [ ] `npm run typecheck` e `npm run build` passam.

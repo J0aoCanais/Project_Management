@@ -1,0 +1,87 @@
+# Tarefa 01 · Painel
+
+> Segue **todas** as regras de [`../prompt.md`](../prompt.md). Este ficheiro só descreve o que é específico desta tarefa.
+> Os componentes genéricos de `src/components/ui/` **já estão criados**. Não os voltes a criar: lê as props no ficheiro de cada um e usa-os. Se faltar alguma coisa, alarga-os com uma prop opcional.
+
+## Tarefa
+
+- **O que fazer:** página inicial do CRM com indicadores, capital dos investidores, funil de oportunidades, leads por origem, operações ativas por fase e alertas.
+- **Página(s) afetada(s):** Painel (`/`)
+- **Endpoint(s) da API:** ainda não existe → usar fixtures (`GET /api/v1/dashboard` no futuro)
+- **Referência no mockup:** `Dashboard` e `GroupedOperations` em `mockup/src/App.tsx`; classes `.stat-grid`, `.investor-capital`, `.dashboard-grid`, `.lower-grid`, `.grouped-table`, `.alert-row` em `mockup/src/index.css`
+
+---
+
+## 1. Âmbito
+
+### Fora do âmbito
+- Ligação ao backend real (fica com fixtures).
+- Configuração dos limites dos alertas (botão "Limites" só navega para `/definicoes`).
+
+## 2. Componentes
+
+### Reutilizar (já existem, não criar)
+`AppLayout`, `Icon`, `Avatar`, `lib/format.ts` (`formatMoney`, `formatPercent`, `formatDate`) e, em `components/ui/`: `Button`, `ButtonLink`, `PageHeading`, `Panel`, `PanelHeader`, `StatCard`, `Pill`, `VerticalBarChart`, `HorizontalBars`, `StackedTrack`, `LoadingState`, `ErrorState`, `EmptyState`.
+
+### Criar em `components/dashboard/`
+| Componente | Responsabilidade |
+|---|---|
+| `DashboardStats.tsx` | `Panel` em grelha (4 colunas; 2 em ecrãs pequenos) com 4 `StatCard` separados por linhas |
+| `InvestorCapitalCard.tsx` | Total de capital + `StackedTrack` (Comprometido / Investido / Disponível) com `formatValue={formatMoney}` |
+| `OpportunityFunnelPanel.tsx` | `Panel` + `VerticalBarChart` com as 8 fases de oportunidade + "Ver todas →" para `/oportunidades` |
+| `LeadsBySourcePanel.tsx` | `Panel` + `HorizontalBars` + total à direita do título ("Leads por origem · últimos 7 dias") |
+| `OperationsByPhasePanel.tsx` | Lista agrupada por fase de operação: cabeçalho do grupo com subtotal de capital, linhas clicáveis (código, zona, capital · margem) que abrem `/operacoes/:id` |
+| `AlertsPanel.tsx` + `AlertRow.tsx` | Lista de alertas (data, registo, descrição, seta); cada linha é um `<Link>` para a página indicada |
+
+### Página
+`pages/DashboardPage.tsx` — só compõe: `PageHeading` (ação "Nova oportunidade" → `/oportunidades`), `DashboardStats`, `InvestorCapitalCard`, grelha com funil + leads, grelha com operações + alertas. Trata os 4 estados com base no hook.
+
+Em `App.tsx`, trocar o `PlaceholderPage` do índice (`/`) por `DashboardPage`.
+
+## 3. Dados
+
+`src/api/dashboardApi.ts`:
+
+```ts
+export interface DashboardSummary {
+  stats: {
+    openOpportunities: { value: number; meta: string };
+    activeOperations: { value: number; meta: string };
+    yearSales: { value: number; meta: string };      // euros
+    realizedMargin: { value: number; meta: string };  // euros
+  };
+  investorCapital: { total: number; committed: number; invested: number; available: number };
+  funnel: { phase: string; count: number }[];          // 8 fases, pela ordem do prompt.md §7
+  leadsBySource: { source: string; count: number }[];  // últimos 7 dias
+  operationsByPhase: {
+    phase: string;
+    capitalSubtotal: number;
+    operations: { id: string; code: string; zone: string; capital: number; margin: number }[];
+  }[];
+  alerts: { id: string; date: string; record: string; description: string; to: string }[];
+}
+export async function getDashboard(): Promise<DashboardSummary>;
+```
+
+- Fixture em `src/api/fixtures/dashboard.ts` com os valores do mockup (24 oportunidades, 8 operações, 1 285 000 €, 286 450 €, capital 1 240 000 € = 680 000 + 390 000 + 170 000, etc.), com `// TODO: trocar pelo endpoint quando existir`.
+- Hook `src/hooks/useDashboard.ts` com `useQuery({ queryKey: ["dashboard"], queryFn: getDashboard })`.
+- Os valores em euros chegam como **números** e são formatados no componente com `formatMoney`; percentagens com `formatPercent`.
+- As rotas dos alertas usam as rotas do `prompt.md` §4 (`/leads`, `/obras`, `/oportunidades`, `/documentos`).
+
+## 4. Layout e responsivo
+
+- **Desktop (≥1051px):** stats em 4 colunas; funil e leads lado a lado; operações e alertas lado a lado.
+- **Ecrã pequeno (721–1050px):** stats em 2 colunas; os painéis empilham.
+- **Telemóvel (≤720px):** stats em 2 colunas compactas, tudo numa coluna; o funil mantém as 8 barras e faz scroll horizontal (já tratado pelo `VerticalBarChart`).
+- Números sempre com `tabular-nums`.
+
+## 5. Critérios de aceitação
+
+- [ ] `/` mostra o painel com os 6 blocos do mockup, com dados da fixture.
+- [ ] O funil usa as 8 fases de oportunidade com os nomes exatos e na ordem certa.
+- [ ] "Nova oportunidade" e "Ver todas" levam a `/oportunidades`; "Ver operações" a `/operacoes`; "Limites" a `/definicoes`.
+- [ ] Clicar numa operação abre `/operacoes/<id>`; clicar num alerta abre a página respetiva.
+- [ ] Estado a carregar, erro (com "Tentar novamente") e vazio estão implementados (testar mudando a fixture).
+- [ ] Nenhum componente de `ui/` foi duplicado.
+- [ ] Visual correto em desktop e a 390px.
+- [ ] `npm run typecheck` e `npm run build` passam.

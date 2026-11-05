@@ -86,8 +86,15 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
   - Sidebar `#0d2f31` com 200px de largura; topbar com 58px
   - Raio 3–4px, **sem sombras**, superfícies planas com borda `1px var(--line)`
   - Fonte **DM Sans**, 13px de base, `font-variant-numeric: tabular-nums` em números e tabelas
-- **Já implementado (reutilizar):** `components/layout/` (`AppLayout`, `Sidebar`, `Topbar`, `MobileNav`, `navigation.ts` com o menu e as rotas) e `components/ui/` (`Icon`, `Avatar`). Para uma nova página do menu, basta trocar o `PlaceholderPage` da rota em `App.tsx`.
-- **Padrões a reutilizar:** `PageHeading` (título + ações à direita), `Filters` (pesquisa + selects), `Table` (números alinhados à direita, estado em `Pill` na última coluna), `RecordFields` (grelha de campos), `EntityHeader`, `Tabs`, `PhaseStepper`, quadros kanban, `Dialog`/`Drawer`, `ImportExcel` (template + carregar), cartão escuro de resultados (`results-card`).
+- **Já implementado (reutilizar, nunca duplicar):**
+  - `components/layout/`: `AppLayout`, `Sidebar`, `Topbar`, `MobileNav` e `navigation.ts` (menu e rotas). Para uma nova página do menu, basta trocar o `PlaceholderPage` da rota em `App.tsx`.
+  - `components/ui/` — base: `Icon`, `Avatar`, `Button`, `ButtonLink`, `Pill`, `Panel`, `PanelHeader`, `PageHeading`, `EntityHeader`, `RecordFields`, `Notice`, `Timeline`, `LoadingState`, `ErrorState`, `EmptyState`.
+  - `components/ui/` — dados e gráficos: `Table`, `Filters`, `StatCard`, `VerticalBarChart`, `HorizontalBars`, `StackedTrack`.
+  - `components/ui/` — formulários: `FormField`, `NumberInput`, `SegmentedChoice`, `FileUploadButton`, `inputClasses` (classes para `input`, `select` e `textarea`).
+  - `components/ui/` — sobreposições e navegação: `Dialog`, `Drawer`, `DropdownMenu`, `Tabs`, `FloatingActionButton`, `useEscape`.
+  - `components/ui/` — fluxos: `KanbanBoard` (usa `KanbanColumn`), `PhaseStepper`, `ImportExcel` (usa `ImportStep` e `lib/csv.ts`).
+  - Se faltar alguma coisa a um destes componentes, alarga-o com uma prop opcional.
+- **Padrões do mockup ainda por criar (criar quando forem precisos):** quadros de domínio como o cartão de oportunidade, cartão escuro de resultados (`results-card`).
 - **Ícones:** usar o componente `Icon` (SVG de traço 1.8) com o mesmo conjunto de ícones do mockup. Não juntar outra biblioteca de ícones sem motivo.
 - **Telemóvel (≤720px):** a sidebar dá lugar à barra inferior (`MobileNav`), as tabelas passam a linhas compactas, os kanbans fazem scroll horizontal com snap e os formulários ficam numa coluna. Testa sempre a 390px de largura.
 - **Se o mockup não cobrir o caso**, segue os padrões mais próximos que já existem e diz explicitamente o que inventaste.

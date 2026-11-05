@@ -1,0 +1,130 @@
+# Tarefa 03 · Oportunidades
+
+> Segue **todas** as regras de [`../prompt.md`](../prompt.md). Este ficheiro só descreve o que é específico desta tarefa.
+> Os componentes genéricos de `src/components/ui/` **já estão criados**. Não os voltes a criar: lê as props no ficheiro de cada um e usa-os. Se faltar alguma coisa, alarga-os com uma prop opcional.
+
+## Tarefa
+
+- **O que fazer:** pipeline de oportunidades em quadro kanban (arrastar entre fases) e em lista, e página de detalhe com fases, resumo, análise financeira em tempo real, histórico de fases, documentos e relatório para investidores.
+- **Página(s) afetada(s):** Oportunidades (`/oportunidades`) e Detalhe de oportunidade (`/oportunidades/:id`, separadores via `?tab=`)
+- **Endpoint(s) da API:** ainda não existem → fixtures. Previstos: `GET/POST /api/v1/opportunities`, `GET/PATCH /api/v1/opportunities/:id`, `PATCH /api/v1/opportunities/:id/phase`, `PUT /api/v1/opportunities/:id/finance`, `GET/POST /api/v1/opportunities/:id/documents`, `POST /api/v1/opportunities/:id/convert`
+- **Referência no mockup:** `Opportunities`, `OpportunityDetail`, `calcFinance`, `OpportunityReport` em `mockup/src/App.tsx`; classes `.toolbar`, `.deal-card`, `.finance-layout`, `.form-section`, `.extra-costs`, `.results-card`, `.report*` em `mockup/src/index.css`
+
+---
+
+## 1. Âmbito
+
+### Lista (`/oportunidades`)
+- `PageHeading` "Oportunidades" + **Nova oportunidade** (primário; abre `Drawer` com Imóvel/morada, Tipologia, Zona, Preço pedido, VVR e lead de origem opcional).
+- Toolbar: `SegmentedChoice` **Quadro / Lista** (guardado em `?vista=quadro|lista`) + `Filters` com `compact` (pesquisa, Zona, Gestor).
+- **Quadro:** `KanbanBoard` com 8 colunas, uma por fase (numeração automática a partir de `startAt`, que aqui é 1; ponto colorido via `dotClassName`).
+  - `DealCard`: `Pill` da tipologia, `DropdownMenu` ⋯, título, zona com ícone, Preço pedido e VVR, faixa "Lucro estimado", rodapé com "`n` dias nesta fase" (vermelho se passar o `maxDaysStalled` da fase; por omissão 10) e `Avatar` do responsável.
+  - Arrastar um cartão para outra coluna chama `onMove`, que muda a fase (atualização otimista + mutation; se falhar, volta atrás e mostra erro). Também tem de ser possível mudar de fase **sem rato** (no `DropdownMenu` → "Mover para…").
+  - Clicar no cartão abre `/oportunidades/:id`.
+- **Lista:** `Table` com Imóvel / Zona, Tipologia, Preço pedido, VVR, Lucro estimado, Fase, Dias. Valores em euros com `align: "right"`.
+
+### Detalhe (`/oportunidades/:id`)
+- `EntityHeader` com `media` (ícone), `type` "Oportunidades · Registo atualizado …", título e `meta` (`Pill` da fase atual e "Responsável: …"). Ações:
+  - **Gerar relatório** (secundário)
+  - **Marcar como rejeitada/perdida** (perigo → `Dialog` com motivo obrigatório)
+  - **Avançar fase** (primário) ou, na última fase (Aprovado), **Converter em operação** → cria a operação e navega para `/operacoes/:id`
+- `PhaseStepper`: as 8 fases numeradas 1–8, concluídas até à atual.
+- `Tabs` (estado em `?tab=`): **Resumo**, **Análise financeira**, **Histórico de fases**, **Documentos**.
+  - **Resumo:** painel "Informação principal" (Tipologia, Zona, Área, Preço pedido, VVR, Contacto, Data de visita) + Observações; ao lado, "Atividade recente" com `Timeline`.
+  - **Análise financeira:** ver §3.
+  - **Histórico de fases:** `Table` (Fase anterior, Nova fase, Data, Nota).
+  - **Documentos:** `Notice` informativo (pode carregar em qualquer fase, incluindo due diligence; ficam associados ao imóvel e aparecem em Documentos), select do tipo de documento (Caderneta predial, Certidão permanente, Orçamento de obra, Planta, Licença de utilização, Certificado energético, Outro), `FileUploadButton` **Carregar documentos** (com `multiple`) e `Table` (Documento, Tipo, Imóvel, Entidade associada, Tamanho, Validade, Estado). Vazio → `EmptyState` "Ainda não há documentos."
+- **Relatório:** pré-visualização em ecrã inteiro (portal para `document.body`) com barra "Fechar / Imprimir / guardar PDF" (`window.print()`); estilos de impressão com as variantes `print:` do Tailwind (esconder app e barra, mostrar só o relatório). Conteúdo: cabeçalho com título e data, 2 fotos, KPIs (Investimento total, Venda prevista, Margem estimada, ROI, ROI anualizado, Prazo), "O imóvel", "Estratégia" e "Estrutura de custos" com total. Fecha com Esc (`useEscape`).
+- Em telemóvel, o botão do relatório aparece como bloco de largura total abaixo do cabeçalho ("Gerar relatório para investidores").
+
+### Fora do âmbito
+- Upload real de ficheiros para armazenamento (a fixture guarda nome, tipo e tamanho).
+- **Proposta máxima:** foi retirada do mockup. Não mostrar, mesmo que exista `max_proposal` no modelo.
+
+## 2. Componentes
+
+### Reutilizar (já existem, não criar)
+Em `components/ui/`: `Button`, `ButtonLink`, `PageHeading`, `Panel`, `PanelHeader`, `Pill`, `Filters`, `Table`, `SegmentedChoice`, `Drawer`, `Dialog`, `FormField`, `inputClasses`, `EntityHeader`, `RecordFields`, `KanbanBoard`, `PhaseStepper`, `Tabs`, `NumberInput`, `Timeline`, `Notice`, `FileUploadButton`, `DropdownMenu`, `useEscape`, `LoadingState`, `ErrorState`, `EmptyState`, `Icon`, `Avatar`. Também `lib/format.ts`.
+
+### Criar em `components/opportunities/`
+`OpportunityToolbar.tsx`, `OpportunityBoard.tsx` (configura `KanbanBoard` com as 8 fases), `DealCard.tsx`, `OpportunitiesTable.tsx`, `NewOpportunityDrawer.tsx`, `OpportunityHeader.tsx` (com `OpportunityActions.tsx`), `RejectOpportunityDialog.tsx`, `OpportunitySummary.tsx`, `OpportunityActivity.tsx`, `PhaseHistoryTable.tsx`, `OpportunityDocuments.tsx`, `FinanceAssumptionsForm.tsx`, `CommissionSection.tsx`, `ExtraCostsEditor.tsx`, `FinanceResultsCard.tsx`, `OpportunityReport.tsx` (dividir em `ReportKpis.tsx` e `ReportCostTable.tsx` se crescer).
+
+### Lógica pura em `src/lib/` (ainda por criar)
+- `phases.ts`: `OPPORTUNITY_PHASES` (as 8 fases) e `OPERATION_PHASES` (as 7 fases, numeradas a partir de 9), para não repetir os nomes.
+- `finance.ts`: `calcFinance(values, extras)` igual ao mockup:
+  - `outros = Σ extras.value`
+  - `comissão = venda × comissão% × (1 + IVA%)`
+  - `custo total = compra + IMT + selo + escritura + obra + outros + comissão`
+  - `margem = venda − custo total`; `ROI = margem / custo total`
+  - `ROI anualizado = (1 + ROI)^(12 / meses) − 1`
+  - Divisões por zero devolvem 0 (ou "—" na UI).
+
+### Páginas
+- `pages/OpportunitiesPage.tsx` e `pages/OpportunityDetailPage.tsx` (lê `:id` e `?tab=`).
+- Em `App.tsx`: rotas `oportunidades` e `oportunidades/:id`.
+
+## 3. Análise financeira
+
+- **Pressupostos** (`NumberInput` dentro de `FormField`): Preço de compra, IMT, Imposto do selo, Escritura e registos, Custo da obra, Preço de venda previsto, Prazo previsto (meses).
+- **Comissão imobiliária:** Comissão (%) — por omissão **5%** — e IVA sobre a comissão (%) — por omissão **23%**; valor calculado mostrado ao lado com a fórmula (`5% × 355 000 € + IVA 23%`).
+- **Outros custos:** lista editável (descrição + valor), remover linha (`aria-label="Remover custo"`), **Adicionar custo** e total.
+- **Cartão de resultados** (escuro, como `.results-card`): Investimento total, decomposição (Compra; IMT, selo e escritura; Obra; Comissão imobiliária c/ IVA; Outros custos), **Margem estimada** em destaque com % sobre a venda, ROI e ROI anualizado, e `Pill` "Rentabilidade acima do objetivo" (ROI > 15%, verde) ou "Rever pressupostos" (âmbar).
+- Tudo recalcula **em tempo real** ao escrever. Guardar com botão **Guardar análise** (mutation `PUT …/finance`); avisar se sair do separador com alterações por guardar.
+- Em ≤1050px o cartão de resultados passa para baixo do formulário; em ≤720px o formulário fica numa coluna.
+
+## 4. Dados
+
+`src/api/opportunitiesApi.ts` (alinhado com `Opportunity` e `Property` em `app/models.py`):
+
+```ts
+export interface OpportunityCard {
+  id: number;
+  title: string;          // morada/nome do imóvel
+  zone: string;
+  typology: string;       // T1, T2…
+  askingPrice: number;
+  vvr: number;
+  estimatedProfit: number;
+  phaseIndex: number;     // 0–7, índice em OPPORTUNITY_PHASES
+  daysInPhase: number;
+  owner: { name: string };
+}
+
+export interface FinanceValues {
+  purchasePrice: number; imt: number; stampDuty: number; deedCosts: number;
+  workCost: number; expectedSalePrice: number;
+  commissionPercent: number; commissionVatPercent: number; termMonths: number;
+}
+export interface ExtraCost { id: string; label: string; value: number }
+
+export interface OpportunityDetail extends OpportunityCard {
+  property: { code: string; areaM2: number; visitDate?: string; notes?: string; constructionYear?: number; condition?: string; energyCertificate?: string };
+  contactName?: string;
+  updatedAt: string;
+  finance: FinanceValues;
+  extraCosts: ExtraCost[];
+  phaseHistory: { from: string; to: string; date: string; note?: string }[];
+  activity: { date: string; text: string }[];
+  documents: { id: string; name: string; type: string; propertyCode: string; entity: string; sizeBytes: number; validUntil?: string; status: string }[];
+}
+```
+
+- Fixtures em `src/api/fixtures/opportunities.ts` com as 5 oportunidades do mockup (Apartamento na Alta, Rua do Brasil, Baixa de Coimbra, Quinta da Portela, Moradia na Solum, nas fases 1, 2, 3, 5 e 8) e o detalhe da "Baixa de Coimbra" (imóvel IM-1042, valores financeiros e 3 outros custos do mockup). Mutations alteram a fixture em memória. `// TODO: trocar pelo endpoint quando existir`.
+- Hooks: `useOpportunities`, `useOpportunity(id)`, `useCreateOpportunity`, `useMoveOpportunityPhase` (otimista), `useSaveFinance`, `useUploadOpportunityDocuments`, `useRejectOpportunity`, `useConvertOpportunity`.
+- Tamanho de ficheiro formatado por uma função nova `formatFileSize` em `lib/format.ts` (`"1,2 MB"`, `"340 KB"`).
+
+## 5. Critérios de aceitação
+
+- [ ] Quadro com 8 colunas numeradas 1–8 com os nomes exatos; arrastar muda a fase e a contagem; mudar de fase também funciona pelo teclado/menu.
+- [ ] Alternar Quadro/Lista mantém os filtros e fica no URL.
+- [ ] "`n` dias nesta fase" fica a vermelho acima do limite.
+- [ ] Detalhe: stepper correto; separadores abrem diretamente por `?tab=analise-financeira` (etc.).
+- [ ] Análise financeira: com os valores do mockup (compra 220 000, IMT 8 400, selo 1 760, escritura 1 250, obra 58 000, venda 355 000, 5% + 23%, outros 3 500 + 1 800 + 1 200) a comissão é **21 833 €** e o investimento total **317 743 €** — verificar.
+- [ ] Adicionar/remover outros custos atualiza totais imediatamente.
+- [ ] Documentos: carregar vários ficheiros adiciona-os à tabela com tipo e tamanho.
+- [ ] Relatório abre, imprime só o relatório e fecha com Esc.
+- [ ] Na fase Aprovado aparece "Converter em operação" e navega para a operação criada.
+- [ ] "Proposta máxima" não aparece em lado nenhum.
+- [ ] Nenhum componente de `ui/` foi duplicado, e nada específico de oportunidades entrou neles (`KanbanBoard` e `PhaseStepper` também servem às Operações, a partir da fase 9).
+- [ ] Em 390px: kanban com snap, formulários numa coluna, cartão de resultados abaixo.
+- [ ] `npm run typecheck` e `npm run build` passam.
