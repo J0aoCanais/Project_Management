@@ -10,3 +10,7 @@ __pycache__/
 *.egg-info/
 .venv/
 venv/
+
+# Frontend: dependencies are installed and the bundle is built inside the image
+frontend/node_modules
+app/static/dist
