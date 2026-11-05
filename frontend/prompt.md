@@ -16,7 +16,7 @@
 
 1. **Procura componentes que já existam.** Lê `src/components/` e procura pelo nome e pela função:
    ```sh
-   ls -R src/components src/pages
+   ls -R src/components src/pages src/hooks src/api
    grep -rn "export default\|export function" src/components
    ```
 2. **Se já existir um componente parecido, reutiliza-o ou alarga-o com props.** Nunca cries um segundo `Table`, `Pill`, `Filters`, etc. Se mudares a API de um componente partilhado, atualiza todos os sítios que o usam.
@@ -35,8 +35,10 @@ src/
     <domínio>/    # específicos: leads/, opportunities/, operations/, works/, documents/, finance/ …
   pages/          # uma página por rota: LeadsPage.tsx, OpportunityDetailPage.tsx …
   lib/            # utilitários puros: format.ts (dinheiro, datas, %), csv.ts …
-  styles/         # tokens.css (variáveis do mockup) e estilos globais base
+  index.css       # Tailwind + tokens do design (@theme) + estilos base
 ```
+
+**Stack:** React + **TypeScript** (sem ficheiros `.js`/`.jsx`) + **Tailwind CSS v4** (plugin `@tailwindcss/vite`, sem `tailwind.config.js`) + React Router + TanStack Query.
 
 ## 3. Regras de componentes
 
@@ -46,7 +48,10 @@ src/
 - **Props tipadas** com `interface Props`. Sem `any`.
 - **Os componentes de `ui/` não sabem nada do negócio:** recebem dados e callbacks por props e não chamam a API.
 - **Componentes pequenos.** Se um ficheiro passar das ~150 linhas ou tiver mais do que uma responsabilidade, divide-o.
-- **Estilos:** cada componente tem o seu `NomeDoComponente.css` ao lado e importa-o. As classes têm o prefixo do componente (ex.: `.deal-card`, `.deal-card__title`). As cores, raios e fontes vêm sempre das variáveis em `styles/tokens.css`, nunca escritas à mão.
+- **Estilos só com Tailwind:** classes utilitárias diretamente no JSX. Não criar ficheiros `.css` por componente nem usar `style={{}}`, exceto para valores dinâmicos (ex.: largura de uma barra calculada).
+- **Usar sempre os tokens do tema** (`bg-brand`, `text-muted`, `border-line`, `rounded-control`…), definidos em `@theme` no `src/index.css`. Só usar valores arbitrários (`text-[11px]`, `w-[200px]`) para medidas do mockup que não tenham token. Uma cor nova vai primeiro para o `@theme`, nunca como `bg-[#123456]` repetido.
+- **Combinações que se repetem viram componente, não classe CSS:** se o mesmo conjunto de classes aparece em vários sítios (ex.: botão primário), cria `components/ui/Button.tsx` com variantes por props. Só usar `@layer components` no `index.css` se não houver alternativa.
+- **Breakpoints do mockup:** telemóvel até 720px e ecrã pequeno até 1050px. Usar `min-[721px]:` e `min-[1051px]:` (mobile-first), como no layout já existente.
 
 ## 4. Páginas e rotas
 
@@ -74,13 +79,14 @@ src/
 
 O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata, mas o essencial tem de ser igual:** layout, hierarquia, cores, densidade, tipografia e comportamento em telemóvel.
 
-- **Tokens** (copiar para `styles/tokens.css`; os valores finais estão no fim de `mockup/src/index.css`):
+- **Tokens** (já estão em `@theme` no `src/index.css`; os valores de origem estão no fim de `mockup/src/index.css`):
   - Marca `--brand #0f6b6e`, `--brand-dark #0a4f52`, `--brand-soft #e5f2f1`
   - Texto `--ink #172323`, secundário `--muted #687777`, linhas `--line #dfe7e5`, fundo `#f3f4f4`
   - Estados: verde `#16805d`/`#e8f5ef`, vermelho `#c44843`/`#fbeceb`, âmbar `#a56b14`/`#fff5df`
   - Sidebar `#0d2f31` com 200px de largura; topbar com 58px
   - Raio 3–4px, **sem sombras**, superfícies planas com borda `1px var(--line)`
   - Fonte **DM Sans**, 13px de base, `font-variant-numeric: tabular-nums` em números e tabelas
+- **Já implementado (reutilizar):** `components/layout/` (`AppLayout`, `Sidebar`, `Topbar`, `MobileNav`, `navigation.ts` com o menu e as rotas) e `components/ui/` (`Icon`, `Avatar`). Para uma nova página do menu, basta trocar o `PlaceholderPage` da rota em `App.tsx`.
 - **Padrões a reutilizar:** `PageHeading` (título + ações à direita), `Filters` (pesquisa + selects), `Table` (números alinhados à direita, estado em `Pill` na última coluna), `RecordFields` (grelha de campos), `EntityHeader`, `Tabs`, `PhaseStepper`, quadros kanban, `Dialog`/`Drawer`, `ImportExcel` (template + carregar), cartão escuro de resultados (`results-card`).
 - **Ícones:** usar o componente `Icon` (SVG de traço 1.8) com o mesmo conjunto de ícones do mockup. Não juntar outra biblioteca de ícones sem motivo.
 - **Telemóvel (≤720px):** a sidebar dá lugar à barra inferior (`MobileNav`), as tabelas passam a linhas compactas, os kanbans fazem scroll horizontal com snap e os formulários ficam numa coluna. Testa sempre a 390px de largura.
@@ -115,6 +121,7 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - [ ] A página tem rota em `App.tsx` e entrada no menu, se fizer parte do menu
 - [ ] O visual corresponde ao mockup no essencial, em desktop e a 390px
 - [ ] Os quatro estados estão tratados (a carregar, erro, vazio, com dados)
+- [ ] Estilos só com classes Tailwind e tokens do tema (sem `.css` novos, sem cores hexadecimais soltas)
 - [ ] Textos em pt-PT; dinheiro, datas e % formatados por `lib/format.ts`
 - [ ] `npm run typecheck` e `npm run build` passam sem erros
 - [ ] Resumo final: componentes criados, componentes alterados e diferenças em relação ao mockup

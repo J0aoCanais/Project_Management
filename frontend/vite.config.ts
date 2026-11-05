@@ -1,3 +1,4 @@
+import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
 import { defineConfig } from "vite";
 
@@ -8,7 +9,7 @@ export default defineConfig(({ command, mode }) => {
   const apiTarget = "http://web:8000";
 
   return {
-    plugins: [react()],
+    plugins: [react(), tailwindcss()],
 
     // Build: Flask serves the files from /static/dist/. Dev: served from the root.
     base: command === "build" ? "/static/dist/" : "/",

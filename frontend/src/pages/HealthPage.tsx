@@ -18,12 +18,12 @@ function HealthPage() {
   });
 
   if (isLoading) {
-    return <p>Checking system health...</p>;
+    return <main className="health-page"><p>Checking system health...</p></main>;
   }
 
   if (isError) {
     return (
-      <div>
+      <div className="health-page">
         <h2>Health check failed</h2>
         <p>{error.message}</p>
 

@@ -1,18 +1,25 @@
-import { Routes, Route, Navigate } from "react-router-dom";
+import { Route, Routes } from "react-router-dom";
 
+import AppLayout from "./components/layout/AppLayout";
+import { navItems } from "./components/layout/navigation";
 import HealthPage from "./pages/HealthPage";
+import PlaceholderPage from "./pages/PlaceholderPage";
 
 function App() {
   return (
     <Routes>
-      <Route path="/" element={<Navigate to="/health" replace />} />
-
-      <Route path="/health" element={<HealthPage />} />
-
-      <Route
-        path="*"
-        element={<h1>404 - Page not found</h1>}
-      />
+      <Route element={<AppLayout />}>
+        {/* TODO: substituir cada PlaceholderPage pela página real à medida que forem implementadas */}
+        {navItems.map((item) =>
+          item.path === "/" ? (
+            <Route key={item.path} index element={<PlaceholderPage title={item.label} />} />
+          ) : (
+            <Route key={item.path} path={item.path.slice(1)} element={<PlaceholderPage title={item.label} />} />
+          ),
+        )}
+        <Route path="health" element={<HealthPage />} />
+        <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
+      </Route>
     </Routes>
   );
 }
