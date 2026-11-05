@@ -1,6 +1,6 @@
 from flask import flash, jsonify, render_template, request, session, url_for, Blueprint
 from datetime import datetime
-from sqlalchemy import or_
+from sqlalchemy import or_, and_
 from marshmallow import ValidationError
 from flask_login import current_user
 from http import HTTPStatus
@@ -13,13 +13,15 @@ from ..schemas.contacts_schema import (
     ContactCreateSchema,
     ContactResponseSchema,
     ContactSearchSchema,
-    ContactListSchema
+    ContactListSchema,
+    ContactUpdateSchema
 )
 
 contact_list_schema = ContactListSchema()
 contact_create_schema = ContactCreateSchema()
 contact_response_schema = ContactResponseSchema()
 search_schema = ContactSearchSchema()
+contact_update_schema = ContactUpdateSchema()
 
 contacts_bp = Blueprint("contacts", __name__)
 
@@ -34,7 +36,12 @@ def get_contacts():
     page = params["page"]
     per_page = params["per_page"]
     
-    stmt = db.select(Contact).order_by(Contact.name.asc())
+    stmt = (
+        db.select(Contact)
+        .where(Contact.type != "investor")
+        .order_by(Contact.name.asc())
+    )
+    
     pagination = db.paginate(
         stmt,
         page=page,
@@ -76,7 +83,7 @@ def create_contact():
 
     except Exception:
         db.session.rollback()
-        return jsonify({"error": "Internal server error"}),HTTPStatus.INTERNAL_SERVER_ERROR
+        return jsonify({"error": "Internal server error"}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @contacts_bp.route("/search", methods=["GET"])
@@ -103,11 +110,14 @@ def search_contacts():
         pattern = f"%{search_term}%"
 
         # Search across contact fields
-        conditions = or_(
+        conditions = and_(
+            or_(
             Contact.name.ilike(pattern, escape="\\"),
             Contact.email.ilike(pattern, escape="\\"),
             Contact.phone_number.ilike(pattern, escape="\\"),
             Contact.nif.ilike(pattern, escape="\\")
+            ),
+            Contact.type != "investor"
         )
 
         stmt = (
@@ -139,3 +149,30 @@ def search_contacts():
 
     except ValidationError as error:
         return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST
+
+
+@contacts_bp.route("/<int:contact_id>", methods=["PATCH"])
+def edit_contact(contact_id):
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
+    
+    contact = db.session.get(Contact, contact_id)
+    if not contact:
+        return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
+    
+    try:
+        data = contact_update_schema.load(payload, partial=True)
+    except ValidationError as error:
+        return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST
+    
+    try:
+        for key, value in data.items():
+            setattr(contact, key, value)
+            
+        db.session.commit()
+        return jsonify(contact_response_schema.dump(contact)), HTTPStatus.OK
+    
+    except Exception:
+        db.session.rollback()
+        return jsonify({"error": "Internal server error"}), HTTPStatus.INTERNAL_SERVER_ERROR
