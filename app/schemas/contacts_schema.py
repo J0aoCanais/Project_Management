@@ -20,6 +20,12 @@ class BaseSchema(Schema):
         return cleaned
 
 
+class RoleResponseSchema(BaseSchema):
+    """Simple schema to return contact role"""
+    id = fields.Integer()
+    name = fields.String()
+
+
 class ContactCreateSchema(BaseSchema):
     """Contact creation schema. Name and type fields are required"""
     name = fields.String(required=True, validate=validate.Length(min=1, max=512))
@@ -34,6 +40,7 @@ class ContactCreateSchema(BaseSchema):
     consent_given = fields.Boolean(allow_none=True)
     consent_date = fields.DateTime(allow_none=True)
     consent_channel = fields.String(allow_none=True)
+    role_ids = fields.List(fields.Integer(), allow_none=True)
 
 
 class ContactResponseSchema(BaseSchema):
@@ -51,24 +58,26 @@ class ContactResponseSchema(BaseSchema):
     consent_given = fields.Boolean(allow_none=True)
     consent_date = fields.DateTime(allow_none=True)
     consent_channel = fields.String(allow_none=True)
+    roles = fields.List(fields.Nested(RoleResponseSchema))
+
 
 class ContactUpdateSchema(ContactCreateSchema):
     """For PATCH: make the name and type fields optional"""
-
     name = fields.String(validate=validate.Length(min=1, max=512))
     type = fields.String(validate=validate.Length(min=1, max=512))
     
     
 class ContactListSchema(BaseSchema):
     """Lists contacts with fields for pagination"""
-
     class Meta:
         unknown = EXCLUDE  # ignore harmless extras such as cache-busters
 
     page = fields.Integer(load_default=1, validate=validate.Range(min=1))
     per_page = fields.Integer(load_default=20, validate=validate.Range(min=1, max=100))
 
+
 class ContactSearchSchema(ContactListSchema):
     """Search schema: List Schema with a query field"""
-
-    q = fields.String(required=True, validate=validate.Length(min=2, max=512))
+    q = fields.String(required=False, allow_none=True, validate=validate.Length(min=2, max=512))
+    role_id = fields.Integer(allow_none=True)
+    consent = fields.Boolean(allow_none=True)
