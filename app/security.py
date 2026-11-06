@@ -47,7 +47,7 @@ def owner_required(view):
     return wrapper
 
 #Everything not listed here requires login, so a new blueprint is private by default
-PUBLIC_ENDPOINTS = {"auth.login", "demos.health", "static", "demos.csrf-token"}
+PUBLIC_ENDPOINTS = {"auth.login", "demos.health", "static", "auth.get_csrf_token", "demos.get_csrf_token"}
  
 
 # Hooks applied to the entirety of the app (every Blueprint) 
