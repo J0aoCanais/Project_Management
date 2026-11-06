@@ -1,6 +1,8 @@
 """Tests for /api/contacts (list, get, add, search, edit)."""
 import pytest
 from http import HTTPStatus
+from app.extensions import db
+from app.models import Contact
 
 BASE = "/api/contacts"
 BLOCKED = (301, 302, 401, 403)
@@ -27,6 +29,8 @@ def search(client, **params):
     ("get", f"{BASE}/roles"),
     ("post", f"{BASE}/add"),
     ("patch", f"{BASE}/1"),
+    ("delete", f"{BASE}/1"),
+    ("delete", f"{BASE}/roles/1"),
 ])
 def test_anonymous_is_blocked(anon_client, method, path):
     res = getattr(anon_client, method)(path)
@@ -247,3 +251,79 @@ def test_patch_rejects_non_json_body(client):
     res = client.patch(f"{BASE}/{c['id']}", data="hi", content_type="text/plain")
     assert res.status_code == HTTPStatus.BAD_REQUEST
     assert "body" in res.json["errors"]
+
+
+def test_delete_missing_role_is_404(client):
+    res = client.delete(f"{BASE}/roles/99999")
+    assert res.status_code == HTTPStatus.NOT_FOUND
+    assert "id" in res.json["errors"]
+
+
+# ---------------------------------------------------------------- Delete (soft)
+
+def test_delete_contact_returns_204(client):
+    c = make(client)
+    res = client.delete(f"{BASE}/{c['id']}")
+    assert res.status_code == HTTPStatus.NO_CONTENT
+    assert res.data == b""
+
+
+def test_delete_missing_contact_is_404(client):
+    res = client.delete(f"{BASE}/99999")
+    assert res.status_code == HTTPStatus.NOT_FOUND
+    assert "id" in res.json["errors"]
+
+
+def test_delete_is_soft_row_stays_in_db(app, client):
+    c = make(client)
+    client.delete(f"{BASE}/{c['id']}")
+    with app.app_context():
+        row = db.session.get(Contact, c["id"])
+        assert row is not None
+        assert row.deleted_at is not None
+
+
+def test_deleted_contact_not_in_list(client):
+    keep = make(client, name="Zzyzx Keep")
+    gone = make(client, name="Zzyzx Gone")
+    client.delete(f"{BASE}/{gone['id']}")
+    res = client.get(f"{BASE}/")
+    assert [c["name"] for c in res.json["data"]] == ["Zzyzx Keep"]
+    assert res.json["pagination"]["total"] == 1
+
+
+def test_deleted_contact_not_in_search(client):
+    c = make(client, email="zzyzx@qwerty-test.example")
+    client.delete(f"{BASE}/{c['id']}")
+    res = search(client, q="zzyzx")
+    assert res.status_code == HTTPStatus.OK
+    assert res.json["data"] == []
+    assert res.json["pagination"]["total"] == 0
+
+
+def test_delete_only_affects_target_contact(client):
+    a = make(client, name="Zzyzx A")
+    b = make(client, name="Zzyzx B")
+    client.delete(f"{BASE}/{a['id']}")
+    res = client.get(f"{BASE}/")
+    assert [c["name"] for c in res.json["data"]] == ["Zzyzx B"]
+
+
+def test_get_deleted_contact_is_404(client):
+    c = make(client)
+    client.delete(f"{BASE}/{c['id']}")
+    res = client.get(f"{BASE}/{c['id']}")
+    assert res.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_patch_deleted_contact_is_404(client):
+    c = make(client)
+    client.delete(f"{BASE}/{c['id']}")
+    res = client.patch(f"{BASE}/{c['id']}", json={"notes": "x"})
+    assert res.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_delete_already_deleted_contact_is_404(client):
+    c = make(client)
+    assert client.delete(f"{BASE}/{c['id']}").status_code == HTTPStatus.NO_CONTENT
+    assert client.delete(f"{BASE}/{c['id']}").status_code == HTTPStatus.NOT_FOUND

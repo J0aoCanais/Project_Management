@@ -131,8 +131,9 @@ def get_contacts():
 def get_contact(contact_id: int):
     """Returns the detailts of a specific contact."""
     contact = db.session.get(Contact, contact_id)
-    if contact is None:
+    if contact is None or contact.deleted_at is not None:
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
+   
     return jsonify(contact_response_schema.dump(contact)), HTTPStatus.OK
 
 
@@ -256,9 +257,9 @@ def edit_contact(contact_id):
         return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
     
     contact = db.session.get(Contact, contact_id)
-    if not contact:
+    if contact is None or contact.deleted_at is not None:
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
-    
+   
     try:
         if "role_ids" in payload and isinstance(payload["role_ids"], int):
             payload["role_ids"] = [payload["role_ids"]]
@@ -297,9 +298,9 @@ def delete_contact(contact_id: int):
     This makes the contact not appear on search queries."""
 
     contact = db.session.get(Contact, contact_id)
-    if contact is None:
+    if contact is None or contact.deleted_at is not None:
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
-
+ 
     try:
         contact.deleted_at = datetime.now()
         db.session.commit()
