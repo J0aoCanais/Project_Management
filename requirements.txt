@@ -11,3 +11,4 @@ gunicorn
 marshmallow 
 flask-marshmallow
 marshmallow-sqlalchemy
+pytest==9.2.0
