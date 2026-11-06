@@ -1,5 +1,6 @@
-from flask import flash, redirect, render_template, request, session, url_for, Blueprint
+from flask import flash, redirect, render_template, request, session, url_for, Blueprint, jsonify
 from flask_login import current_user, login_user, logout_user
+from flask_wtf.csrf import generate_csrf
 
 from ..extensions import db, limiter, login_manager
 from ..models import User
@@ -23,6 +24,12 @@ def is_safe_next(target) -> bool:
         and "\\" not in target
     )
 
+
+@auth_bp.route("/csrf-token", methods=["GET"])
+def get_csrf_token():
+    return jsonify({
+        "csrf_token": generate_csrf()
+    })
 
 @auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])

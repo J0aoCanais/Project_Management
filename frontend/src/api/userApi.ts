@@ -1,4 +1,4 @@
-import { currentUserFixture } from "./fixtures/currentUser";
+import { currentUserFixture } from "./fixtures/testData";
 
 export interface CurrentUser {
   id: number;

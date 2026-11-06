@@ -5,9 +5,11 @@ import Panel from "./Panel";
 interface Props {
   title?: string;
   fields: { label: string; value: ReactNode }[];
+  /** Conteúdo por baixo dos campos, como as observações. */
+  children?: ReactNode;
 }
 
-function RecordFields({ title = "Dados do registo", fields }: Props) {
+function RecordFields({ title = "Dados do registo", fields, children }: Props) {
   return (
     <Panel>
       <h2 className="border-b border-line px-3 py-2.5 text-xs font-bold">{title}</h2>
@@ -19,6 +21,7 @@ function RecordFields({ title = "Dados do registo", fields }: Props) {
           </dl>
         ))}
       </div>
+      {children}
     </Panel>
   );
 }

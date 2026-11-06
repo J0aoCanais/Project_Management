@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { leadContactOptions } from "../../api/fixtures/testData";
 import type { NewLeadInput } from "../../api/leadsApi";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
@@ -12,8 +13,6 @@ interface Props {
   onClose: () => void;
   onCreate: (input: NewLeadInput) => void;
 }
-
-const contacts = ["Ana Lourenço", "Rodrigo Mendes", "Joana Costa"];
 
 function NewLeadDrawer({ open, sources, onClose, onCreate }: Props) {
   const [mode, setMode] = useState<"existing" | "new">("new");
@@ -42,7 +41,7 @@ function NewLeadDrawer({ open, sources, onClose, onCreate }: Props) {
         <legend className="mb-1 text-xs font-bold">Contacto</legend>
         <SegmentedChoice label="Tipo de contacto" value={mode} onChange={setMode} options={[{ value: "existing", label: "Escolher existente" }, { value: "new", label: "Criar novo" }]} />
         {mode === "existing" ? (
-          <FormField label="Contacto" error={error && !contactName ? error : undefined}><select className={inputClasses} value={contactName} onChange={(event) => setContactName(event.target.value)}><option value="">Selecionar contacto</option>{contacts.map((contact) => <option key={contact}>{contact}</option>)}</select></FormField>
+          <FormField label="Contacto" error={error && !contactName ? error : undefined}><select className={inputClasses} value={contactName} onChange={(event) => setContactName(event.target.value)}><option value="">Selecionar contacto</option>{leadContactOptions.map((contact) => <option key={contact}>{contact}</option>)}</select></FormField>
         ) : (
           <><FormField label="Nome" error={error && !contactName ? error : undefined}><input className={inputClasses} value={contactName} onChange={(event) => setContactName(event.target.value)} /></FormField><FormField label="Telemóvel" error={error && !phone ? error : undefined}><input className={inputClasses} value={phone} onChange={(event) => setPhone(event.target.value)} /></FormField></>
         )}

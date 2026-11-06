@@ -15,7 +15,7 @@ interface Props<T> {
 }
 
 // Em telemóvel, cada linha mostra só a primeira coluna, a segunda por baixo e a última à direita.
-const mobileCell = "max-[720px]:hidden max-[720px]:first:block max-[720px]:first:font-semibold max-[720px]:last:col-start-2 max-[720px]:last:row-start-1 max-[720px]:last:block max-[720px]:last:text-right max-[720px]:[&:nth-child(2)]:col-start-1 max-[720px]:[&:nth-child(2)]:block max-[720px]:[&:nth-child(2)]:text-left max-[720px]:[&:nth-child(2)]:text-[11px] max-[720px]:[&:nth-child(2)]:text-muted";
+const mobileCell = "max-[720px]:hidden max-[720px]:first:block max-[720px]:first:truncate max-[720px]:first:font-semibold max-[720px]:last:col-start-2 max-[720px]:last:row-start-1 max-[720px]:last:block max-[720px]:last:text-right max-[720px]:[&:nth-child(2)]:col-start-1 max-[720px]:[&:nth-child(2)]:block max-[720px]:[&:nth-child(2)]:text-left max-[720px]:[&:nth-child(2)]:text-[11px] max-[720px]:[&:nth-child(2)]:text-muted";
 
 function Table<T>({ columns, rows, getRowKey, onRowClick }: Props<T>) {
   const handleKey = (e: KeyboardEvent, row: T) => {

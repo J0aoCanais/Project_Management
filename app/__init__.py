@@ -31,9 +31,11 @@ def create_app(config_class=Config):
     # Blueprints (imported here, after the extensions exist)
     from .auth.routes import auth_bp
     from .demos import demos_bp
+    from .contacts.routes import contacts_bp
  
-    app.register_blueprint(demos_bp, url_prefix="/api/demos")                           # /, /health, /account
-    app.register_blueprint(auth_bp)                           # /login, /logout
+    app.register_blueprint(demos_bp, url_prefix="/api/demos")           # /, /health, /account
+    app.register_blueprint(auth_bp)                                     # /login, /logout
+    app.register_blueprint(contacts_bp, url_prefix="/api/contacts")     # /contacts
  
     register_security_hooks(app)
  

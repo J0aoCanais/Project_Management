@@ -1,6 +1,7 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 import { useImportLeads, useLeadSources, useLeads, useCreateLead } from "../hooks/useLeads";
+import { leadImportSample } from "../api/fixtures/testData";
 import type { LeadStatus, NewLeadInput } from "../api/leadsApi";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
@@ -18,13 +19,7 @@ const importConfig: ImportConfig = {
   title: "Importar leads",
   templateName: "template_leads.csv",
   columns: ["Nome", "Referenciado por", "Zona", "Telemóvel", "Origem", "Estado", "Data"],
-  sample: [
-    ["Marta Ribeiro", "Casa Certa", "Baixa", "912 345 678", "Anúncio", "Nova", "03/11/2026"],
-    ["João Noronha", "Particular", "Celas", "934 102 889", "Indicação", "Nova", "03/11/2026"],
-    ["Carla Mendes", "Habita", "Solum", "966 334 120", "Site", "Nova", "03/11/2026"],
-    ["Rui Valente", "Porta 21", "Alta", "918 422 301", "Idealista", "Nova", "03/11/2026"],
-    ["Sofia Matos", "Particular", "Santa Clara", "925 781 442", "Redes sociais", "Nova", "03/11/2026"],
-  ],
+  sample: leadImportSample,
 };
 
 function parseDate(value: string) {

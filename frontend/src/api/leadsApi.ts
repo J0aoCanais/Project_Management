@@ -1,4 +1,4 @@
-import { leads, leadContacts } from "./fixtures/leads";
+import { leads, leadContacts } from "./fixtures/testData";
 
 export type LeadStatus = "Nova" | "Contactada" | "Qualificada" | "Convertida" | "Descartada";
 
