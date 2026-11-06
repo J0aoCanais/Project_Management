@@ -1,7 +1,7 @@
 from flask import flash, jsonify, render_template, request, session, url_for, Blueprint
 from datetime import datetime
 from sqlalchemy import or_, and_
-from sqlalchemy import selectinload
+from sqlalchemy.orm import selectinload
 from marshmallow import ValidationError
 from flask_login import current_user
 from http import HTTPStatus
