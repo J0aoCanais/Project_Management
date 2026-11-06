@@ -230,6 +230,8 @@ def create_contact():
         
         if role_ids:
             roles = db.session.execute(db.select(Role).where(Role.id.in_(role_ids))).scalars().all()
+            if roles is None:
+                return jsonify({"errors": {"body": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
             contact.roles = roles
 
         db.session.add(contact)
@@ -273,6 +275,8 @@ def edit_contact(contact_id):
         
         if role_ids is not None:
             roles = db.session.execute(db.select(Role).where(Role.id.in_(role_ids))).scalars().all()
+            if roles is None:
+                return jsonify({"errors": {"body": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
             contact.roles = roles
             
         db.session.commit()

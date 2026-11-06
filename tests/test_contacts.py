@@ -110,6 +110,11 @@ def test_add_rejects_unknown_field(client):
                       json={"name": "Zzyzx", "role_ids": 2, "bogus": 1})
     assert res.status_code == HTTPStatus.BAD_REQUEST
 
+def test_add_invalid_role_id(client):
+    res = client.post(f"{BASE}/add",
+                          json={"name": "Zzyzx", "role_ids": 99, "bogus": 1})
+    assert res.status_code == HTTPStatus.BAD_REQUEST
+
 
 # ---------------------------------------------------------------- List & Get
 
