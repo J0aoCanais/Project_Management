@@ -1,226 +1,160 @@
-# Contacts API Documentation
+# Contacts API
 
-This document provides comprehensive technical documentation for the Contacts API endpoints, built with Flask, SQLAlchemy, and Marshmallow validation.
+Base URL (local development): `http://localhost:8000`
+All contact endpoints live under **`/api/contacts`**. Requests and responses are JSON.
 
 ---
 
-## Overview
+## Authentication
 
-The Contacts API allows authenticated owners to retrieve, create, and search for contact records. All responses are returned in JSON format.
+Every contacts endpoint requires a logged-in user with the **owner** access level. Authentication is session-cookie based, so your HTTP client must store and resend cookies (`credentials: "include"` in `fetch`).
+
+1. **Get a CSRF token**: `GET /csrf-token`. Also starts the session cookie.
+2. **Log in**: `POST /login` as form data (`application/x-www-form-urlencoded`, not JSON) with fields `username` and `password`, and the header `X-CSRFToken: <token>`. Success is a `302` redirect to `/` and a new session cookie. A wrong username or password returns `200` with the login page again.
+3. **Fetch a fresh CSRF token after logging in** (the session changed).
+4. **Send `X-CSRFToken: <token>` on every `POST` and `PATCH`.** `GET` requests don't need it.
+
+Requests without a valid owner session are rejected and never reach the endpoint.
+
+```bash
+BASE=http://localhost:8000
+curl -s -c cookies.txt $BASE/csrf-token
+curl -i -b cookies.txt -c cookies.txt -X POST $BASE/login \
+  -H "X-CSRFToken: <token>" \
+  --data-urlencode "username=<user>" --data-urlencode "password=<pass>"
+```
+
+---
+
+## Conventions
+
+**Contacts of type `investor` are hidden** from the list and search endpoints. (They can still be fetched or edited by id.)
+
+**Errors.** Validation errors are `400` with field messages under `errors`:
+
+```json
+{ "errors": { "email": ["Not a valid email address."] } }
+```
+
+Other errors use a single message:
+
+```json
+{ "error": "Internal server error" }
+```
+
+**Pagination.** List and search accept `page` (default `1`, minimum `1`) and `per_page` (default `20`, `1` to `100`). Invalid values return `400`, e.g. `{ "errors": { "per_page": ["Not a valid integer."] } }`.
+
+Paginated responses look like this:
+
+```json
+{
+  "success": true,
+  "data": [ /* contact objects */ ],
+  "pagination": {
+    "page": 1, "per_page": 20, "total": 1, "pages": 1,
+    "has_next": false, "has_prev": false
+  }
+}
+```
+
+---
+
+## The contact object
+
+```json
+{
+  "id": 1,
+  "name": "Zzyzx Qwertyuiop",
+  "type": "client",
+  "email": "zzyzx@qwerty-test.example",
+  "phone_number": "999000111",
+  "address": null,
+  "company_name": null,
+  "zone": null,
+  "notes": null,
+  "nif": "999000111",
+  "consent_given": null,
+  "consent_date": null,
+  "consent_channel": null
+}
+```
+
+Unset optional fields come back as `null`.
 
 ---
 
 ## Endpoints
 
-### 1. Get All Contacts
+### List contacts
 
-Retrieves a list of all contacts.
+`GET /api/contacts/`
 
-* **URL:** `/`
+Query: `page`, `per_page` (see Pagination). Sorted by name, A to Z. Investors excluded.
 
+**200**: paginated response (see Conventions).
+**400**: invalid `page` / `per_page`.
 
-* **Method:** `GET`
+### Get one contact
 
+`GET /api/contacts/<id>`
 
-* **Authentication/Security:** Protected by `@owner_required`
+**200**: the contact object (not wrapped in `data`).
+**404**: `{ "error": "Contact not found" }`
 
+### Create a contact
 
-* **Success Response:**
-* **Code:** `200 OK`
+`POST /api/contacts/add`
 
+Header `Content-Type: application/json`, plus `X-CSRFToken`.
 
-* **Content:** A JSON array of contact objects matching the `ContactResponseSchema`.
+| Field | Type | Required | Notes |
+|---|---|---|---|
+| `name` | string | **yes** | 1 to 512 characters |
+| `type` | string | **yes** | 1 to 512 characters, e.g. `client`, `supplier`, `investor` |
+| `email` | string | no | must be a valid email |
+| `phone_number` | string | no | |
+| `address` | string | no | |
+| `company_name` | string | no | |
+| `zone` | string | no | |
+| `notes` | string | no | |
+| `nif` | string | no | |
+| `consent_given` | boolean | no | |
+| `consent_date` | datetime (ISO 8601) | no | |
+| `consent_channel` | string | no | |
 
+Unknown fields are rejected.
 
+**201**: the created contact object.
+**400**: validation errors (`{ "errors": {...} }`), or body is not JSON (`{ "errors": { "body": ["Request body must be valid JSON"] } }`).
+**500**: `{ "error": "Internal server error" }` (the change is rolled back).
 
+### Search contacts
 
+`GET /api/contacts/search?q=<text>`
+
+| Param | Required | Notes |
+|---|---|---|
+| `q` | **yes** | at least 2 characters, max 512 |
+| `page`, `per_page` | no | see Pagination |
+
+Case-insensitive substring match on `name`, `email`, `phone_number` and `nif`. `%` and `_` in `q` are matched literally, not as wildcards. Results are sorted by name; investors are excluded.
+
+**200**: paginated response. No matches gives `"data": []` and `"total": 0`.
+**400**: `q` missing or too short, or invalid pagination values.
+
+### Edit a contact
+
+`PATCH /api/contacts/<id>`
+
+Header `Content-Type: application/json`, plus `X-CSRFToken`. Send only the fields you want to change; the rest are untouched. Field rules are the same as for creation.
+
+**200**: the updated contact object.
+**400**: validation errors, or body is not JSON.
+**404**: `{ "errors": { "id": ["Contact not found"] } }`
+**500**: `{ "error": "Internal server error" }`
 
 ---
 
-### 2. Create a Contact
+## Not available yet
 
-Creates a new contact record.
-
-* **URL:** `/add`
-
-
-* **Method:** `POST`
-
-
-* **Content-Type:** `application/json`
-* Request Body Schema (`ContactCreateSchema`):
-
-
-* `name` (string, **Required**): Length between 1 and 512 characters.
-
-
-* `type` (string, **Required**): Length between 1 and 512 characters.
-
-
-* `email` (string/email, *Optional*): Valid email address.
-
-
-* `phone_number` (string, *Optional*)
-
-
-* `address` (string, *Optional*)
-
-
-* `company_name` (string, *Optional*)
-
-
-* `zone` (string, *Optional*)
-
-
-* `notes` (string, *Optional*)
-
-
-* `nif` (string, *Optional*)
-
-
-* `consent_given` (boolean, *Optional*)
-
-
-* `consent_date` (datetime, *Optional*)
-
-
-* `consent_channel` (string, *Optional*)
-
-
-
-
-* **Success Response:**
-* **Code:** `201 Created`
-
-
-* **Content:** The newly created contact object.
-
-
-* **Error Responses:**
-* **Code:** `400 Bad Request`
-
-
-* **Content:** Validation errors returned by Marshmallow.
-
-
-```json
-{
-  "errors": {
-    "field_name": ["Error message description"]
-  }
-}
-
-```
-
-
-
-
-* **Code:** `500 Internal Server Error`
-
-
-* **Content:** Triggered on unexpected server exceptions (triggers a database rollback).
-
-
-```json
-{
-  "error": "Internal server error"
-}
-
-```
-
-
-
-
-
-
-
----
-
-### 3. Search Contacts
-
-Searches for contacts across multiple fields (`name`, `email`, `phone_number`, `nif`) with pagination support.
-
-* **URL:** `/search`
-
-
-* **Method:** `GET`
-
-
-* Query Parameters (`ContactSearchSchema`):
-
-
-* `q` (string, **Required**): Search query string. Must contain at least 2 characters (maximum 512 characters).
-
-
-* `page` (integer, *Optional*): Page number for pagination (defaults to `1`, minimum `1`).
-
-
-* `per_page` (integer, *Optional*): Number of results per page (defaults to `20`, range `1` to `100`).
-
-
-
-
-* **Success Response:**
-* **Code:** `200 OK`
-
-
-* **Content:**
-```json
-{
-  "success": true,
-  "data": [
-    {
-      "id": 1,
-      "name": "Example Name",
-      "type": "Client",
-      "email": "example@example.com",
-      "phone_number": "123456789",
-      "address": "123 Street",
-      "company_name": "Company Ltd",
-      "zone": "North",
-      "notes": "Some notes",
-      "nif": "123456789",
-      "consent_given": true,
-      "consent_date": "2026-01-01T00:00:00",
-      "consent_channel": "Web"
-    }
-  ],
-  "pagination": {
-    "page": 1,
-    "per_page": 20,
-    "total": 1,
-    "pages": 1,
-    "has_next": false,
-    "has_prev": false
-  }
-}
-
-```
-
-
-
-
-* **Error Responses:**
-* **Code:** `400 Bad Request`
-
-
-* **Content (Short Search Term):**
-
-
-```json
-{
-  "error": "Search term must contain at least 2 characters"
-}
-
-```
-
-
-* **Content (Invalid Parameters / Validation Error):**
-
-
-```json
-{
-  "error": "Invalid search parameters"
-}
-
-```
+There is no delete endpoint.
