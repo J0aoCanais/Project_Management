@@ -7,7 +7,7 @@ import Topbar from "./Topbar";
 /** Estrutura comum às páginas do CRM: sidebar, barra superior e conteúdo da rota. */
 function AppLayout() {
   return (
-    <div className="min-h-screen">
+    <div className="min-h-screen print:hidden">
       <Sidebar />
       <main className="min-w-0 min-[721px]:ml-[200px]">
         <Topbar />
