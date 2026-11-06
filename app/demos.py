@@ -15,7 +15,7 @@ def health():
     """Check that the app can reach Postgres, useful for development."""
     try:
         db.session.execute(text("SELECT 1"))
-        return jsonify(status="ok", database="connected")
+        return jsonify(status="ok", database="connected"), 200
     except Exception:
         current_app.logger.exception("Database health check failed")
         return jsonify(status="error", database="unreachable"), 503

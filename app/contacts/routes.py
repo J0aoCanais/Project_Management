@@ -62,8 +62,17 @@ def get_contacts():
         }
     }), HTTPStatus.OK
 
+@contacts_bp.get("/<int:contact_id>")
+@owner_required
+def get_contact(contact_id: int):
+    contact = db.session.get(Contact, contact_id)
+    if contact is None:
+        return jsonify({"error": "Contact not found"}), 404
+    return jsonify(contact_response_schema.dump(contact)), 200
+
 
 @contacts_bp.route("/add", methods=["POST"])
+@owner_required
 def create_contact():
     payload = request.get_json(silent=True)
     if payload is None:
@@ -87,6 +96,7 @@ def create_contact():
 
 
 @contacts_bp.route("/search", methods=["GET"])
+@owner_required
 def search_contacts():
     try:
         # Validate query parameters
@@ -152,6 +162,7 @@ def search_contacts():
 
 
 @contacts_bp.route("/<int:contact_id>", methods=["PATCH"])
+@owner_required
 def edit_contact(contact_id):
     payload = request.get_json(silent=True)
     if payload is None:
