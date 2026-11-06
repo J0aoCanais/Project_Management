@@ -2,8 +2,7 @@ import { calcFinance } from "../../lib/finance";
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { ApiError } from "../client";
 import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityDetail } from "../opportunitiesApi";
-import { currentUserFixture } from "./currentUser";
-import { defaultFinance, opportunitiesFixture, opportunityOptionsFixture } from "./opportunities";
+import { currentUserFixture, defaultFinance, opportunitiesFixture, opportunityOptionsFixture } from "./testData";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar a página.
 

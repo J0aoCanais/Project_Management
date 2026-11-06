@@ -1,6 +1,126 @@
-import { OPPORTUNITY_PHASES } from "../../lib/phases";
+// Todos os dados de teste do frontend. Quando os endpoints existirem, é este ficheiro que deixa de ser preciso.
+// Pessoas e contactos fictícios. A lógica que simula o servidor está em opportunitiesStore.ts.
+
 import { calcFinance } from "../../lib/finance";
+import { OPPORTUNITY_PHASES } from "../../lib/phases";
+import type { DashboardSummary } from "../dashboardApi";
+import type { Lead, LeadContactEntry } from "../leadsApi";
 import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "../opportunitiesApi";
+import type { CurrentUser } from "../userApi";
+
+// ---- Utilizador autenticado ----
+
+// TODO: trocar pelo endpoint quando existir (utilizador autenticado).
+export const currentUserFixture: CurrentUser = {
+  id: 1,
+  name: "Rodrigo Mendes",
+  role: "Administrador",
+};
+
+// ---- Painel ----
+
+// TODO: trocar pelo endpoint quando existir
+export const dashboardFixture: DashboardSummary = {
+  stats: {
+    openOpportunities: { value: 24, meta: "+5 este mês" },
+    activeOperations: { value: 8, meta: "3 em renovação" },
+    yearSales: { value: 1285000, meta: "+18,2% vs. 2025" },
+    realizedMargin: { value: 286450, meta: "22,3% média" },
+  },
+  investorCapital: {
+    total: 1240000,
+    committed: 680000,
+    invested: 390000,
+    available: 170000,
+  },
+  funnel: [
+    { phase: "Novo", count: 14 },
+    { phase: "Contactado", count: 12 },
+    { phase: "Análise financeira", count: 10 },
+    { phase: "Informação pendente", count: 8 },
+    { phase: "Due diligence", count: 6 },
+    { phase: "Negociação", count: 4 },
+    { phase: "CPCV", count: 2 },
+    { phase: "Aprovado", count: 1 },
+  ],
+  leadsBySource: [
+    { source: "Idealista", count: 12 },
+    { source: "Anúncio", count: 9 },
+    { source: "Indicação", count: 8 },
+    { source: "Site", count: 6 },
+    { source: "Facebook/Instagram", count: 3 },
+  ],
+  operationsByPhase: [
+    {
+      phase: "Em aquisição",
+      capitalSubtotal: 158500,
+      operations: [
+        { id: "OP-2026-002", code: "OP-2026-002", zone: "Solum", capital: 158500, margin: 19.4 },
+      ],
+    },
+    {
+      phase: "Em obra",
+      capitalSubtotal: 172400,
+      operations: [
+        { id: "OP-2026-001", code: "OP-2026-001", zone: "Baixa", capital: 172400, margin: 22.8 },
+      ],
+    },
+    {
+      phase: "À venda",
+      capitalSubtotal: 342800,
+      operations: [
+        { id: "OP-2026-003", code: "OP-2026-003", zone: "Santa Clara", capital: 342800, margin: 25.1 },
+      ],
+    },
+    {
+      phase: "Vendido",
+      capitalSubtotal: 248000,
+      operations: [
+        { id: "OP-2025-014", code: "OP-2025-014", zone: "Olivais", capital: 248000, margin: 21.6 },
+      ],
+    },
+  ],
+  alerts: [
+    { id: "1", date: "15/11/2026", record: "Marta Ribeiro", description: "Follow-up em atraso", to: "/leads" },
+    { id: "2", date: "15/11/2026", record: "Obra Baixa", description: "Desvio de obra: 11,8%", to: "/obras" },
+    { id: "3", date: "14/11/2026", record: "Apartamento na Alta", description: "12 dias sem alteração", to: "/oportunidades" },
+    { id: "4", date: "13/11/2026", record: "Certidão permanente", description: "Expira em 15 dias", to: "/documentos" },
+  ],
+};
+
+// ---- Leads ----
+
+// TODO: trocar pelo endpoint quando existir.
+export const leadSources = ["Anúncio", "Indicação", "Site", "Idealista", "Redes sociais"];
+
+export const leads: Lead[] = [
+  { id: 1, contactName: "Marta Ribeiro", phone: "912 345 678", referredBy: "Casa Certa", zone: "Baixa", source: "Anúncio", status: "Nova", message: "Proprietária pretende vender apartamento T2 na Baixa de Coimbra.", createdAt: "2026-11-03T09:00:00.000Z" },
+  { id: 2, contactName: "João Noronha", phone: "934 102 889", referredBy: "Particular", zone: "Celas", source: "Indicação", status: "Contactada", message: "Procura uma solução de investimento.", createdAt: "2026-11-02T10:30:00.000Z" },
+  { id: 3, contactName: "Carla Mendes", phone: "966 334 120", referredBy: "Habita", zone: "Solum", source: "Site", status: "Qualificada", message: "Tem documentação pronta para análise.", createdAt: "2026-11-01T14:15:00.000Z" },
+  { id: 4, contactName: "Rui Valente", phone: "918 422 301", referredBy: "Porta 21", zone: "Alta", source: "Idealista", status: "Convertida", createdAt: "2026-10-30T11:00:00.000Z" },
+  { id: 5, contactName: "Sofia Matos", phone: "925 781 442", referredBy: "Particular", zone: "Santa Clara", source: "Redes sociais", status: "Descartada", discardReason: "Fora dos critérios de investimento", createdAt: "2026-10-28T16:45:00.000Z" },
+];
+
+export const leadContacts: Record<number, LeadContactEntry[]> = {
+  1: [
+    { id: 1, date: "2026-11-04T10:00:00.000Z", channel: "Telefone", owner: "Rodrigo Mendes", result: "Atendeu", note: "Visita marcada para 18/11/2026" },
+    { id: 2, date: "2026-11-03T15:00:00.000Z", channel: "Email", owner: "Rodrigo Mendes", result: "Enviado", note: "Pedido de documentação" },
+  ],
+};
+
+/** Contactos existentes que se podem escolher em "Nova lead". */
+export const leadContactOptions = ["Ana Lourenço", "Rodrigo Mendes", "Joana Costa"];
+
+/** Linhas mostradas ao carregar um .xlsx na importação, que ainda não é lido a sério. */
+export const leadImportSample: string[][] = [
+  ["Marta Ribeiro", "Casa Certa", "Baixa", "912 345 678", "Anúncio", "Nova", "03/11/2026"],
+  ["João Noronha", "Particular", "Celas", "934 102 889", "Indicação", "Nova", "03/11/2026"],
+  ["Carla Mendes", "Habita", "Solum", "966 334 120", "Site", "Nova", "03/11/2026"],
+  ["Rui Valente", "Porta 21", "Alta", "918 422 301", "Idealista", "Nova", "03/11/2026"],
+  ["Sofia Matos", "Particular", "Santa Clara", "925 781 442", "Redes sociais", "Nova", "03/11/2026"],
+];
+
+// ---- Oportunidades ----
 
 // TODO: trocar pelo endpoint quando existir.
 

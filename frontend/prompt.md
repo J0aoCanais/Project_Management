@@ -104,7 +104,7 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - Todos os pedidos passam por `apiFetch` (`src/api/client.ts`). Nunca usar `fetch` diretamente num componente.
 - Um ficheiro por recurso em `src/api/` com os tipos da resposta, e um hook TanStack Query em `src/hooks/` (`useQuery` para ler, `useMutation` + `invalidateQueries` para escrever).
 - **Todas as listas e detalhes tratam quatro estados:** a carregar, erro (com "Tentar novamente"), vazio (com uma mensagem útil) e com dados.
-- **Se o endpoint ainda não existir:** cria dados de exemplo em `src/api/fixtures/<recurso>.ts`, devolvidos pela mesma função da API, com `// TODO: trocar pelo endpoint quando existir`. Os componentes não podem saber se os dados são reais ou de exemplo.
+- **Se o endpoint ainda não existir:** cria dados de exemplo em `src/api/fixtures/testData.ts`, devolvidos pela mesma função da API, com `// TODO: trocar pelo endpoint quando existir`. Os componentes não podem saber se os dados são reais ou de exemplo.
 - Os dados de exemplo usam pessoas e emails fictícios (`@exemplo.pt`), nunca dados reais.
 
 ## 7. Texto e formatação
