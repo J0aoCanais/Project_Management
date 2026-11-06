@@ -6,6 +6,7 @@ import HealthPage from "./pages/HealthPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
 import LeadsPage from "./pages/LeadsPage";
 import LeadDetailPage from "./pages/LeadDetailPage";
+import DashboardPage from "./pages/DashboardPage";
 
 function App() {
   return (
@@ -13,14 +14,14 @@ function App() {
       <Route element={<AppLayout />}>
         {/* TODO: substituir cada PlaceholderPage pela página real à medida que forem implementadas */}
         {navItems.map((item) => {
+          if (item.path === "/") return <Route key={item.path} index element={<DashboardPage />} />;
           if (item.path === "/leads") return <Route key={item.path} path="leads" element={<LeadsPage />} />;
-          return item.path === "/" ? (
-            <Route key={item.path} index element={<PlaceholderPage title={item.label} />} />
-          ) : (
+          return (
             <Route key={item.path} path={item.path.slice(1)} element={<PlaceholderPage title={item.label} />} />
           );
         })}
         <Route path="leads/:id" element={<LeadDetailPage />} />
+        <Route path="operacoes/:id" element={<PlaceholderPage title="Operações" />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
       </Route>
