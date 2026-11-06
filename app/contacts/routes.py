@@ -100,7 +100,7 @@ def get_contacts():
     stmt = (
         db.select(Contact)
         .options(selectinload(Contact.roles))
-        .where(~Contact.roles.any(func.lower(Role.name) == "Investidor"),
+        .where(~Contact.roles.any(func.lower(Role.name) == "investidor"),
                Contact.deleted_at.is_(None))
         .order_by(Contact.name.asc())
     )
@@ -130,7 +130,7 @@ def get_contacts():
 @owner_required
 def get_contact(contact_id: int):
     """Returns the detailts of a specific contact."""
-    contact = db.session.get(Contact, contact_id).where(Contact.deleted_at.is_(None))
+    contact = db.session.get(Contact, contact_id)
     if contact is None:
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
     return jsonify(contact_response_schema.dump(contact)), HTTPStatus.OK
@@ -147,7 +147,7 @@ def search_contacts():
         stmt = (
             db.select(Contact)
             .options(selectinload(Contact.roles))
-            .where(~Contact.roles.any(func.lower(Role.name) == "Investidor"),
+            .where(~Contact.roles.any(func.lower(Role.name) == "investidor"),
                    Contact.deleted_at.is_(None))
         )
 
@@ -220,6 +220,8 @@ def create_contact():
         return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
     
     try:
+        if "role_ids" in payload and isinstance(payload["role_ids"], int):
+            payload["role_ids"] = [payload["role_ids"]]
         data = contact_create_schema.load(payload)
         
         role_ids = data.pop("role_ids", [])
@@ -256,6 +258,9 @@ def edit_contact(contact_id):
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
     
     try:
+        if "role_ids" in payload and isinstance(payload["role_ids"], int):
+            payload["role_ids"] = [payload["role_ids"]]
+
         data = contact_update_schema.load(payload, partial=True)
     except ValidationError as error:
         return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST

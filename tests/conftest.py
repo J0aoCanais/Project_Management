@@ -24,12 +24,14 @@ load_dotenv()  # no-op in CI, where env vars are set directly
 from app import create_app  # noqa: E402  (after load_dotenv: Config reads env)
 from app.config import Config  # noqa: E402
 from app.extensions import db  # noqa: E402
-from app.models import User  # noqa: E402
+from app.models import User, Role  # noqa: E402
 from app.security import hash_password  # noqa: E402
 
 OWNER_USER = "test-owner@example.test"
 INVESTOR_USER = "test-investor@example.test"
 TEST_PASSWORD = "fake-test-password-123"  # fake, not a real secret
+
+ROLES = ["investidor", "client", "Filler"]
 
 TEST_DB_NAME = os.environ.get("TEST_DB_NAME", "propdb_test")
 assert TEST_DB_NAME.endswith("_test"), "refusing to run: test DB name must end in _test"
@@ -40,7 +42,7 @@ def _url(database: str) -> URL:
         "postgresql+psycopg",
         username=os.environ.get("TEST_DB_ADMIN_USER", "postgres"),
         password=os.environ["POSTGRES_ADMIN_PASSWORD"],
-        host=os.environ.get("TEST_DB_HOST", "localhost"),
+        host=os.environ.get("TEST_DB_HOST", "127.0.0.1"),
         port=int(os.environ.get("TEST_DB_PORT", "5432")),
         database=database,
     )
@@ -85,6 +87,10 @@ def app(test_database):
                     password_hash=hash_password(TEST_PASSWORD),
                     access_level=level,
                 )
+            )
+        for role in ROLES:
+            db.session.add(
+                Role(name=role)
             )
         db.session.commit()
         yield app

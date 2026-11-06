@@ -7,7 +7,7 @@ BLOCKED = (301, 302, 401, 403)
 
 
 def make(client, **overrides):
-    body = {"name": "Zzyzx Qwertyuiop", "type": "client"}
+    body = {"name": "Zzyzx Qwertyuiop", "role_ids": 2}
     body.update(overrides)
     res = client.post(f"{BASE}/add", json=body)
     assert res.status_code == HTTPStatus.CREATED, f"setup add failed: {res.get_json()}"
@@ -36,30 +36,56 @@ def test_anonymous_is_blocked(anon_client, method, path):
 def test_non_owner_is_blocked(investor_client):
     assert investor_client.get(f"{BASE}/").status_code in BLOCKED
 
-
+# ---------------------------------------------------------------- Roles
 def test_get_roles(client):
     res = client.get(f"{BASE}/roles")
     assert res.status_code == HTTPStatus.OK
     assert isinstance(res.json, list)
+    assert len(res.json) == 3
 
+def test_create_role(client):
+    res = client.post(
+        f"{BASE}/roles",
+        json={"name": "bogus"}
+    )
+    assert res.status_code == HTTPStatus.CREATED
+    assert res.json["id"]
+    assert res.json["name"] == "bogus"
+
+def test_delete_role(client):
+    res = client.post(
+        f"{BASE}/roles",
+        json={"name": "to_delete"}
+    )
+
+    assert res.status_code == HTTPStatus.CREATED
+    assert res.json["id"]
+    assert res.json["name"] == "to_delete"
+
+    res = client.delete(
+        f"{BASE}/roles/{res.json["id"]}"
+    )
+
+    assert res.status_code == HTTPStatus.NO_CONTENT
 
 # ---------------------------------------------------------------- Add & Validation
 
 def test_add_contact_returns_201_and_body(client):
     res = client.post(
         f"{BASE}/add",
-        json={"name": "Zzyzx Qwertyuiop", "type": "client",
+        json={"name": "Zzyzx Qwertyuiop", "role_ids": 2,
               "email": "zzyzx@qwerty-test.example", "nif": "999000111"},
     )
     assert res.status_code == HTTPStatus.CREATED
     assert res.json["id"]
     assert res.json["name"] == "Zzyzx Qwertyuiop"
     assert res.json["email"] == "zzyzx@qwerty-test.example"
+    assert res.json["roles"][0]["name"] == "client"
 
 
-@pytest.mark.parametrize("missing", ["name", "type"])
-def test_add_requires_name_and_type(client, missing):
-    body = {"name": "Zzyzx", "type": "client"}
+@pytest.mark.parametrize("missing", ["name", "role_ids"])
+def test_add_requires_name_and_role(client, missing):
+    body = {"name": "Zzyzx", "role_ids": 2}
     del body[missing]
     res = client.post(f"{BASE}/add", json=body)
     assert res.status_code == HTTPStatus.BAD_REQUEST
@@ -68,7 +94,7 @@ def test_add_requires_name_and_type(client, missing):
 
 def test_add_rejects_invalid_email(client):
     res = client.post(f"{BASE}/add",
-                      json={"name": "Zzyzx", "type": "client", "email": "not-an-email"})
+                      json={"name": "Zzyzx", "role_ids": 2, "email": "not-an-email"})
     assert res.status_code == HTTPStatus.BAD_REQUEST
     assert "email" in res.json["errors"]
 
@@ -81,7 +107,7 @@ def test_add_rejects_non_json_body(client):
 
 def test_add_rejects_unknown_field(client):
     res = client.post(f"{BASE}/add",
-                      json={"name": "Zzyzx", "type": "client", "bogus": 1})
+                      json={"name": "Zzyzx", "role_ids": 2, "bogus": 1})
     assert res.status_code == HTTPStatus.BAD_REQUEST
 
 
@@ -98,8 +124,8 @@ def test_list_is_sorted_by_name_and_paginated(client):
 
 
 def test_list_excludes_investors(client):
-    make(client, name="Zzyzx Client", type="client")
-    make(client, name="Zzyzx Investor", type="investor")
+    make(client, name="Zzyzx Client", role_ids=2)
+    make(client, name="Zzyzx Investor", role_ids=1)
     res = client.get(f"{BASE}/")
     assert [c["name"] for c in res.json["data"]] == ["Zzyzx Client"]
 
