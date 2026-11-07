@@ -8,7 +8,13 @@ from .security import owner_required
 from .models import User
 
 demos_bp = Blueprint("demos", __name__)
- 
+
+
+from flask_wtf.csrf import generate_csrf
+
+@demos_bp.get("/csrf-token")
+def get_csrf_token():
+    return jsonify(csrf_token=generate_csrf())
  
 @demos_bp.get("/health")
 def health():
