@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 
 import { useCreateLead, useLeadSources } from "../../hooks/useLeads";
-import { LEAD_TEXT_LIMITS, leadNameError, maxLengthError, phoneError, sanitizePhone } from "../../lib/leadRules";
+import { LEAD_TEXT_LIMITS, leadNameError, optionalTextError, phoneError, sanitizePhone } from "../../lib/leadRules";
 import { leadContactOptions, leadZoneOptions } from "../../temp";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
@@ -34,8 +34,8 @@ function NewLeadDrawer({ onClose }: Props) {
     phone: mode === "new" ? phoneError(phone) : undefined,
     zone: zone ? undefined : "Escolha a zona.",
     source: source ? undefined : "Indique a origem.",
-    referredBy: maxLengthError(referredBy, LEAD_TEXT_LIMITS.referredBy),
-    message: maxLengthError(message, LEAD_TEXT_LIMITS.message),
+    referredBy: optionalTextError(referredBy, LEAD_TEXT_LIMITS.referredBy),
+    message: optionalTextError(message, LEAD_TEXT_LIMITS.message),
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -100,7 +100,7 @@ function NewLeadDrawer({ onClose }: Props) {
           <input className={inputClasses} value={referredBy} maxLength={LEAD_TEXT_LIMITS.referredBy} onChange={(e) => setReferredBy(e.target.value)} />
         </FormField>
         <FormField label="Mensagem recebida (opcional)" error={showErrors ? errors.message : undefined}>
-          <textarea className={`${inputClasses} resize-none`} rows={3} value={message} maxLength={LEAD_TEXT_LIMITS.message} onChange={(e) => setMessage(e.target.value)} />
+          <textarea className={`${inputClasses} resize-none wrap-anywhere`} rows={3} value={message} maxLength={LEAD_TEXT_LIMITS.message} onChange={(e) => setMessage(e.target.value)} />
         </FormField>
       </form>
     </Drawer>
