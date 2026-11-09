@@ -1,5 +1,5 @@
 import { useNavigate, useParams, useSearchParams } from "react-router-dom";
-import { useAddLeadContact, useConvertLead, useLead, useUpdateLeadStatus } from "../hooks/useLeads";
+import { useConvertLead, useLead, useUpdateLeadStatus } from "../hooks/useLeads";
 import EntityHeader from "../components/ui/EntityHeader";
 import EmptyState from "../components/ui/EmptyState";
 import ErrorState from "../components/ui/ErrorState";
@@ -17,14 +17,13 @@ function LeadDetailPage() {
   const leadId = Number(id);
   const query = useLead(leadId);
   const updateStatus = useUpdateLeadStatus(leadId);
-  const addContact = useAddLeadContact(leadId);
   const convert = useConvertLead(leadId);
   const backTo = `/leads${searchParams.toString() ? `?${searchParams.toString()}` : ""}`;
   if (query.isLoading) return <LoadingState />;
   if (query.isError || !query.data) return <EmptyState message="Lead não encontrada" action={<a className="text-brand underline" href="/leads">Voltar para leads</a>} />;
   const lead = query.data;
   return <div>
-    <EntityHeader title={lead.contactName} type="Lead" backTo={backTo} meta={<LeadStatusPill status={lead.status} />} actions={<LeadActions status={lead.status} onStatusChange={(status) => updateStatus.mutate({ status })} onDiscard={(reason) => updateStatus.mutate({ status: "Descartada", discardReason: reason })} onConvert={() => convert.mutate(undefined, { onSuccess: ({ opportunityId }) => navigate(`/oportunidades/${opportunityId}`) })} />} />
+    <EntityHeader title={lead.contactName} type="Lead" backTo={backTo} meta={<LeadStatusPill status={lead.status} />} actions={<LeadActions leadId={leadId} status={lead.status} busy={updateStatus.isPending || convert.isPending} onStatusChange={(status) => updateStatus.mutate({ status })} onConvert={() => convert.mutate(undefined, { onSuccess: ({ opportunityId }) => navigate(`/oportunidades/${opportunityId}`) })} />} />
     <div className="grid gap-3">
       <RecordFields fields={[
         { label: "Referenciado por", value: lead.referredBy || "—" },
@@ -36,7 +35,7 @@ function LeadDetailPage() {
         { label: "Mensagem", value: lead.message || "—" },
         ...(lead.discardReason ? [{ label: "Motivo do descarte", value: lead.discardReason }] : []),
       ]} />
-      <LeadContactHistory entries={lead.contacts} onAdd={(entry) => addContact.mutate(entry)} />
+      <LeadContactHistory leadId={leadId} entries={lead.contacts} />
     </div>
   </div>;
 }

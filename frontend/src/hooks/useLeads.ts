@@ -1,6 +1,6 @@
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 import { addLeadContact, convertLead, createLead, getLead, importLeads, listLeads, updateLeadStatus, type LeadStatus, type NewLeadInput, type LeadContactEntry } from "../api/leadsApi";
-import { leadSources } from "../api/fixtures/testData";
+import { leadSources } from "../temp";
 
 export function useLeads() {
   return useQuery({ queryKey: ["leads"], queryFn: listLeads });

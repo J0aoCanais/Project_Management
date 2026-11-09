@@ -1,5 +1,6 @@
 import { useLocation } from "react-router-dom";
 
+import { hasUnreadNotifications } from "../../temp";
 import { useCurrentUser } from "../../hooks/useCurrentUser";
 import { formatLongDate } from "../../lib/format";
 import Avatar from "../ui/Avatar";
@@ -20,8 +21,7 @@ function Topbar() {
       </div>
       <div className="flex items-center gap-3">
         <GlobalSearch />
-        {/* TODO: ligar ao endpoint de notificações quando existir */}
-        <NotificationButton hasUnread />
+        <NotificationButton hasUnread={hasUnreadNotifications} />
         {user && <Avatar name={user.name} className="hidden min-[721px]:grid" />}
       </div>
     </header>

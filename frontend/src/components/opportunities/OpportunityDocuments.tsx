@@ -1,3 +1,4 @@
+import { documentTypeOptions } from "../../temp";
 import { useState } from "react";
 
 import type { OpportunityDetail, OpportunityDocument } from "../../api/opportunitiesApi";
@@ -7,15 +8,14 @@ import EmptyState from "../ui/EmptyState";
 import FileUploadButton from "../ui/FileUploadButton";
 import Notice from "../ui/Notice";
 import Panel from "../ui/Panel";
+import Select from "../ui/Select";
 import Pill from "../ui/Pill";
 import Table, { type TableColumn } from "../ui/Table";
-import { inputClasses } from "../ui/inputClasses";
 
 interface Props {
   detail: OpportunityDetail;
 }
 
-const DOCUMENT_TYPES = ["Caderneta predial", "Certidão permanente", "Orçamento de obra", "Planta", "Licença de utilização", "Certificado energético", "Outro"];
 
 const columns: TableColumn<OpportunityDocument>[] = [
   { key: "name", header: "Documento", render: (document) => document.name },
@@ -29,7 +29,7 @@ const columns: TableColumn<OpportunityDocument>[] = [
 
 function OpportunityDocuments({ detail }: Props) {
   const upload = useUploadOpportunityDocuments();
-  const [type, setType] = useState(DOCUMENT_TYPES[0]);
+  const [type, setType] = useState(documentTypeOptions[0]);
 
   return (
     <Panel className="overflow-hidden">
@@ -41,11 +41,7 @@ function OpportunityDocuments({ detail }: Props) {
       </div>
       <div className="flex flex-col gap-2 border-b border-line px-3.5 pb-3 min-[721px]:flex-row min-[721px]:items-center">
         <strong className="text-xs min-[721px]:mr-auto">Documentos do imóvel</strong>
-        <select aria-label="Tipo de documento" className={`${inputClasses} min-[721px]:w-auto`} value={type} onChange={(e) => setType(e.target.value)}>
-          {DOCUMENT_TYPES.map((option) => (
-            <option key={option}>{option}</option>
-          ))}
-        </select>
+        <Select label="Tipo de documento" className="min-[721px]:w-auto" value={type} onChange={setType} options={documentTypeOptions} />
         <FileUploadButton label="Carregar documentos" multiple onFiles={(files) => upload.mutate({ id: detail.id, files, type })} />
       </div>
       {upload.isError && (

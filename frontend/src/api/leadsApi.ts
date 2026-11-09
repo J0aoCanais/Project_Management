@@ -1,4 +1,6 @@
-import { leads, leadContacts } from "./fixtures/testData";
+import { LEAD_TEXT_LIMITS, leadNameError, maxLengthError, phoneError } from "../lib/leadRules";
+import { leads, leadContacts } from "../temp";
+import { ApiError } from "./client";
 
 export type LeadStatus = "Nova" | "Contactada" | "Qualificada" | "Convertida" | "Descartada";
 
@@ -50,7 +52,18 @@ export async function getLead(id: number): Promise<Lead & { contacts: LeadContac
   return delay({ ...lead, contacts: leadContacts[id] ?? [] });
 }
 
+function leadInputError(input: NewLeadInput): string | undefined {
+  return (
+    leadNameError(input.contactName) ??
+    phoneError(input.phone) ??
+    maxLengthError(input.referredBy, LEAD_TEXT_LIMITS.referredBy) ??
+    maxLengthError(input.message ?? "", LEAD_TEXT_LIMITS.message)
+  );
+}
+
 export async function createLead(input: NewLeadInput): Promise<Lead> {
+  const invalid = leadInputError(input);
+  if (invalid) throw new ApiError(422, invalid);
   const lead: Lead = { id: Math.max(0, ...leads.map((item) => item.id)) + 1, status: input.status ?? "Nova", createdAt: input.createdAt ?? new Date().toISOString(), contactName: input.contactName, phone: input.phone, referredBy: input.referredBy, zone: input.zone, source: input.source, message: input.message };
   leads.unshift(lead);
   return delay(lead);
@@ -76,7 +89,7 @@ export async function importLeads(rows: NewLeadInput[]): Promise<{ created: numb
   const names = new Set(leads.map((lead) => lead.contactName.toLowerCase()));
   let created = 0;
   for (const row of rows) {
-    if (names.has(row.contactName.toLowerCase())) continue;
+    if (leadInputError(row) || names.has(row.contactName.toLowerCase())) continue;
     await createLead(row);
     names.add(row.contactName.toLowerCase());
     created += 1;

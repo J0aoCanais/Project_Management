@@ -104,8 +104,17 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - Todos os pedidos passam por `apiFetch` (`src/api/client.ts`). Nunca usar `fetch` diretamente num componente.
 - Um ficheiro por recurso em `src/api/` com os tipos da resposta, e um hook TanStack Query em `src/hooks/` (`useQuery` para ler, `useMutation` + `invalidateQueries` para escrever).
 - **Todas as listas e detalhes tratam quatro estados:** a carregar, erro (com "Tentar novamente"), vazio (com uma mensagem útil) e com dados.
-- **Se o endpoint ainda não existir:** cria dados de exemplo em `src/api/fixtures/testData.ts`, devolvidos pela mesma função da API, com `// TODO: trocar pelo endpoint quando existir`. Os componentes não podem saber se os dados são reais ou de exemplo.
+- **Se o endpoint ainda não existir:** cria dados de exemplo em `src/temp.tsx` (tudo o que é hard coded vive aí), devolvidos pela mesma função da API, com `// TODO: trocar pelo endpoint quando existir`. Os componentes não podem saber se os dados são reais ou de exemplo.
 - Os dados de exemplo usam pessoas e emails fictícios (`@exemplo.pt`), nunca dados reais.
+
+### Validação de formulários
+
+- Os limites de cada campo ficam em `src/lib/` (`opportunityRules.ts`, `leadRules.ts`), nunca escritos à mão no componente. O formulário e o servidor simulado usam as mesmas regras.
+- **Todos os campos de texto têm `maxLength`**, e o servidor simulado recusa (422) o que exceder. Nenhum campo aceita texto sem limite.
+- **Telemóvel:** só dígitos, espaços e um `+` inicial (o campo remove letras e símbolos ao escrever), entre 9 e 15 dígitos, máximo 20 caracteres.
+- **Nome da lead:** 2 a 80 caracteres. **Referenciado por:** até 80. **Mensagem:** até 500. **Contacto registado:** responsável até 80, resultado até 120, nota até 500.
+- Os erros aparecem por campo só depois de tentar submeter, em pt-PT. Se o servidor recusar, mostra-se um `Notice` no formulário.
+- Na importação de Excel, as linhas que não cumprem estas regras são ignoradas.
 
 ## 7. Texto e formatação
 

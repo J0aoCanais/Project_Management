@@ -1,12 +1,11 @@
 import { useMemo, useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
-import { useImportLeads, useLeadSources, useLeads, useCreateLead } from "../hooks/useLeads";
-import { leadImportSample } from "../api/fixtures/testData";
+import { useImportLeads, useLeadSources, useLeads } from "../hooks/useLeads";
+import { leadImportSample } from "../temp";
 import type { LeadStatus, NewLeadInput } from "../api/leadsApi";
 import Button from "../components/ui/Button";
 import EmptyState from "../components/ui/EmptyState";
 import ErrorState from "../components/ui/ErrorState";
-import FloatingActionButton from "../components/ui/FloatingActionButton";
 import ImportExcel, { type ImportConfig } from "../components/ui/ImportExcel";
 import LoadingState from "../components/ui/LoadingState";
 import PageHeading from "../components/ui/PageHeading";
@@ -38,7 +37,6 @@ function LeadsPage() {
   const [importOpen, setImportOpen] = useState(false);
   const leadsQuery = useLeads();
   const sourcesQuery = useLeadSources();
-  const createMutation = useCreateLead();
   const importMutation = useImportLeads();
   const query = params.get("q") ?? "";
   const status = params.get("estado") ?? "";
@@ -59,12 +57,11 @@ function LeadsPage() {
   if (leadsQuery.isLoading) return <LoadingState />;
   if (leadsQuery.isError) return <ErrorState onRetry={() => void leadsQuery.refetch()} />;
   return <div>
-    <PageHeading title="Leads" actions={<><Button onClick={() => setImportOpen(true)}>Importar de Excel</Button><Button variant="primary" onClick={() => setDrawerOpen(true)}>Nova lead</Button></>} />
+    <PageHeading title="Leads" actions={<><Button onClick={() => setImportOpen(true)}>Importar de Excel</Button><Button variant="primary" icon="plus" onClick={() => setDrawerOpen(true)}>Nova lead</Button></>} />
     <LeadFilters query={query} status={status} source={source} zone={zone} sources={sourcesQuery.data ?? []} onChange={updateFilter} />
-    <Panel>{filtered.length ? <LeadsTable leads={filtered} onRowClick={(lead) => navigate(`/leads/${lead.id}${backTo.includes("?") ? `?${backTo.split("?")[1]}` : ""}`)} /> : <EmptyState message="Nenhuma lead corresponde aos filtros." action={<Button onClick={clearFilters}>Limpar filtros</Button>} />}</Panel>
-    <NewLeadDrawer open={drawerOpen} sources={sourcesQuery.data ?? []} onClose={() => setDrawerOpen(false)} onCreate={(input) => { createMutation.mutate(input, { onSuccess: () => setDrawerOpen(false) }); }} />
+    <Panel className="overflow-hidden">{filtered.length ? <LeadsTable leads={filtered} onRowClick={(lead) => navigate(`/leads/${lead.id}${backTo.includes("?") ? `?${backTo.split("?")[1]}` : ""}`)} /> : <EmptyState message="Nenhuma lead corresponde aos filtros." action={<Button onClick={clearFilters}>Limpar filtros</Button>} />}</Panel>
+    {drawerOpen && <NewLeadDrawer onClose={() => setDrawerOpen(false)} />}
     {importOpen && <ImportExcel config={importConfig} existingNames={(leadsQuery.data ?? []).map((lead) => lead.contactName)} onClose={() => setImportOpen(false)} onImport={(rows) => importMutation.mutate(rows.map(rowToInput))} />}
-    <FloatingActionButton label="Nova lead" onClick={() => setDrawerOpen(true)} />
   </div>;
 }
 

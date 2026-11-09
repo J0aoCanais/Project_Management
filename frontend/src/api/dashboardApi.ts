@@ -1,4 +1,4 @@
-import { dashboardFixture } from "./fixtures/testData";
+import { dashboardFixture } from "../temp";
 
 export interface DashboardSummary {
   stats: {

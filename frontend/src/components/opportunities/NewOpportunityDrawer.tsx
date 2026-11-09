@@ -6,7 +6,9 @@ import Drawer from "../ui/Drawer";
 import FormField from "../ui/FormField";
 import Notice from "../ui/Notice";
 import NumberInput from "../ui/NumberInput";
+import Select from "../ui/Select";
 import { inputClasses } from "../ui/inputClasses";
+import { typologyOptions } from "../../temp";
 import { MONEY, TEXT_LIMITS, fitsRule, titleError } from "../../lib/opportunityRules";
 
 interface Props {
@@ -14,7 +16,6 @@ interface Props {
 }
 
 const FORM_ID = "nova-oportunidade";
-const TYPOLOGIES = ["T0", "T1", "T2", "T3", "T4", "T5+"];
 
 function NewOpportunityDrawer({ onClose }: Props) {
   const { data: options } = useOpportunityOptions();
@@ -78,19 +79,10 @@ function NewOpportunityDrawer({ onClose }: Props) {
           />
         </FormField>
         <FormField label="Tipologia">
-          <select className={inputClasses} value={typology} onChange={(e) => setTypology(e.target.value)}>
-            {TYPOLOGIES.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
+          <Select value={typology} onChange={setTypology} options={typologyOptions} />
         </FormField>
         <FormField label="Zona" error={showErrors ? errors.zone : undefined}>
-          <select className={inputClasses} value={zone} onChange={(e) => setZone(e.target.value)}>
-            <option value="">Selecionar zona…</option>
-            {options?.zones.map((option) => (
-              <option key={option}>{option}</option>
-            ))}
-          </select>
+          <Select value={zone} onChange={setZone} options={options?.zones ?? []} placeholder="Selecionar zona…" />
         </FormField>
         <FormField label="Preço pedido" error={showErrors ? errors.askingPrice : undefined}>
           <NumberInput min={MONEY.min} max={MONEY.max} decimals={MONEY.decimals} suffix="€" value={askingPrice} onChange={setAskingPrice} invalid={showErrors && !!errors.askingPrice} />

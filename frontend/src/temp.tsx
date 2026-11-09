@@ -1,12 +1,14 @@
-// Todos os dados de teste do frontend. Quando os endpoints existirem, é este ficheiro que deixa de ser preciso.
-// Pessoas e contactos fictícios. A lógica que simula o servidor está em opportunitiesStore.ts.
+// TODO(integração): TUDO o que está hard coded no frontend vive neste ficheiro.
+// Ao integrar com o backend, remover este ficheiro e, em cada ficheiro que o importa
+// (procurar por `temp"`), trocar o import por um hook/endpoint real.
+// A lógica que simula o servidor está em api/fixtures/opportunitiesStore.ts (também a remover).
 
-import { calcFinance } from "../../lib/finance";
-import { OPPORTUNITY_PHASES } from "../../lib/phases";
-import type { DashboardSummary } from "../dashboardApi";
-import type { Lead, LeadContactEntry } from "../leadsApi";
-import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "../opportunitiesApi";
-import type { CurrentUser } from "../userApi";
+import { calcFinance } from "./lib/finance";
+import { OPPORTUNITY_PHASES } from "./lib/phases";
+import type { DashboardSummary } from "./api/dashboardApi";
+import type { Lead, LeadContactEntry } from "./api/leadsApi";
+import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "./api/opportunitiesApi";
+import type { CurrentUser } from "./api/userApi";
 
 // ---- Utilizador autenticado ----
 
@@ -270,3 +272,27 @@ export const opportunityOptionsFixture: OpportunityOptions = {
     { id: 3, name: "Carla Mendes" },
   ],
 };
+
+// ---- Listas e valores fixos da interface ----
+
+// TODO: trocar pelo endpoint de notificações.
+export const hasUnreadNotifications = true;
+
+// TODO: trocar pelo endpoint (estados de lead).
+export const leadStatusOptions = ["Nova", "Contactada", "Qualificada", "Convertida", "Descartada"];
+export const leadStatusChangeOptions = ["Nova", "Contactada", "Qualificada"];
+
+// TODO: trocar pelo endpoint (zonas).
+export const leadZoneOptions = ["Baixa", "Alta", "Celas", "Solum", "Santa Clara", "Olivais"];
+
+// TODO: trocar pelo endpoint (motivos de descarte).
+export const discardReasonOptions = ["Sem interesse do proprietário", "Fora dos critérios de investimento", "Preço não negociável"];
+
+// TODO: trocar pelo endpoint (canais de contacto).
+export const contactChannelOptions = ["Telefone", "Email", "Reunião"];
+
+// TODO: trocar pelo endpoint (tipologias).
+export const typologyOptions = ["T0", "T1", "T2", "T3", "T4", "T5+"];
+
+// TODO: trocar pelo endpoint (tipos de documento).
+export const documentTypeOptions = ["Caderneta predial", "Certidão permanente", "Orçamento de obra", "Planta", "Licença de utilização", "Certificado energético", "Outro"];
