@@ -19,7 +19,7 @@ function FinanceResultsCard({ values, result }: Props) {
     { label: "Outros custos", value: result.other },
   ];
   return (
-    <aside className="rounded-panel bg-results p-[22px] text-white tabular-nums">
+    <aside className="min-w-0 rounded-panel bg-results p-[22px] wrap-anywhere text-white tabular-nums">
       <h2 className="text-sm font-semibold">Análise de rentabilidade</h2>
       <small className="text-[11px] text-results-muted">Atualizada em tempo real</small>
 
@@ -31,7 +31,7 @@ function FinanceResultsCard({ values, result }: Props) {
         {breakdown.map((item) => (
           <li key={item.label} className="flex justify-between gap-2.5 text-[11px] text-results-muted">
             <span>{item.label}</span>
-            <b className="font-semibold text-white">{formatMoney(item.value)}</b>
+            <b className="shrink-0 font-semibold text-white">{formatMoney(item.value)}</b>
           </li>
         ))}
       </ul>

@@ -1,4 +1,5 @@
 import { calcFinance } from "../../lib/finance";
+import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, titleError } from "../../lib/opportunityRules";
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { ApiError } from "../client";
 import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityDetail } from "../opportunitiesApi";
@@ -46,13 +47,17 @@ export function listOptions() {
 
 export async function addOpportunity(input: NewOpportunity) {
   await respond(null);
+  // O servidor valida sempre, mesmo que o formulário já o tenha feito.
+  const invalid = titleError(input.title) ?? (!opportunityOptionsFixture.zones.includes(input.zone) ? "Zona inválida" : undefined);
+  if (invalid) throw new ApiError(422, invalid);
+  if (!fitsRule(input.askingPrice, MONEY) || input.askingPrice <= 0 || !fitsRule(input.vvr, MONEY) || input.vvr <= 0) throw new ApiError(422, "Valores inválidos");
   const id = Math.max(0, ...opportunitiesFixture.map((item) => item.id)) + 1;
   const lead = opportunityOptionsFixture.leads.find((item) => item.id === input.leadId);
   const finance = defaultFinance(input.askingPrice, input.vvr);
   const now = new Date().toISOString();
   const opportunity: OpportunityDetail = {
     id,
-    title: input.title,
+    title: input.title.trim(),
     zone: input.zone,
     typology: input.typology,
     askingPrice: input.askingPrice,
@@ -93,6 +98,7 @@ export async function movePhase(id: number, phaseIndex: number) {
 export async function saveFinance(id: number, finance: FinanceValues, extraCosts: ExtraCost[]) {
   await respond(null);
   const opportunity = find(id);
+  if (Object.keys(financeErrors(finance)).length || Object.keys(extraCostErrors(extraCosts)).length) throw new ApiError(422, "Análise financeira inválida");
   opportunity.finance = structuredClone(finance);
   opportunity.extraCosts = structuredClone(extraCosts);
   opportunity.estimatedProfit = calcFinance(finance, extraCosts).margin;
@@ -121,6 +127,7 @@ export async function addDocuments(id: number, files: File[], type: string) {
 export async function reject(id: number, reason: string) {
   await respond(null);
   const opportunity = find(id);
+  if (!reason.trim() || reason.length > TEXT_LIMITS.rejectionReason) throw new ApiError(422, "Motivo inválido");
   opportunity.rejection = { reason, date: new Date().toISOString() };
   record(opportunity, `Marcada como rejeitada/perdida: ${reason}`);
   return structuredClone(opportunity);

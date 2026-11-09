@@ -10,7 +10,12 @@ interface Props {
 }
 
 const columns: TableColumn<OpportunityCard>[] = [
-  { key: "property", header: "Imóvel / Zona", render: (card) => `${card.title} · ${card.zone}` },
+  { key: "property", header: "Imóvel / Zona", render: (card) => (
+      <span className="block max-w-[320px] wrap-anywhere whitespace-normal">
+        {card.title} · {card.zone}
+      </span>
+    ),
+  },
   { key: "typology", header: "Tipologia", render: (card) => card.typology },
   { key: "asking", header: "Preço pedido", align: "right", render: (card) => formatMoney(card.askingPrice) },
   { key: "vvr", header: "VVR", align: "right", render: (card) => formatMoney(card.vvr) },
