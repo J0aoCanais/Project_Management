@@ -14,11 +14,14 @@ class BaseSchema(Schema):
         for key, value in data.items():
             if isinstance(value, str):
                 value = value.strip()
-                if value == "" and key not in ("name", "type", "q"):
+                if value == "" and key not in ("name", "q"):
                     value = None
             cleaned[key] = value
         return cleaned
 
+class RoleCreateSchema(BaseSchema):
+    """Simple schema to create a contact role"""
+    name = fields.String(required=True, validate=validate.Length(min=1, max=512))
 
 class RoleResponseSchema(BaseSchema):
     """Simple schema to return contact role"""
@@ -27,9 +30,9 @@ class RoleResponseSchema(BaseSchema):
 
 
 class ContactCreateSchema(BaseSchema):
-    """Contact creation schema. Name and type fields are required"""
+    """Contact creation schema. Name and roles fields are required"""
     name = fields.String(required=True, validate=validate.Length(min=1, max=512))
-    type = fields.String(required=True, validate=validate.Length(min=1, max=512))
+    role_ids = fields.List(fields.Integer(), required=True, allow_none=True)
     email = fields.Email(allow_none=True, validate=validate.Length(max=512))
     phone_number = fields.String(allow_none=True, validate=validate.Length(max=512))
     address = fields.String(allow_none=True, validate=validate.Length(max=512))
@@ -37,17 +40,16 @@ class ContactCreateSchema(BaseSchema):
     zone = fields.String(allow_none=True, validate=validate.Length(max=512))
     notes = fields.String(allow_none=True, validate=validate.Length(max=512))
     nif = fields.String(allow_none=True, validate=validate.Length(max=512))
-    consent_given = fields.Boolean(allow_none=True)
+    consent_given = fields.Boolean(allow_none=True, load_default=False)
     consent_date = fields.DateTime(allow_none=True)
     consent_channel = fields.String(allow_none=True)
-    role_ids = fields.List(fields.Integer(), allow_none=True)
 
 
 class ContactResponseSchema(BaseSchema):
     """Contact response schema"""
     id = fields.Integer()
     name = fields.String()
-    type = fields.String()
+    roles = fields.List(fields.Nested(RoleResponseSchema))
     email = fields.String(allow_none=True)
     phone_number = fields.String(allow_none=True)
     address = fields.String(allow_none=True)
@@ -58,13 +60,12 @@ class ContactResponseSchema(BaseSchema):
     consent_given = fields.Boolean(allow_none=True)
     consent_date = fields.DateTime(allow_none=True)
     consent_channel = fields.String(allow_none=True)
-    roles = fields.List(fields.Nested(RoleResponseSchema))
 
 
 class ContactUpdateSchema(ContactCreateSchema):
-    """For PATCH: make the name and type fields optional"""
+    """For PATCH: make the name and roles fields optional"""
     name = fields.String(validate=validate.Length(min=1, max=512))
-    type = fields.String(validate=validate.Length(min=1, max=512))
+    role_ids = fields.List(fields.Integer(), allow_none=True)
     
     
 class ContactListSchema(BaseSchema):

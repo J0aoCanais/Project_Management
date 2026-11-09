@@ -1,6 +1,6 @@
 from flask import flash, jsonify, render_template, request, session, url_for, Blueprint
 from datetime import datetime
-from sqlalchemy import or_, and_
+from sqlalchemy import or_, func
 from sqlalchemy.orm import selectinload
 from marshmallow import ValidationError
 from flask_login import current_user
@@ -15,7 +15,8 @@ from ..schemas.contacts_schema import (
     ContactSearchSchema,
     ContactListSchema,
     ContactUpdateSchema,
-    RoleResponseSchema
+    RoleResponseSchema,
+    RoleCreateSchema
 )
 
 # Schema Instances
@@ -25,6 +26,7 @@ contact_response_schema = ContactResponseSchema()
 search_schema = ContactSearchSchema()
 contact_update_schema = ContactUpdateSchema()
 role_response_schema = RoleResponseSchema()
+role_create_schema = RoleCreateSchema()
 
 contacts_bp = Blueprint("contacts", __name__)
 
@@ -40,6 +42,44 @@ def get_roles():
     roles = db.session.execute(db.select(Role).order_by(Role.name.asc())).scalars().all()
     return jsonify(role_response_schema.dump(roles, many=True)), HTTPStatus.OK
 
+@contacts_bp.post("/roles")
+@owner_required
+def create_role():
+    """Creates a new role"""
+    payload = request.get_json(silent=True)
+    if payload is None:
+        return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
+    
+    try:
+        data = role_create_schema.load(payload)
+
+        role = Role(**data)
+        db.session.add(role)
+        db.session.commit()
+
+        return jsonify(contact_response_schema.dump(role)), HTTPStatus.CREATED
+
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+@contacts_bp.delete("/roles/<int:role_id>")
+@owner_required
+def delete_role(role_id):
+    role = db.session.get(Role, role_id)
+    if role is None:
+        return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
+
+    try:
+        db.session.delete(role)
+        db.session.commit()
+        return "", HTTPStatus.NO_CONTENT
+    except Exception:
+        db.session.rollback()
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 #========================================
 #  2.Contact Read Endpoints (GET)
@@ -60,7 +100,8 @@ def get_contacts():
     stmt = (
         db.select(Contact)
         .options(selectinload(Contact.roles))
-        .where(Contact.type != "investor")
+        .where(~Contact.roles.any(func.lower(Role.name) == "investidor"),
+               Contact.deleted_at.is_(None))
         .order_by(Contact.name.asc())
     )
     
@@ -90,8 +131,9 @@ def get_contacts():
 def get_contact(contact_id: int):
     """Returns the detailts of a specific contact."""
     contact = db.session.get(Contact, contact_id)
-    if contact is None:
+    if contact is None or contact.deleted_at is not None:
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
+   
     return jsonify(contact_response_schema.dump(contact)), HTTPStatus.OK
 
 
@@ -106,7 +148,8 @@ def search_contacts():
         stmt = (
             db.select(Contact)
             .options(selectinload(Contact.roles))
-            .where(Contact.type != "investor")
+            .where(~Contact.roles.any(func.lower(Role.name) == "investidor"),
+                   Contact.deleted_at.is_(None))
         )
 
         search_term = params.get("q")
@@ -178,6 +221,8 @@ def create_contact():
         return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
     
     try:
+        if "role_ids" in payload and isinstance(payload["role_ids"], int):
+            payload["role_ids"] = [payload["role_ids"]]
         data = contact_create_schema.load(payload)
         
         role_ids = data.pop("role_ids", [])
@@ -186,6 +231,8 @@ def create_contact():
         
         if role_ids:
             roles = db.session.execute(db.select(Role).where(Role.id.in_(role_ids))).scalars().all()
+            if roles is None:
+                return jsonify({"errors": {"body": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
             contact.roles = roles
 
         db.session.add(contact)
@@ -210,10 +257,13 @@ def edit_contact(contact_id):
         return jsonify({"errors": {"body": ["Request body must be valid JSON"]}}), HTTPStatus.BAD_REQUEST
     
     contact = db.session.get(Contact, contact_id)
-    if not contact:
+    if contact is None or contact.deleted_at is not None:
         return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
-    
+   
     try:
+        if "role_ids" in payload and isinstance(payload["role_ids"], int):
+            payload["role_ids"] = [payload["role_ids"]]
+
         data = contact_update_schema.load(payload, partial=True)
     except ValidationError as error:
         return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST
@@ -226,11 +276,35 @@ def edit_contact(contact_id):
         
         if role_ids is not None:
             roles = db.session.execute(db.select(Role).where(Role.id.in_(role_ids))).scalars().all()
+            if roles is None:
+                return jsonify({"errors": {"body": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
             contact.roles = roles
             
         db.session.commit()
         return jsonify(contact_response_schema.dump(contact)), HTTPStatus.OK
     
+    except Exception:
+        db.session.rollback()
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
+
+#===============================================
+#  2.Contact Delete Endpoint (DELETE)
+#===============================================
+
+@contacts_bp.delete("/<int:contact_id>")
+@owner_required
+def delete_contact(contact_id: int):
+    """Soft deletes a contact by marking it as deleted. 
+    This makes the contact not appear on search queries."""
+
+    contact = db.session.get(Contact, contact_id)
+    if contact is None or contact.deleted_at is not None:
+        return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
+ 
+    try:
+        contact.deleted_at = datetime.now()
+        db.session.commit()
+        return "", HTTPStatus.NO_CONTENT
     except Exception:
         db.session.rollback()
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
