@@ -31,6 +31,11 @@ export function formatDate(date: Date): string {
   return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
 }
 
+/** Date → "2026-11-05" (dia local), o formato de um <input type="date">. */
+export function toIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
 /** Lê uma data ISO; "2026-11-18" é um dia local, não meia-noite UTC (que noutro fuso seria o dia anterior). */
 function parseIsoDate(iso: string): Date {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -53,11 +58,12 @@ export function formatActivityDate(iso: string): string {
   return `Hoje, ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-/** 340000 → "332 KB"; 1258291 → "1,2 MB" */
+/** 340000 → "332 KB"; 1258291 → "1,2 MB"; 2147483648 → "2,0 GB" */
 export function formatFileSize(bytes: number): string {
   const kilobytes = Math.max(1, Math.round(bytes / 1024));
   if (kilobytes < 1024) return `${kilobytes} KB`;
-  return `${(bytes / 1048576).toFixed(1).replace(".", ",")} MB`;
+  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1).replace(".", ",")} MB`;
+  return `${(bytes / 1073741824).toFixed(1).replace(".", ",")} GB`;
 }
 
 const longDate = new Intl.DateTimeFormat("pt-PT", {

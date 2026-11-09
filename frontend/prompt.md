@@ -113,6 +113,10 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - **Todos os campos de texto têm `maxLength`**, e o servidor simulado recusa (422) o que exceder. Nenhum campo aceita texto sem limite.
 - **Telemóvel:** só dígitos, espaços e um `+` inicial (o campo remove letras e símbolos ao escrever), entre 9 e 15 dígitos, máximo 20 caracteres.
 - **Nome da lead:** 2 a 80 caracteres. **Referenciado por:** até 80. **Mensagem:** até 500. **Contacto registado:** responsável até 80, resultado até 120, nota até 500.
+- **Nome (leads e contactos):** só letras, espaços, hífens, pontos e apóstrofos. **Palavras:** nenhum texto aceita palavras com mais de 40 caracteres sem espaços (partiam o layout).
+- **Contacto** (`contactRules.ts`): nome 2 a 80; email opcional, formato válido, até 120; telemóvel opcional com as regras acima; empresa até 80; NIF opcional, 9 dígitos com dígito de controlo válido; morada até 200; notas até 500; com consentimento RGPD o canal é obrigatório (a data é automática).
+- **Perfil de investidor** (`investorRules.ts`): capital disponível, montante mínimo e máximo em euros (`MONEY`), maiores que 0, com **mínimo ≤ máximo ≤ capital**; perfil de risco e estado da relação obrigatórios; prazos preferidos até 200.
+- **Investimento:** operação, tipo de retorno e data obrigatórios; valor comprometido > 0 (`MONEY`); participação > 0 e taxa entre 0 e 100 (`PERCENT`).
 - Os erros aparecem por campo só depois de tentar submeter, em pt-PT. Se o servidor recusar, mostra-se um `Notice` no formulário.
 - Na importação de Excel, as linhas que não cumprem estas regras são ignoradas.
 

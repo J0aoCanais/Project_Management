@@ -1,31 +1,19 @@
 import { documentTypeOptions } from "../../temp";
 import { useState } from "react";
 
-import type { OpportunityDetail, OpportunityDocument } from "../../api/opportunitiesApi";
+import type { OpportunityDetail } from "../../api/opportunitiesApi";
 import { useUploadOpportunityDocuments } from "../../hooks/useOpportunities";
-import { formatFileSize, formatIsoDate } from "../../lib/format";
+import DocumentsTable from "../documents/DocumentsTable";
 import EmptyState from "../ui/EmptyState";
 import FileUploadButton from "../ui/FileUploadButton";
 import Notice from "../ui/Notice";
 import Panel from "../ui/Panel";
 import Select from "../ui/Select";
-import Pill from "../ui/Pill";
-import Table, { type TableColumn } from "../ui/Table";
 
 interface Props {
   detail: OpportunityDetail;
 }
 
-
-const columns: TableColumn<OpportunityDocument>[] = [
-  { key: "name", header: "Documento", render: (document) => document.name },
-  { key: "type", header: "Tipo", render: (document) => document.type },
-  { key: "property", header: "Imóvel", render: (document) => document.propertyCode },
-  { key: "entity", header: "Entidade associada", render: (document) => document.entity },
-  { key: "size", header: "Tamanho", align: "right", render: (document) => formatFileSize(document.sizeBytes) },
-  { key: "validity", header: "Validade", render: (document) => (document.validUntil ? formatIsoDate(document.validUntil) : "—") },
-  { key: "status", header: "Estado", render: (document) => <Pill tone={document.status === "Válido" ? "green" : "amber"}>{document.status}</Pill> },
-];
 
 function OpportunityDocuments({ detail }: Props) {
   const upload = useUploadOpportunityDocuments();
@@ -50,7 +38,7 @@ function OpportunityDocuments({ detail }: Props) {
         </div>
       )}
       {detail.documents.length ? (
-        <Table columns={columns} rows={detail.documents} getRowKey={(document) => document.id} />
+        <DocumentsTable documents={detail.documents} />
       ) : (
         <EmptyState message="Ainda não há documentos." />
       )}

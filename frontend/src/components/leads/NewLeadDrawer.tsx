@@ -2,7 +2,7 @@ import { useState, type FormEvent } from "react";
 
 import { useCreateLead, useLeadSources } from "../../hooks/useLeads";
 import { LEAD_TEXT_LIMITS, leadNameError, optionalTextError, phoneError, sanitizePhone } from "../../lib/leadRules";
-import { leadContactOptions, leadZoneOptions } from "../../temp";
+import { leadContactOptions, zoneOptions } from "../../temp";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
 import FormField from "../ui/FormField";
@@ -91,7 +91,7 @@ function NewLeadDrawer({ onClose }: Props) {
           </>
         )}
         <FormField label="Zona" error={showErrors ? errors.zone : undefined}>
-          <Select value={zone} onChange={setZone} options={leadZoneOptions} placeholder="Selecionar zona…" />
+          <Select value={zone} onChange={setZone} options={zoneOptions} placeholder="Selecionar zona…" />
         </FormField>
         <FormField label="Origem" error={showErrors ? errors.source : undefined}>
           <Select value={source} onChange={setSource} options={sources} placeholder="Selecionar origem…" />
