@@ -3,7 +3,7 @@ import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, titleErro
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { ApiError } from "../client";
 import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityDetail } from "../opportunitiesApi";
-import { currentUserFixture, defaultFinance, opportunitiesFixture, opportunityOptionsFixture } from "../../temp";
+import { currentUserFixture, defaultFinance, leads, opportunitiesFixture, opportunityOptionsFixture } from "../../temp";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar a página.
 
@@ -52,7 +52,9 @@ export async function addOpportunity(input: NewOpportunity) {
   if (invalid) throw new ApiError(422, invalid);
   if (!fitsRule(input.askingPrice, MONEY) || input.askingPrice <= 0 || !fitsRule(input.vvr, MONEY) || input.vvr <= 0) throw new ApiError(422, "Valores inválidos");
   const id = Math.max(0, ...opportunitiesFixture.map((item) => item.id)) + 1;
-  const lead = opportunityOptionsFixture.leads.find((item) => item.id === input.leadId);
+  const sourceLead = leads.find((item) => item.id === input.leadId);
+  if (input.leadId !== undefined && !sourceLead) throw new ApiError(422, "Lead de origem inválida");
+  const lead = sourceLead && { id: sourceLead.id, name: sourceLead.contactName };
   const finance = defaultFinance(input.askingPrice, input.vvr);
   const now = new Date().toISOString();
   const opportunity: OpportunityDetail = {

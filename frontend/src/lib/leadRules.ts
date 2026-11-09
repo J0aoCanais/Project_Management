@@ -21,13 +21,29 @@ export function sanitizePhone(value: string): string {
   return cleaned.slice(0, LEAD_TEXT_LIMITS.phone);
 }
 
+/** Palavra mais comprida aceite. Uma palavra enorme sem espaços não cabe nos campos da ficha. */
+export const MAX_WORD_LENGTH = 40;
+
 /** Erro do nome de uma lead, ou `undefined` se estiver bem. */
 export function leadNameError(name: string): string | undefined {
   const text = name.trim();
   if (!text) return "Indique o nome.";
   if (text.length < MIN_NAME_LENGTH) return `Escreva pelo menos ${MIN_NAME_LENGTH} caracteres.`;
   if (text.length > LEAD_TEXT_LIMITS.contactName) return `Máximo de ${LEAD_TEXT_LIMITS.contactName} caracteres.`;
-  return undefined;
+  if (!/^\p{L}[\p{L} .'-]*$/u.test(text)) return "O nome só pode ter letras, espaços, hífens e apóstrofos.";
+  return longWordError(text);
+}
+
+/** Erro de uma palavra demasiado longa (sem espaços), ou `undefined`. */
+export function longWordError(value: string): string | undefined {
+  return value.split(/\s+/).some((word) => word.length > MAX_WORD_LENGTH)
+    ? `Há uma palavra com mais de ${MAX_WORD_LENGTH} caracteres. Separe o texto com espaços.`
+    : undefined;
+}
+
+/** Erro de um texto opcional: demasiado longo ou com palavras enormes. */
+export function optionalTextError(value: string, max: number): string | undefined {
+  return maxLengthError(value, max) ?? longWordError(value.trim());
 }
 
 /** Erro do telemóvel de uma lead, ou `undefined` se estiver bem. */

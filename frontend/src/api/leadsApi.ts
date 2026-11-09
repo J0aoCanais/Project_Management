@@ -1,4 +1,4 @@
-import { LEAD_TEXT_LIMITS, leadNameError, maxLengthError, phoneError } from "../lib/leadRules";
+import { LEAD_TEXT_LIMITS, leadNameError, optionalTextError, phoneError } from "../lib/leadRules";
 import { leads, leadContacts } from "../temp";
 import { ApiError } from "./client";
 
@@ -56,8 +56,10 @@ function leadInputError(input: NewLeadInput): string | undefined {
   return (
     leadNameError(input.contactName) ??
     phoneError(input.phone) ??
-    maxLengthError(input.referredBy, LEAD_TEXT_LIMITS.referredBy) ??
-    maxLengthError(input.message ?? "", LEAD_TEXT_LIMITS.message)
+    (input.zone ? undefined : "Zona em falta") ??
+    (input.source ? undefined : "Origem em falta") ??
+    optionalTextError(input.referredBy, LEAD_TEXT_LIMITS.referredBy) ??
+    optionalTextError(input.message ?? "", LEAD_TEXT_LIMITS.message)
   );
 }
 
@@ -97,7 +99,10 @@ export async function importLeads(rows: NewLeadInput[]): Promise<{ created: numb
   return delay({ created, skipped: rows.length - created });
 }
 
-export async function convertLead(id: number): Promise<{ opportunityId: number }> {
-  await updateLeadStatus(id, "Convertida");
-  return delay({ opportunityId: 1000 + id });
+/** Marca a lead como convertida. A oportunidade é criada antes, com `createOpportunity({ leadId })`. */
+export async function convertLead(id: number): Promise<Lead> {
+  const lead = leads.find((item) => item.id === id);
+  if (!lead) throw new ApiError(404, "Lead não encontrada");
+  if (lead.status === "Convertida" || lead.status === "Descartada") throw new ApiError(409, `A lead já está ${lead.status.toLowerCase()}`);
+  return updateLeadStatus(id, "Convertida");
 }
