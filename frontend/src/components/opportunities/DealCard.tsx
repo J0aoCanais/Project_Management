@@ -29,7 +29,7 @@ function DealCard({ card, onMove }: Props) {
           <DropdownMenu label={`Ações de ${card.title}`} items={moveItems} />
         </div>
       </div>
-      <h3 className="mt-1.5 mb-1 text-xs font-bold">
+      <h3 className="mt-1.5 mb-1 text-xs font-bold wrap-anywhere">
         {/* O link estica-se a todo o cartão. Não é arrastável para o cartão inteiro ser a origem do arrastar. */}
         <Link
           to={`/oportunidades/${card.id}`}
@@ -40,11 +40,11 @@ function DealCard({ card, onMove }: Props) {
           {card.title}
         </Link>
       </h3>
-      <p className="flex items-center gap-1 text-[11px] text-muted">
+      <p className="flex min-w-0 items-center gap-1 text-[11px] text-muted">
         <Icon name="home" size={14} />
-        {card.zone}
+        <span className="truncate">{card.zone}</span>
       </p>
-      <dl className="mt-3 mb-2 flex justify-between">
+      <dl className="mt-3 mb-2 flex justify-between gap-2">
         <div>
           <dt className="text-[11px] text-muted">Preço pedido</dt>
           <dd className="m-0 mt-0.5 text-xs font-semibold tabular-nums">{formatMoney(card.askingPrice)}</dd>

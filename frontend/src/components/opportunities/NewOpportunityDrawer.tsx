@@ -7,6 +7,7 @@ import FormField from "../ui/FormField";
 import Notice from "../ui/Notice";
 import NumberInput from "../ui/NumberInput";
 import { inputClasses } from "../ui/inputClasses";
+import { MONEY, TEXT_LIMITS, fitsRule, titleError } from "../../lib/opportunityRules";
 
 interface Props {
   onClose: () => void;
@@ -27,10 +28,10 @@ function NewOpportunityDrawer({ onClose }: Props) {
   const [showErrors, setShowErrors] = useState(false);
 
   const errors = {
-    title: title.trim() ? undefined : "Indique o imóvel ou a morada.",
+    title: titleError(title),
     zone: zone ? undefined : "Escolha a zona.",
-    askingPrice: askingPrice > 0 ? undefined : "Indique o preço pedido.",
-    vvr: vvr > 0 ? undefined : "Indique o VVR.",
+    askingPrice: askingPrice > 0 && fitsRule(askingPrice, MONEY) ? undefined : "Indique o preço pedido.",
+    vvr: vvr > 0 && fitsRule(vvr, MONEY) ? undefined : "Indique o VVR.",
   };
 
   const handleSubmit = (e: FormEvent) => {
@@ -60,7 +61,21 @@ function NewOpportunityDrawer({ onClose }: Props) {
       <form id={FORM_ID} noValidate onSubmit={handleSubmit} className="grid gap-3 rounded-panel border border-line bg-white p-3.5">
         {create.isError && <Notice tone="warning">Não foi possível criar a oportunidade. Tente novamente.</Notice>}
         <FormField label="Imóvel / morada" error={showErrors ? errors.title : undefined}>
-          <input className={inputClasses} value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Rua da Sofia, Coimbra" autoFocus />
+          {/* Textarea para a morada passar para a linha de baixo; continua a ser uma só linha de texto. */}
+          <textarea
+            rows={2}
+            className={`${inputClasses} resize-none wrap-anywhere`}
+            value={title}
+            maxLength={TEXT_LIMITS.title}
+            onChange={(e) => setTitle(e.target.value.replace(/[\r\n]+/g, " "))}
+            onKeyDown={(e) => {
+              if (e.key !== "Enter") return;
+              e.preventDefault();
+              e.currentTarget.form?.requestSubmit();
+            }}
+            placeholder="Rua da Sofia, Coimbra"
+            autoFocus
+          />
         </FormField>
         <FormField label="Tipologia">
           <select className={inputClasses} value={typology} onChange={(e) => setTypology(e.target.value)}>
@@ -78,10 +93,10 @@ function NewOpportunityDrawer({ onClose }: Props) {
           </select>
         </FormField>
         <FormField label="Preço pedido" error={showErrors ? errors.askingPrice : undefined}>
-          <NumberInput min={0} suffix="€" value={askingPrice} onChange={setAskingPrice} />
+          <NumberInput min={MONEY.min} max={MONEY.max} decimals={MONEY.decimals} suffix="€" value={askingPrice} onChange={setAskingPrice} invalid={showErrors && !!errors.askingPrice} />
         </FormField>
         <FormField label="VVR" error={showErrors ? errors.vvr : undefined}>
-          <NumberInput min={0} suffix="€" value={vvr} onChange={setVvr} />
+          <NumberInput min={MONEY.min} max={MONEY.max} decimals={MONEY.decimals} suffix="€" value={vvr} onChange={setVvr} invalid={showErrors && !!errors.vvr} />
         </FormField>
         <FormField label="Lead de origem (opcional)">
           <select className={inputClasses} value={leadId} onChange={(e) => setLeadId(e.target.value)}>

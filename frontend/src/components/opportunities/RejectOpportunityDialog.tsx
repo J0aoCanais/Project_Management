@@ -6,6 +6,7 @@ import Dialog from "../ui/Dialog";
 import FormField from "../ui/FormField";
 import Notice from "../ui/Notice";
 import { inputClasses } from "../ui/inputClasses";
+import { TEXT_LIMITS } from "../../lib/opportunityRules";
 
 interface Props {
   opportunityId: number;
@@ -39,7 +40,10 @@ function RejectOpportunityDialog({ opportunityId, onClose }: Props) {
     >
       {reject.isError && <Notice tone="warning">Não foi possível guardar. Tente novamente.</Notice>}
       <FormField label="Motivo" error={missing ? "Indique o motivo." : undefined}>
-        <textarea rows={4} autoFocus className={inputClasses} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <textarea rows={4} autoFocus maxLength={TEXT_LIMITS.rejectionReason} className={`${inputClasses} resize-y`} value={reason} onChange={(e) => setReason(e.target.value)} />
+        <span className="mt-1 block text-right text-[11px] text-muted">
+          {reason.length}/{TEXT_LIMITS.rejectionReason}
+        </span>
       </FormField>
     </Dialog>
   );

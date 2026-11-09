@@ -56,7 +56,7 @@ function OpportunityReport({ detail, values, extras, onClose }: Props) {
         <header className="flex flex-col items-start justify-between gap-5 border-b-2 border-brand pb-4 min-[721px]:flex-row print:flex-row">
           <div>
             <span className="text-[10px] font-bold tracking-[1px] text-brand uppercase">ImoVentures · Oportunidade de investimento</span>
-            <h1 className="mt-1.5 mb-1 text-[26px] font-bold tracking-[-0.5px]">{detail.title}</h1>
+            <h1 className="mt-1.5 mb-1 text-[26px] font-bold tracking-[-0.5px] wrap-anywhere">{detail.title}</h1>
             <p className="text-[13px] text-muted">
               {detail.typology} · {detail.zone} · {area}
             </p>
