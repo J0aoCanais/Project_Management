@@ -201,7 +201,6 @@ class Contact(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(512), nullable=False)
-    type: Mapped[str] = mapped_column(String(512), nullable=False)
     email: Mapped[Optional[str]] = mapped_column(String(512))
     phone_number: Mapped[Optional[str]] = mapped_column(String(512))
     address: Mapped[Optional[str]] = mapped_column(Text)
@@ -212,6 +211,7 @@ class Contact(Base):
     consent_given: Mapped[Optional[bool]] = mapped_column(Boolean)
     consent_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     consent_channel: Mapped[Optional[str]] = mapped_column(String(512))
+    deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
 
     # relationships
     operations: Mapped[List["Operation"]] = relationship(back_populates="contact")
