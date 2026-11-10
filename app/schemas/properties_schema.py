@@ -3,10 +3,10 @@ Schemas for the Property resource.
 
     PropertyCreateSchema     POST   body
     PropertyUpdateSchema     PATCH  body (every field optional)
-    PropertyListQuerySchema  GET    query string (search, filters, sort, pagination)
-    PropertyListItemSchema   GET    list rows (compact: no long text fields)
+    PropertySearchSchema  GET    query string (search, filters, pagination)
+    PropertyListSchema   GET    list rows
     PropertyResponseSchema   POST/PATCH responses (all columns)
-    PropertyDetailSchema     GET    /<id> (all columns + related counts)
+    PropertyDetailSchema     GET    /<id> (all columns)
 
 Money and areas are exchanged as DECIMAL STRINGS ("250000.00"), never floats,
 so no rounding error can creep in between the API and the React app."""
@@ -108,7 +108,7 @@ class PropertyCreateSchema(BaseSchema):
     max_proposal = _money(required=True, validate=POSITIVE_MONEY)
     first_proposal = _money(required=True, validate=POSITIVE_MONEY)
 
-    # Naive input is interpreted as UTC; aware input keeps its offset.
+    # TODO: consider adding timezone to datetime types
     visit_date = fields.DateTime(required=True)
 
     notes = fields.String(allow_none=True, validate=validate.Length(max=MAX_LONG_TEXT))
