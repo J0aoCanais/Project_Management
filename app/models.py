@@ -16,6 +16,7 @@ from sqlalchemy import (
     String,
     Table,
     Text,
+    Numeric
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from flask_sqlalchemy import SQLAlchemy
@@ -425,12 +426,12 @@ class Property(Base):
     address: Mapped[str] = mapped_column(String(512), nullable=False)
     typology: Mapped[str] = mapped_column(String(512), nullable=False)
     zone: Mapped[str] = mapped_column(String(512), nullable=False)
-    area_m2: Mapped[float] = mapped_column(Float(8), nullable=False)
-    asking_price: Mapped[float] = mapped_column(Float(8), nullable=False)
-    vvr: Mapped[float] = mapped_column(Float(8), nullable=False)
-    profit: Mapped[float] = mapped_column(Float(8), nullable=False)
-    max_proposal: Mapped[float] = mapped_column(Float(8), nullable=False)
-    first_proposal: Mapped[float] = mapped_column(Float(8), nullable=False)
+    area_m2: Mapped[float] = mapped_column(Numeric(10, 2), nullable=False)
+    asking_price: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    vvr: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    profit: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    max_proposal: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    first_proposal: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
     visit_date: Mapped[datetime] = mapped_column(DateTime, nullable=False)
     notes: Mapped[Optional[str]] = mapped_column(Text)
     admin_location: Mapped[Optional[str]] = mapped_column(String(512))
@@ -440,9 +441,12 @@ class Property(Base):
     matricial_article: Mapped[Optional[str]] = mapped_column(String(512))
     predial_description: Mapped[Optional[str]] = mapped_column(Text)
     usage_license: Mapped[Optional[str]] = mapped_column(String(512))
-    energy_certificate: Mapped[Optional[str]] = mapped_column(String(512))
+    energy_certificate: Mapped[Optional[str]] = mapped_column(String(512)) 
+
+    deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
 
     opportunities: Mapped[List["Opportunity"]] = relationship(back_populates="property")
+    operation: Mapped[List["Operation"]] = relationship(back_populates="property")
     documents: Mapped[List["Document"]] = relationship(
         secondary=property_document, back_populates="property"
     )
@@ -453,12 +457,12 @@ class Opportunity(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     current_status: Mapped[str] = mapped_column(String(512), nullable=False)
-    purchase_price: Mapped[Optional[float]] = mapped_column(Float(8))
-    acquisition_costs: Mapped[Optional[float]] = mapped_column(Float(8))
-    work_cost: Mapped[Optional[float]] = mapped_column(Float(8))
-    other_costs: Mapped[Optional[float]] = mapped_column(Float(8))
+    purchase_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    acquisition_costs: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    work_cost: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    other_costs: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     expected_sale_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
-    expected_sale_price: Mapped[Optional[float]] = mapped_column(Float(8))
+    expected_sale_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     term_months: Mapped[Optional[int]] = mapped_column(Integer)
     last_activity_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
     phase_id: Mapped[int] = mapped_column(
@@ -492,9 +496,9 @@ class Operation(Base):
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     code: Mapped[str] = mapped_column(String(512), nullable=False)
-    real_purchase_price: Mapped[float] = mapped_column(Float(8), nullable=False)
-    advertised_price: Mapped[Optional[float]] = mapped_column(Float(8))
-    final_sale_price: Mapped[Optional[float]] = mapped_column(Float(8))
+    real_purchase_price: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+    advertised_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    final_sale_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     sale_deed_date: Mapped[Optional[date]] = mapped_column(Date)
     phase_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("phase.id"), nullable=False
@@ -505,10 +509,14 @@ class Operation(Base):
     opportunity_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("opportunity.id"), nullable=False, unique=True
     )
+    property_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("property.id"), nullable=False
+    )
 
     phase: Mapped["Phase"] = relationship(back_populates="operations")
     contact: Mapped["Contact"] = relationship(back_populates="operations")
     opportunity: Mapped["Opportunity"] = relationship(back_populates="operation")
+    property: Mapped["Property"] = relationship(back_populates="operation")
     construction_works: Mapped[List["ConstructionWork"]] = relationship(
         back_populates="operation"
     )
