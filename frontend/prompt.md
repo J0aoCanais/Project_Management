@@ -109,10 +109,11 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 
 ### Validação de formulários
 
-- Os limites de cada campo ficam em `src/lib/` (`opportunityRules.ts`, `leadRules.ts`), nunca escritos à mão no componente. O formulário e o servidor simulado usam as mesmas regras.
+- Os limites de cada campo ficam em `src/lib/` (`opportunityRules.ts`, `leadRules.ts`, `workRules.ts`), nunca escritos à mão no componente. O formulário e o servidor simulado usam as mesmas regras.
 - **Todos os campos de texto têm `maxLength`**, e o servidor simulado recusa (422) o que exceder. Nenhum campo aceita texto sem limite.
 - **Telemóvel:** só dígitos, espaços e um `+` inicial (o campo remove letras e símbolos ao escrever), entre 9 e 15 dígitos, máximo 20 caracteres.
 - **Nome da lead:** 2 a 80 caracteres. **Referenciado por:** até 80. **Mensagem:** até 500. **Contacto registado:** responsável até 80, resultado até 120, nota até 500.
+- **Obras:** **Nome da obra:** 3 a 80 caracteres. **Notas:** até 500 caracteres. **Datas:** data de fim ≥ data de início. **Orçamento:** categoria e empreiteiro até 80 caracteres; valores com `MONEY` (0 a 99 999 999 €); regras de negócio: pago ≤ faturado ≤ contratado e executado ≤ contratado.
 - Os erros aparecem por campo só depois de tentar submeter, em pt-PT. Se o servidor recusar, mostra-se um `Notice` no formulário.
 - Na importação de Excel, as linhas que não cumprem estas regras são ignoradas.
 
