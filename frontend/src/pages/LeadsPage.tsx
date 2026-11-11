@@ -54,8 +54,9 @@ function LeadsPage() {
   }), [leadsQuery.data, query, status, source, zone]);
   const clearFilters = () => setParams({});
   const backTo = `/leads${params.toString() ? `?${params.toString()}` : ""}`;
-  if (leadsQuery.isLoading) return <LoadingState />;
+  if (leadsQuery.isLoading || sourcesQuery.isLoading) return <LoadingState />;
   if (leadsQuery.isError) return <ErrorState onRetry={() => void leadsQuery.refetch()} />;
+  if (sourcesQuery.isError) return <ErrorState onRetry={() => void sourcesQuery.refetch()} />;
   return <div>
     <PageHeading title="Leads" actions={<><Button onClick={() => setImportOpen(true)}>Importar de Excel</Button><Button variant="primary" icon="plus" onClick={() => setDrawerOpen(true)}>Nova lead</Button></>} />
     <LeadFilters query={query} status={status} source={source} zone={zone} sources={sourcesQuery.data ?? []} onChange={updateFilter} />

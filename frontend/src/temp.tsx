@@ -4,10 +4,12 @@
 // A lógica que simula o servidor está em api/fixtures/opportunitiesStore.ts (também a remover).
 
 import { calcFinance } from "./lib/finance";
-import { OPPORTUNITY_PHASES } from "./lib/phases";
+import { OPERATION_PHASES, OPPORTUNITY_PHASES } from "./lib/phases";
 import type { DashboardSummary } from "./api/dashboardApi";
 import type { Lead, LeadContactEntry } from "./api/leadsApi";
 import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "./api/opportunitiesApi";
+import type { OperationDetail } from "./api/operationsApi";
+import type { LeadSource, MovementCategory, PhaseSetting, Role, SettingsUser } from "./api/settingsApi";
 import type { CurrentUser } from "./api/userApi";
 
 // ---- Utilizador autenticado ----
@@ -17,6 +19,8 @@ export const currentUserFixture: CurrentUser = {
   id: 1,
   name: "Rodrigo Mendes",
   role: "Administrador",
+  email: "rodrigo.mendes@exemplo.pt",
+  lastLogin: "2026-11-11T09:30:00.000Z",
 };
 
 // ---- Painel ----
@@ -94,6 +98,40 @@ export const dashboardFixture: DashboardSummary = {
 
 // TODO: trocar pelo endpoint quando existir.
 export const leadSources = ["Anúncio", "Indicação", "Site", "Idealista", "Redes sociais"];
+
+// TODO: trocar pelo endpoint quando existir (definições).
+export const administratorRole = "Administrador";
+export const rolesFixture: Role[] = [
+  { id: 1, name: administratorRole },
+  { id: 2, name: "Gestor" },
+  { id: 3, name: "Investidor" },
+];
+export const settingsUsersFixture: SettingsUser[] = [
+  { id: 1, username: "rodrigo.mendes", email: "rodrigo.mendes@exemplo.pt", accessLevel: administratorRole, lastLogin: "2026-11-11T09:30:00.000Z", active: true },
+  { id: 2, username: "sofia.lima", email: "sofia.lima@exemplo.pt", accessLevel: rolesFixture[1].name, lastLogin: "2026-11-10T16:20:00.000Z", active: true },
+  { id: 3, username: "ana.lourenco", email: "ana.lourenco@exemplo.pt", accessLevel: rolesFixture[2].name, lastLogin: "2026-11-09T12:00:00.000Z", active: true },
+  { id: 4, username: "manuel.gouveia", email: "manuel.gouveia@exemplo.pt", accessLevel: rolesFixture[2].name, lastLogin: "2026-10-28T08:15:00.000Z", active: false },
+];
+
+export const settingsLeadSourcesFixture: LeadSource[] = leadSources.map((name, index) => ({
+  id: index + 1,
+  name,
+  isActive: true,
+}));
+
+export const settingsPhasesFixture: PhaseSetting[] = [...OPPORTUNITY_PHASES, ...OPERATION_PHASES].map((phase, index) => ({
+  id: index + 1,
+  name: phase.name,
+  position: index + 1,
+  maxDaysStalled: phase.maxDaysStalled ?? 10,
+}));
+
+export const movementDirections = ["Entrada", "Saída"] as const;
+export const movementCategoriesFixture: MovementCategory[] = [
+  { id: 1, name: "Compra de imóvel", direction: "Saída" },
+  { id: 2, name: "Venda de imóvel", direction: "Entrada" },
+  { id: 3, name: "Obras", direction: "Saída" },
+];
 
 export const leads: Lead[] = [
   { id: 1, contactName: "Marta Ribeiro", phone: "912 345 678", referredBy: "Casa Certa", zone: "Baixa", source: "Anúncio", status: "Nova", message: "Proprietária pretende vender apartamento T2 na Baixa de Coimbra.", createdAt: "2026-11-03T09:00:00.000Z" },
@@ -261,6 +299,111 @@ export const opportunitiesFixture: OpportunityDetail[] = [
     { id: 5, title: "Moradia na Solum", zone: "Solum", typology: "T4", askingPrice: 395000, vvr: 585000, estimatedProfit: 86400, phaseIndex: 7, daysInPhase: 5, owner: rodrigo, contactName: "Rui Valente" },
     { code: "IM-1018", areaM2: 210, condition: "A renovar" },
   ),
+];
+
+// TODO: trocar pelo endpoint quando existir (operações).
+export const operationsFixture: OperationDetail[] = [
+  {
+    id: 100,
+    code: "OP-2026-001",
+    title: "T2 · Baixa, Coimbra",
+    zone: "Baixa",
+    typology: "T2",
+    realPurchasePrice: 128000,
+    advertisedPrice: 239000,
+    expectedMargin: 111000,
+    phaseIndex: 2,
+    daysInPhase: 8,
+    owner: { name: "Rodrigo Mendes" },
+    propertyCode: "IM-1042",
+    areaM2: 86,
+    buyerName: "Marta Ribeiro",
+    saleDeedDate: undefined,
+    phaseHistory: [
+      { from: "Em aquisição", to: "Adquirido", date: daysAgo(22), note: "Escritura de compra concluída" },
+      { from: "Adquirido", to: "Em obra", date: daysAgo(8), note: "Início dos trabalhos" },
+    ],
+    activity: [
+      { date: daysAgo(1), text: "Orçamento da obra atualizado" },
+      { date: daysAgo(8), text: "Fase alterada para Em obra" },
+      { date: daysAgo(22), text: "Imóvel adquirido" },
+    ],
+    documents: [
+      { id: "op-doc-1", name: "Escritura_compra.pdf", type: "Escritura", propertyCode: "IM-1042", entity: "OP-2026-001", sizeBytes: 1200000, status: "Válido" },
+    ],
+    constructionWorks: [{ id: 1, code: "OB-2026-003", name: "Renovação integral", status: "Em curso", startDate: "2026-11-03", endDate: "2026-11-30", budget: 45800, spent: 31970 }],
+    investments: [
+      { investorId: 1, investor: "Ana Lourenço", amount: 80000, sharePercent: 46.4, returnType: "Retorno fixo", rate: 8 },
+      { investorId: 2, investor: "Manuel Gouveia", amount: 52000, sharePercent: 30.2, returnType: "Participação", rate: 25 },
+    ],
+  },
+  {
+    id: 101,
+    code: "OP-2026-002",
+    title: "T1 · Solum, Coimbra",
+    zone: "Solum",
+    typology: "T1",
+    realPurchasePrice: 115000,
+    advertisedPrice: 158500,
+    expectedMargin: 43500,
+    phaseIndex: 0,
+    daysInPhase: 4,
+    owner: { name: "Sofia Lima" },
+    propertyCode: "IM-1051",
+    areaM2: 62,
+    buyerName: "",
+    phaseHistory: [],
+    activity: [{ date: daysAgo(4), text: "Operação criada" }],
+    documents: [],
+    constructionWorks: [],
+    investments: [],
+  },
+  {
+    id: 102,
+    code: "OP-2026-003",
+    title: "T3 · Santa Clara, Coimbra",
+    zone: "Santa Clara",
+    typology: "T3",
+    realPurchasePrice: 274000,
+    advertisedPrice: 342800,
+    finalSalePrice: 342800,
+    expectedMargin: 68800,
+    phaseIndex: 5,
+    daysInPhase: 2,
+    owner: { name: "Rodrigo Mendes" },
+    propertyCode: "IM-1053",
+    areaM2: 141,
+    buyerName: "Joana Costa",
+    saleDeedDate: "2026-11-18",
+    phaseHistory: [{ from: "À venda", to: "Vendido", date: daysAgo(2) }],
+    activity: [{ date: daysAgo(2), text: "Proposta de compra aceite" }],
+    documents: [],
+    constructionWorks: [],
+    investments: [],
+  },
+  {
+    id: 103,
+    code: "OP-2025-014",
+    title: "T2 · Olivais, Coimbra",
+    zone: "Olivais",
+    typology: "T2",
+    realPurchasePrice: 198000,
+    advertisedPrice: 248000,
+    finalSalePrice: 248000,
+    expectedMargin: 50000,
+    phaseIndex: 6,
+    daysInPhase: 1,
+    owner: { name: "Sofia Lima" },
+    propertyCode: "IM-0987",
+    areaM2: 104,
+    buyerName: "João Pereira",
+    saleDeedDate: "2026-11-10",
+    phaseHistory: [{ from: "Vendido", to: "Fechado", date: daysAgo(1) }],
+    activity: [{ date: daysAgo(1), text: "Operação fechada" }],
+    documents: [],
+    constructionWorks: [],
+    investments: [],
+  },
 ];
 
 export const opportunityOptionsFixture: OpportunityOptions = {

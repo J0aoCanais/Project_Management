@@ -1,6 +1,7 @@
 import { calcFinance } from "../../lib/finance";
 import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, titleError } from "../../lib/opportunityRules";
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
+import { createOperationFromOpportunity } from "./operationsStore";
 import { ApiError } from "../client";
 import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityDetail } from "../opportunitiesApi";
 import { currentUserFixture, defaultFinance, leads, opportunitiesFixture, opportunityOptionsFixture } from "../../temp";
@@ -8,7 +9,6 @@ import { currentUserFixture, defaultFinance, leads, opportunitiesFixture, opport
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar a página.
 
 const LATENCY_MS = 150;
-let nextOperationId = 101;
 let nextDocumentId = 1;
 
 const respond = async <T,>(value: T): Promise<T> => {
@@ -139,8 +139,7 @@ export async function convert(id: number) {
   await respond(null);
   const opportunity = find(id);
   if (opportunity.phaseIndex !== LAST_OPPORTUNITY_PHASE) throw new ApiError(409, "Só uma oportunidade aprovada pode ser convertida");
-  // Converter duas vezes devolve a mesma operação em vez de criar outra.
-  opportunity.operationId ??= nextOperationId++;
+  const operation = await createOperationFromOpportunity(id);
   record(opportunity, "Convertida em operação");
-  return { operationId: opportunity.operationId };
+  return { operationId: operation.id };
 }

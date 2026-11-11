@@ -108,7 +108,13 @@ export function useConvertOpportunity() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => convertOpportunity(id),
-    onSuccess: (_result, id) =>
-      Promise.all([client.invalidateQueries({ queryKey: listKey }), client.invalidateQueries({ queryKey: detailKey(id) })]),
+    onSuccess: (result, id) =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: listKey }),
+        client.invalidateQueries({ queryKey: detailKey(id) }),
+        client.invalidateQueries({ queryKey: ["operations"] }),
+        client.invalidateQueries({ queryKey: ["operationOptions"] }),
+        client.invalidateQueries({ queryKey: ["operation", result.operationId] }),
+      ]),
   });
 }

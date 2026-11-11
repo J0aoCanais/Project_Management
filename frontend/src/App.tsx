@@ -10,12 +10,17 @@ import PlaceholderPage from "./pages/PlaceholderPage";
 import LeadsPage from "./pages/LeadsPage";
 import LeadDetailPage from "./pages/LeadDetailPage";
 import DashboardPage from "./pages/DashboardPage";
+import OperationsPage from "./pages/OperationsPage";
+import OperationDetailPage from "./pages/OperationDetailPage";
+import SettingsPage from "./pages/SettingsPage";
 
 // Páginas do menu já implementadas.
 const pages: Record<string, ReactNode> = {
   "/": <DashboardPage />,
   "/leads": <LeadsPage />,
   "/oportunidades": <OpportunitiesPage />,
+  "/operacoes": <OperationsPage />,
+  "/definicoes": <SettingsPage />,
 };
 
 function App() {
@@ -32,8 +37,7 @@ function App() {
         )}
         <Route path="leads/:id" element={<LeadDetailPage />} />
         <Route path="oportunidades/:id" element={<OpportunityDetailPage />} />
-        {/* TODO: trocar pelo detalhe da operação; é para aqui que "Converter em operação" navega. */}
-        <Route path="operacoes/:id" element={<PlaceholderPage title="Operação" />} />
+        <Route path="operacoes/:id" element={<OperationDetailPage />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
       </Route>
