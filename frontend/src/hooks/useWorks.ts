@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import {
   createWork,
@@ -22,6 +22,7 @@ export function useWorks(filters?: WorkFilterParams) {
   return useQuery({
     queryKey: ["works", filters],
     queryFn: () => getWorks(filters),
+    placeholderData: keepPreviousData,
   });
 }
 

@@ -1,3 +1,5 @@
+import { useEffect, useRef, useState } from "react";
+
 import Icon from "./Icon";
 
 export interface FilterSelect {
@@ -19,6 +21,17 @@ interface Props {
 const control = "h-[34px] rounded-control border border-line bg-white";
 
 function Filters({ search, selects = [], compact = false }: Props) {
+  const [searchValue, setSearchValue] = useState(search.value);
+  const searchTimer = useRef<ReturnType<typeof setTimeout> | undefined>(undefined);
+
+  useEffect(() => {
+    setSearchValue(search.value);
+  }, [search.value]);
+
+  useEffect(() => () => {
+    if (searchTimer.current) clearTimeout(searchTimer.current);
+  }, []);
+
   return (
     <div className={`flex flex-col gap-2 min-[721px]:flex-row min-[721px]:flex-wrap ${compact ? "" : "mb-2"}`}>
       <label className={`flex items-center gap-2 px-2.5 text-muted focus-within:border-brand ${control} ${compact ? "min-[721px]:min-w-[220px]" : "min-[721px]:min-w-[300px]"}`}>
@@ -27,8 +40,15 @@ function Filters({ search, selects = [], compact = false }: Props) {
           type="search"
           aria-label={search.placeholder}
           placeholder={search.placeholder}
-          value={search.value}
-          onChange={(e) => search.onChange(e.target.value)}
+          value={searchValue}
+          onChange={(e) => {
+            const value = e.target.value;
+            setSearchValue(value);
+            if (searchTimer.current) clearTimeout(searchTimer.current);
+            searchTimer.current = setTimeout(() => {
+              search.onChange(value);
+            }, 500);
+          }}
           className="w-full min-w-0 border-0 bg-transparent text-xs text-ink outline-none"
         />
       </label>

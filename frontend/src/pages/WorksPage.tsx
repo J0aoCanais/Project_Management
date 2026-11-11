@@ -26,7 +26,7 @@ function WorksPage() {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value);
     else next.delete(key);
-    setParams(next);
+    setParams(next, { replace: true });
   };
 
   const clearFilters = () => setParams({});
@@ -35,7 +35,7 @@ function WorksPage() {
   const statsQuery = useWorkStats();
   const optionsQuery = useWorkOptions();
 
-  if (worksQuery.isPending || statsQuery.isPending) return <LoadingState />;
+  if ((worksQuery.isPending && !worksQuery.data) || (statsQuery.isPending && !statsQuery.data)) return <LoadingState />;
   if (worksQuery.isError || !worksQuery.data) {
     return <ErrorState onRetry={() => void worksQuery.refetch()} />;
   }
