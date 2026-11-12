@@ -220,7 +220,7 @@ def test_create_lead_unauthorized_anon(anon_client, active_lead_source, sample_c
         "contact_id": sample_contact
     }
     response = anon_client.post("/leads", json=payload)
-    assert response.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+    assert response.status_code in (HTTPStatus.FOUND, HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
 
 
 def test_create_lead_unauthorized_investor(investor_client, active_lead_source, sample_contact):

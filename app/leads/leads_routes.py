@@ -59,7 +59,6 @@ def create_lead():
 
             new_contact = Contact(
                 name=contact_data["name"],
-                type=contact_data.get("type", "Lead"),
                 email=contact_data.get("email"),
                 phone_number=contact_data.get("phone_number"),
                 address=contact_data.get("address"),
@@ -71,6 +70,7 @@ def create_lead():
                 consent_date=datetime.now(timezone.utc) if contact_data.get("consent_given") else None,
                 consent_channel=contact_data.get("consent_channel"),
             )
+
             if role_ids:
                 roles_stmt = db.select(Role).where(Role.id.in_(role_ids))
                 new_contact.roles = list(db.session.execute(roles_stmt).scalars().all())
