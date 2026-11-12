@@ -381,7 +381,7 @@ class Lead(Base):
         BigInteger, ForeignKey("contact.id"), nullable=False
     )
     contact_id1: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("contact.id"), nullable=False
+        BigInteger, ForeignKey("contact.id"), nullable=True
     )
 
     lead_source: Mapped["LeadSource"] = relationship(back_populates="leads")
