@@ -77,8 +77,6 @@ def test_database():
 def app(test_database):
     app = create_app(TestConfig)
 
-    app.register_blueprint(leads_bp, url_prefix="/leads")
-
     with app.app_context():
         # Last line of defence: never create/drop tables outside the test DB.
         assert db.engine.url.database == TEST_DB_NAME

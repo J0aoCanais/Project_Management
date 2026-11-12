@@ -174,3 +174,5 @@ def list_leads():
         stmt = stmt.where(Lead.status == status_filter)
 
     leads = db.session.execute(stmt).scalars().all()
+
+    return jsonify(lead_response_schema.dump(leads, many=True)), HTTPStatus.OK
