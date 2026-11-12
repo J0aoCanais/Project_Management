@@ -32,10 +32,12 @@ def create_app(config_class=Config):
     from .auth.routes import auth_bp
     from .demos import demos_bp
     from .contacts.routes import contacts_bp
+    from .leads.leads_routes import leads_bp
  
     app.register_blueprint(demos_bp, url_prefix="/api/demos")           # /, /health, /account
     app.register_blueprint(auth_bp)                                     # /login, /logout
     app.register_blueprint(contacts_bp, url_prefix="/api/contacts")     # /contacts
+    app.register_blueprint(leads_bp, url_prefix="/api/leads")        # /leads
  
     register_security_hooks(app)
  
