@@ -15,11 +15,13 @@ from ..schemas.leads_schema import (
     LeadSourceResponseSchema,
     LeadCreateSchema,
     LeadResponseSchema,
+    LeadUpdateSchema,
 )
 
 lead_source_response_schema = LeadSourceResponseSchema()
 lead_create_schema = LeadCreateSchema()
 lead_response_schema = LeadResponseSchema()
+lead_update_schema = LeadUpdateSchema()
 
 leads_bp = Blueprint("leads", __name__, url_prefix="/leads")
 
@@ -191,3 +193,52 @@ def list_leads():
     leads = db.session.execute(stmt).scalars().all()
 
     return jsonify(lead_response_schema.dump(leads, many=True)), HTTPStatus.OK
+
+
+@leads_bp.route("/<int:lead_id>", methods=["GET"])
+@owner_required
+def get_lead(lead_id: int):
+    stmt = (
+        db.select(Lead)
+        .options(
+            joinedload(Lead.contact),
+            joinedload(Lead.lead_source),
+            joinedload(Lead.contact1),
+        )
+        .where(Lead.id == lead_id)
+    )
+    lead = db.session.execute(stmt).scalar_one_or_none()
+    if not lead:
+        return jsonify({"error": "Lead not found"}), HTTPStatus.NOT_FOUND
+
+    return jsonify(lead_response_schema.dump(lead)), HTTPStatus.OK
+
+
+@leads_bp.route("/<int:lead_id>", methods=["PATCH"])
+@owner_required
+@csrf.exempt
+def update_lead(lead_id: int):
+    lead = db.session.get(Lead, lead_id)
+    if not lead:
+        return jsonify({"error": "Lead not found"}), HTTPStatus.NOT_FOUND
+
+    data = request.get_json(silent=True)
+    if not data:
+        return (
+            jsonify({"error": "Invalid or empty JSON payload"}),
+            HTTPStatus.BAD_REQUEST,
+        )
+
+    try:
+        validated_data = lead_update_schema.load(data, partial=True)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
+
+    if not isinstance(validated_data, dict):
+        return jsonify({"error": "Expected a JSON object"}), HTTPStatus.BAD_REQUEST
+
+    for field, value in validated_data.items():
+        setattr(lead, field, value)
+
+    db.session.commit()
+    return jsonify(lead_response_schema.dump(lead)), HTTPStatus.OK

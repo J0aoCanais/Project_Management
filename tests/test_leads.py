@@ -4,8 +4,8 @@ from app.extensions import db
 from app.models import Contact, LeadSource, Lead, Role
 from datetime import datetime, timedelta, timezone
 
-
 now = datetime.now(timezone.utc)
+
 
 @pytest.fixture
 def active_lead_source(app):
@@ -404,3 +404,128 @@ def test_list_leads_search_combined_with_status_filter(client, active_lead_sourc
     assert response.status_code == HTTPStatus.OK
     assert len(data) == 1
     assert data[0]["message"] == "Match"
+
+
+# ==============================================================================
+# GET /api/leads/<int:lead_id>
+# ==============================================================================
+
+
+def test_get_lead_success(client, active_lead_source, sample_contact):
+    lead = Lead(
+        status="Nova",
+        message="Interested in T3",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    response = client.get(f"/api/leads/{lead.id}")
+    data = response.get_json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert data["id"] == lead.id
+    assert data["status"] == "Nova"
+
+
+def test_get_lead_not_found(client):
+    response = client.get("/api/leads/999999")
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_get_lead_unauthorized(
+    anon_client, investor_client, active_lead_source, sample_contact
+):
+    lead = Lead(
+        status="Nova",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    expected_denied = (HTTPStatus.FOUND, HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+    assert anon_client.get(f"/api/leads/{lead.id}").status_code in expected_denied
+    assert investor_client.get(f"/api/leads/{lead.id}").status_code in expected_denied
+
+
+# ==============================================================================
+# PATCH /api/leads/<int:lead_id>
+# ==============================================================================
+
+
+def test_update_lead_success(client, active_lead_source, sample_contact):
+    lead = Lead(
+        status="Nova",
+        message="Initial message",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    response = client.patch(
+        f"/api/leads/{lead.id}",
+        json={"status": "Em Contacto", "message": "Follow-up scheduled"},
+    )
+    assert response.status_code == HTTPStatus.OK
+
+    db.session.refresh(lead)
+    assert lead.status == "Em Contacto"
+    assert lead.message == "Follow-up scheduled"
+
+
+def test_update_lead_not_found(client):
+    response = client.patch("/api/leads/999999", json={"status": "Em Contacto"})
+    assert response.status_code == HTTPStatus.NOT_FOUND
+
+
+def test_update_lead_bad_request(client, active_lead_source, sample_contact):
+    lead = Lead(
+        status="Nova",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    assert (
+        client.patch(f"/api/leads/{lead.id}", json={}).status_code
+        == HTTPStatus.BAD_REQUEST
+    )
+    assert (
+        client.patch(f"/api/leads/{lead.id}", json={"status": 12345}).status_code
+        == HTTPStatus.BAD_REQUEST
+    )
+
+
+def test_update_lead_unauthorized(
+    anon_client, investor_client, active_lead_source, sample_contact
+):
+    lead = Lead(
+        status="Nova",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    expected_denied = (HTTPStatus.FOUND, HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+    assert (
+        anon_client.patch(
+            f"/api/leads/{lead.id}", json={"status": "Em Contacto"}
+        ).status_code
+        in expected_denied
+    )
+    assert (
+        investor_client.patch(
+            f"/api/leads/{lead.id}", json={"status": "Em Contacto"}
+        ).status_code
+        in expected_denied
+    )

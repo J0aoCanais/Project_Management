@@ -1,6 +1,7 @@
 from marshmallow import fields, validate, validates_schema, ValidationError
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
 
+
 class LeadSourceResponseSchema(BaseSchema):
     id = fields.Integer()
     name = fields.String()
@@ -30,7 +31,11 @@ class LeadCreateSchema(BaseSchema):
             )
         if contact_id and new_contact:
             raise ValidationError(
-                {"contact_id": ["Provide either 'contact_id' or 'new_contact', not both."]}
+                {
+                    "contact_id": [
+                        "Provide either 'contact_id' or 'new_contact', not both."
+                    ]
+                }
             )
 
         referrer_id = data.get("referrer_contact_id")
@@ -48,3 +53,23 @@ class LeadResponseSchema(BaseSchema):
     lead_source_id = fields.Integer()
     contact = fields.Nested(ContactResponseSchema)
     referrer = fields.Nested(ContactResponseSchema, allow_none=True)
+
+
+class LeadUpdateSchema(BaseSchema):
+    status = fields.Str()
+    message = fields.Str(allow_none=True)
+    discard_reason = fields.Str(allow_none=True)
+    campaign_name = fields.Str(allow_none=True, validate=validate.Length(max=512))
+    ad_name = fields.Str(allow_none=True, validate=validate.Length(max=512))
+    form_name = fields.Str(allow_none=True, validate=validate.Length(max=512))
+    lead_source_id = fields.Int()
+    contact_id1 = fields.Int(allow_none=True)
+
+    @validates_schema
+    def validate_discard_reason(self, data, **kwargs):
+        # Optional business rule: require a reason if status is set to Descartada
+        if data.get("status") == "Descartada" and not data.get("discard_reason"):
+            raise ValidationError(
+                "discard_reason is required when status is 'Descartada'.",
+                field_name="discard_reason",
+            )
