@@ -4,6 +4,7 @@ from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from app.extensions import csrf
+from sqlalchemy.orm import joinedload
 
 from ..extensions import db
 from ..models import Lead, Contact, LeadSource, Role
@@ -156,3 +157,20 @@ def create_lead():
             jsonify({"errors": {"server": ["Internal server error"]}}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
+
+
+@leads_bp.route("", methods=["GET"])
+@owner_required
+def list_leads():
+    status_filter = request.args.get("status")
+
+    stmt = (
+        db.select(Lead)
+        .options(joinedload(Lead.contact), joinedload(Lead.lead_source))
+        .order_by(Lead.created_at.desc())
+    )
+
+    if status_filter:
+        stmt = stmt.where(Lead.status == status_filter)
+
+    leads = db.session.execute(stmt).scalars().all()
