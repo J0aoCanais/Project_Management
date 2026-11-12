@@ -5,6 +5,8 @@ from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from app.extensions import csrf
 from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy import or_
 
 from ..extensions import db
 from ..models import Lead, Contact, LeadSource, Role
@@ -162,13 +164,26 @@ def create_lead():
 @leads_bp.route("", methods=["GET"])
 @owner_required
 def list_leads():
-    status_filter = request.args.get("status")
+    status_filter = request.args.get("status", "").strip()
+    search_query = request.args.get("search", "").strip()
 
-    stmt = (
-        db.select(Lead)
-        .options(joinedload(Lead.contact), joinedload(Lead.lead_source))
-        .order_by(Lead.created_at.desc())
-    )
+    stmt = db.select(Lead).options(joinedload(Lead.lead_source))
+
+    if search_query:
+        pattern = f"%{search_query}%"
+        stmt = (
+            stmt.join(Lead.contact)
+            .options(contains_eager(Lead.contact))
+            .where(
+                or_(
+                    Contact.name.ilike(pattern),
+                    Contact.email.ilike(pattern),
+                    Contact.phone_number.ilike(pattern),
+                )
+            )
+        )
+    else:
+        stmt = stmt.options(joinedload(Lead.contact))
 
     if status_filter:
         stmt = stmt.where(Lead.status == status_filter)

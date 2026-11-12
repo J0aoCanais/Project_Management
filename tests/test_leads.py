@@ -5,6 +5,8 @@ from app.models import Contact, LeadSource, Lead, Role
 from datetime import datetime, timedelta, timezone
 
 
+now = datetime.now(timezone.utc)
+
 @pytest.fixture
 def active_lead_source(app):
     """Seed an active lead source."""
@@ -309,3 +311,96 @@ def test_list_leads_unauthorized_investor(investor_client):
     """Non-owner authenticated users (e.g. investor) cannot list leads."""
     response = investor_client.get("/api/leads")
     assert response.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
+
+
+def test_list_leads_search_by_contact_name_and_contact_info(client, active_lead_source):
+    """Filters leads case-insensitively by contact name, email, or phone number."""
+
+    contact_maria = Contact(
+        name="Maria Silva",
+        email="maria.silva@example.com",
+        phone_number="912345678",
+        consent_given=True,
+        consent_channel="Web",
+    )
+    contact_joao = Contact(
+        name="João Santos",
+        email="joao.santos@example.com",
+        phone_number="969876543",
+        consent_given=True,
+        consent_channel="Web",
+    )
+    db.session.add_all([contact_maria, contact_joao])
+    db.session.flush()
+
+    lead_1 = Lead(
+        status="Nova",
+        message="T2",
+        created_at=now,
+        lead_source_id=active_lead_source,
+        contact_id=contact_maria.id,
+    )
+    lead_2 = Lead(
+        status="Nova",
+        message="T3",
+        created_at=now,
+        lead_source_id=active_lead_source,
+        contact_id=contact_joao.id,
+    )
+    db.session.add_all([lead_1, lead_2])
+    db.session.commit()
+
+    # 1. Partial case-insensitive name match
+    res_name = client.get("/api/leads?search=maria")
+    assert res_name.status_code == HTTPStatus.OK
+    assert len(res_name.get_json()) == 1
+    assert res_name.get_json()[0]["message"] == "T2"
+
+    # 2. Partial phone number match
+    res_phone = client.get("/api/leads?search=96987")
+    assert res_phone.status_code == HTTPStatus.OK
+    assert len(res_phone.get_json()) == 1
+    assert res_phone.get_json()[0]["message"] == "T3"
+
+    # 3. Partial email match
+    res_email = client.get("/api/leads?search=SILVA@EXAMPLE")
+    assert res_email.status_code == HTTPStatus.OK
+    assert len(res_email.get_json()) == 1
+    assert res_email.get_json()[0]["message"] == "T2"
+
+
+def test_list_leads_search_combined_with_status_filter(client, active_lead_source):
+    """Combines ?search= and ?status= filters together."""
+    contact = Contact(
+        name="Ana Costa",
+        email="ana@example.com",
+        phone_number="911111111",
+        consent_given=True,
+        consent_channel="Web",
+    )
+    db.session.add(contact)
+    db.session.flush()
+
+    lead_nova = Lead(
+        status="Nova",
+        message="Match",
+        created_at=now,
+        lead_source_id=active_lead_source,
+        contact_id=contact.id,
+    )
+    lead_fechada = Lead(
+        status="Fechada",
+        message="No match",
+        created_at=now,
+        lead_source_id=active_lead_source,
+        contact_id=contact.id,
+    )
+    db.session.add_all([lead_nova, lead_fechada])
+    db.session.commit()
+
+    response = client.get("/api/leads?status=Nova&search=Ana")
+    data = response.get_json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert len(data) == 1
+    assert data[0]["message"] == "Match"
