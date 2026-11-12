@@ -26,6 +26,7 @@ from app.config import Config  # noqa: E402
 from app.extensions import db  # noqa: E402
 from app.models import User, Role  # noqa: E402
 from app.security import hash_password  # noqa: E402
+from app.leads.leads_routes import leads_bp
 
 OWNER_USER = "test-owner@example.test"
 INVESTOR_USER = "test-investor@example.test"
@@ -75,6 +76,9 @@ def test_database():
 @pytest.fixture
 def app(test_database):
     app = create_app(TestConfig)
+
+    app.register_blueprint(leads_bp, url_prefix="/leads")
+
     with app.app_context():
         # Last line of defence: never create/drop tables outside the test DB.
         assert db.engine.url.database == TEST_DB_NAME
