@@ -199,17 +199,26 @@ def list_leads():
 
     if date_from:
         try:
-            start_dt = datetime.combine(datetime.fromisoformat(date_from).date(), time.min)
+            start_dt = datetime.combine(
+                datetime.fromisoformat(date_from).date(), time.min
+            )
             stmt = stmt.where(Lead.created_at >= start_dt)
         except ValueError:
-            return jsonify({"error": "Invalid date_from format (use YYYY-MM-DD)"}), HTTPStatus.BAD_REQUEST
+            return (
+                jsonify({"error": "Invalid date_from format (use YYYY-MM-DD)"}),
+                HTTPStatus.BAD_REQUEST,
+            )
 
     if date_to:
         try:
             end_dt = datetime.combine(datetime.fromisoformat(date_to).date(), time.max)
             stmt = stmt.where(Lead.created_at <= end_dt)
         except ValueError:
-            return jsonify({"error": "Invalid date_to format (use YYYY-MM-DD)"}), HTTPStatus.BAD_REQUEST
+            return (
+                jsonify({"error": "Invalid date_to format (use YYYY-MM-DD)"}),
+                HTTPStatus.BAD_REQUEST,
+            )
+
     leads = db.session.execute(stmt).scalars().all()
 
     return jsonify(lead_response_schema.dump(leads, many=True)), HTTPStatus.OK
