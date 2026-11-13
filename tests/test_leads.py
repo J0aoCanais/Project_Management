@@ -470,12 +470,12 @@ def test_update_lead_success(client, active_lead_source, sample_contact):
 
     response = client.patch(
         f"/api/leads/{lead.id}",
-        json={"status": "Em Contacto", "message": "Follow-up scheduled"},
+        json={"status": "Contactada", "message": "Follow-up scheduled"},
     )
     assert response.status_code == HTTPStatus.OK
 
     db.session.refresh(lead)
-    assert lead.status == "Em Contacto"
+    assert lead.status == "Contactada"
     assert lead.message == "Follow-up scheduled"
 
 
@@ -529,3 +529,109 @@ def test_update_lead_unauthorized(
         ).status_code
         in expected_denied
     )
+
+
+def test_list_leads_filter_by_origin(client, active_lead_source, sample_contact):
+    """Filters leads by ?lead_source_id= query parameter."""
+    other_source = LeadSource(name="Instagram Ads", is_active=True)
+    db.session.add(other_source)
+    db.session.flush()
+
+    now = datetime.now(timezone.utc)
+    lead_source_1 = Lead(
+        status="Nova",
+        message="From default source",
+        created_at=now,
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    lead_source_2 = Lead(
+        status="Nova",
+        message="From Instagram",
+        created_at=now,
+        lead_source_id=other_source.id,
+        contact_id=sample_contact,
+    )
+    db.session.add_all([lead_source_1, lead_source_2])
+    db.session.commit()
+
+    response = client.get(f"/api/leads?lead_source_id={other_source.id}")
+    data = response.get_json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert len(data) == 1
+    assert data[0]["message"] == "From Instagram"
+
+
+def test_list_leads_filter_by_date_range(client, active_lead_source, sample_contact):
+    """Filters leads by ?date_from= and ?date_to= (YYYY-MM-DD) and rejects bad formats."""
+    lead_old = Lead(
+        status="Nova",
+        message="Old lead",
+        created_at=datetime(2026, 10, 1, 12, 0, tzinfo=timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    lead_target = Lead(
+        status="Contactada",
+        message="Target lead",
+        created_at=datetime(2026, 11, 10, 15, 30, tzinfo=timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    lead_future = Lead(
+        status="Nova",
+        message="Later lead",
+        created_at=datetime(2026, 11, 20, 9, 0, tzinfo=timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add_all([lead_old, lead_target, lead_future])
+    db.session.commit()
+
+    # Valid date window
+    response = client.get("/api/leads?date_from=2026-11-01&date_to=2026-11-15")
+    data = response.get_json()
+
+    assert response.status_code == HTTPStatus.OK
+    assert len(data) == 1
+    assert data[0]["message"] == "Target lead"
+
+    # Invalid date format returns 400
+    bad_res = client.get("/api/leads?date_from=13-11-2026")
+    assert bad_res.status_code == HTTPStatus.BAD_REQUEST
+
+
+def test_update_lead_discard_requires_reason(
+    client, active_lead_source, sample_contact
+):
+    """Rejects status='Descartada' without a non-empty discard_reason, succeeds when provided."""
+    lead = Lead(
+        status="Qualificada",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    # Missing or blank discard_reason -> 400
+    res_missing = client.patch(f"/api/leads/{lead.id}", json={"status": "Descartada"})
+    assert res_missing.status_code == HTTPStatus.BAD_REQUEST
+    assert "discard_reason" in res_missing.get_json()["errors"]
+
+    res_blank = client.patch(
+        f"/api/leads/{lead.id}",
+        json={"status": "Descartada", "discard_reason": "   "},
+    )
+    assert res_blank.status_code == HTTPStatus.BAD_REQUEST
+
+    # Valid discard_reason -> 200
+    res_ok = client.patch(
+        f"/api/leads/{lead.id}",
+        json={"status": "Descartada", "discard_reason": "Sem orçamento"},
+    )
+    assert res_ok.status_code == HTTPStatus.OK
+    db.session.refresh(lead)
+    assert lead.status == "Descartada"
+    assert lead.discard_reason == "Sem orçamento"

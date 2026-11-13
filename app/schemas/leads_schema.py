@@ -1,6 +1,13 @@
 from marshmallow import fields, validate, validates_schema, ValidationError
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
 
+ALLOWED_LEAD_STATUSES = [
+    "Nova",
+    "Contactada",
+    "Qualificada",
+    "Convertida",
+    "Descartada",
+]
 
 class LeadSourceResponseSchema(BaseSchema):
     id = fields.Integer()
@@ -56,7 +63,7 @@ class LeadResponseSchema(BaseSchema):
 
 
 class LeadUpdateSchema(BaseSchema):
-    status = fields.Str()
+    status = fields.Str(validate=validate.OneOf(ALLOWED_LEAD_STATUSES))
     message = fields.Str(allow_none=True)
     discard_reason = fields.Str(allow_none=True)
     campaign_name = fields.Str(allow_none=True, validate=validate.Length(max=512))

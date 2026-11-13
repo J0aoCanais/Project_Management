@@ -1,5 +1,6 @@
 from typing import Any, cast
 from datetime import datetime, timezone
+from datetime import datetime, time
 from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
@@ -168,6 +169,9 @@ def create_lead():
 def list_leads():
     status_filter = request.args.get("status", "").strip()
     search_query = request.args.get("search", "").strip()
+    source_id = request.args.get("lead_source_id", type=int)
+    date_from = request.args.get("date_from", "").strip()
+    date_to = request.args.get("date_to", "").strip()
 
     stmt = db.select(Lead).options(joinedload(Lead.lead_source))
 
@@ -190,6 +194,22 @@ def list_leads():
     if status_filter:
         stmt = stmt.where(Lead.status == status_filter)
 
+    if source_id:
+        stmt = stmt.where(Lead.lead_source_id == source_id)
+
+    if date_from:
+        try:
+            start_dt = datetime.combine(datetime.fromisoformat(date_from).date(), time.min)
+            stmt = stmt.where(Lead.created_at >= start_dt)
+        except ValueError:
+            return jsonify({"error": "Invalid date_from format (use YYYY-MM-DD)"}), HTTPStatus.BAD_REQUEST
+
+    if date_to:
+        try:
+            end_dt = datetime.combine(datetime.fromisoformat(date_to).date(), time.max)
+            stmt = stmt.where(Lead.created_at <= end_dt)
+        except ValueError:
+            return jsonify({"error": "Invalid date_to format (use YYYY-MM-DD)"}), HTTPStatus.BAD_REQUEST
     leads = db.session.execute(stmt).scalars().all()
 
     return jsonify(lead_response_schema.dump(leads, many=True)), HTTPStatus.OK
