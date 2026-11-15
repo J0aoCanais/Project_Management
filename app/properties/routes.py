@@ -17,6 +17,7 @@ from ..schemas.properties_schema import (
     PropertySearchSchema,
     PropertyUpdateSchema,
 )
+from ..schemas.oportunity_schema import OportunityLinkResponse
 
 # Schema Instances
 property_list_schema = PropertyListSchema()
@@ -24,6 +25,7 @@ property_create_schema = PropertyCreateSchema()
 property_response_schema = PropertyResponseSchema()
 search_schema = PropertySearchSchema()
 property_update_schema = PropertyUpdateSchema()
+oportunity_link_schema = OportunityLinkResponse()
 
 properties_bp = Blueprint("properties", __name__)
 
@@ -97,6 +99,23 @@ def get_property(property_id: int):
         return jsonify({"errors": {"id": ["Property not found"]}}), HTTPStatus.NOT_FOUND
    
     return jsonify(property_response_schema.dump(property)), HTTPStatus.OK
+
+@properties_bp.get("/<int:property_id>/links")
+@owner_required
+def get_property_links(property_id: int):
+    """Returns the works, operation and oportunity related with a specific property."""
+    property = db.session.get(Property, property_id)
+    if property is None:
+        return jsonify({"errors": {"id": ["Property not found"]}}), HTTPStatus.NOT_FOUND
+
+    #TODO: add logic for operation and works when they are implemented
+    links = []
+    links.append(oportunity_link_schema.dump(property.opportunity))
+   
+    return jsonify({
+        "success": True,
+        "data": links
+    }), HTTPStatus.OK
 
 
 @properties_bp.route("/search", methods=["GET"])

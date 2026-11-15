@@ -24,6 +24,8 @@ from marshmallow import (
     pre_load
 )
 
+from .phases_schema import PhaseResponseSchema
+
 class BaseSchema(Schema):
     """Shared behaviour: trim strings, turn blank strings into None."""
  
@@ -175,6 +177,7 @@ class PropertyResponseSchema(Schema):
     """Every column. Used for create/update responses and as the detail base."""
 
     id = fields.Integer() #TODO: Decide between having a name variable or derive it from id
+    code = fields.Method("get_code")
     source_url = fields.String()
     address = fields.String()
     typology = fields.String()
@@ -195,6 +198,9 @@ class PropertyResponseSchema(Schema):
     predial_description = fields.String(allow_none=True)
     usage_license = fields.String(allow_none=True)
     energy_certificate = fields.String(allow_none=True)
+
+    def get_code(self, obj):
+        return f"IMO-{obj.id}"
 
 class PropertyListSchema(PropertyResponseSchema):
     """Compact row for tables: leaves out notes and long descriptions."""

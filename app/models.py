@@ -3,6 +3,7 @@ from __future__ import annotations
 
 from datetime import date, datetime
 from typing import List, Optional
+import builtins
 
 from sqlalchemy import (
     BigInteger,
@@ -445,8 +446,8 @@ class Property(Base):
 
     deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
 
-    opportunities: Mapped[List["Opportunity"]] = relationship(back_populates="property")
-    operation: Mapped[List["Operation"]] = relationship(back_populates="property")
+    opportunity: Mapped[Optional["Opportunity"]] = relationship(back_populates="property", uselist=False)
+    operation: Mapped[Optional["Operation"]] = relationship(back_populates="property", uselist=False)
     documents: Mapped[List["Document"]] = relationship(
         secondary=property_document, back_populates="property"
     )
@@ -473,7 +474,7 @@ class Opportunity(Base):
     )
 
     phase: Mapped["Phase"] = relationship(back_populates="opportunities")
-    property: Mapped["Property"] = relationship(back_populates="opportunities")
+    property: Mapped["Property"] = relationship(back_populates="opportunity")
     operation: Mapped[Optional["Operation"]] = relationship(
         back_populates="opportunity", uselist=False
     )
@@ -489,6 +490,10 @@ class Opportunity(Base):
     documents: Mapped[List["Document"]] = relationship(
         secondary=opportunity_document, back_populates="opportunity"
     )
+
+    @builtins.property
+    def code(self) -> str:
+        return f"OPO-{self.id}"
 
 
 class Operation(Base):
