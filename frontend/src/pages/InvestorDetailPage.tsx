@@ -58,9 +58,7 @@ function InvestorDetailPage() {
         meta={<InvestorStatusPill status={profile.relationStatus} />}
         actions={
           <>
-            <ButtonLink to={`/contactos/${investor.id}`} icon="contact">
-              Ver contacto
-            </ButtonLink>
+            {/* TODO: botão "Ver contacto" quando os investidores usarem o backend (hoje são de exemplo e os ids não correspondem). */}
             <Button variant="primary" onClick={() => setEditing(true)}>
               Editar perfil
             </Button>

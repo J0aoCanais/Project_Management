@@ -1,10 +1,7 @@
 import { contactErrors } from "../lib/contactRules";
-import { USE_CONTACTS_API, contactTypeOptions } from "../temp";
 import { apiFetch } from "./client";
-import * as store from "./fixtures/contactsStore";
 
-// Contactos: endpoints reais em /api/contacts (ver docs/api/contacts.md). Enquanto o backend
-// não corre em todos os PCs, USE_CONTACTS_API (em temp.tsx) escolhe entre o Flask e os dados de exemplo.
+// Contactos: endpoints do Flask em /api/contacts (ver docs/api/contacts.md).
 
 /** Papel que transforma um contacto em investidor. O backend esconde estes contactos da lista. */
 export const INVESTOR_ROLE = "Investidor";
@@ -32,25 +29,15 @@ export interface Contact {
 
 export type ContactInput = Omit<Contact, "id">;
 
-export interface ContactOperation {
-  code: string;
-  /** Papel do contacto na operação, ex.: "Proprietário (vendedor)". */
-  role: string;
-  phase: string;
-}
+const isInvestorRole = (role: string) => role.toLowerCase() === INVESTOR_ROLE.toLowerCase();
 
-/** Tipo mostrado na lista: o primeiro papel conhecido, senão "Outro". */
+/** Tipo mostrado na lista: o primeiro papel que não é Investidor, senão "Outro". */
 export function contactType(contact: Pick<Contact, "roles">): string {
-  const known = [...contactTypeOptions, INVESTOR_ROLE];
-  for (const role of contact.roles) {
-    const match = known.find((type) => type.toLowerCase() === role.toLowerCase());
-    if (match) return match;
-  }
-  return OTHER_TYPE;
+  return contact.roles.find((role) => !isInvestorRole(role)) ?? OTHER_TYPE;
 }
 
 export function isInvestor(contact: Pick<Contact, "roles">): boolean {
-  return contact.roles.some((role) => role.toLowerCase() === INVESTOR_ROLE.toLowerCase());
+  return contact.roles.some(isInvestorRole);
 }
 
 // ---- Formato do Flask ----
@@ -138,29 +125,32 @@ async function listFromApi(): Promise<Contact[]> {
 
 // ---- Pedidos ----
 
-/** Contactos ativos, sem investidores (esses estão em /investidores). */
+/** Tipos que se podem escolher: os papéis do backend (sem Investidor) e "Outro" (sem papel). */
+export async function listContactTypes(): Promise<string[]> {
+  const roles = await apiFetch<ApiRole[]>("/contacts/roles");
+  return [...roles.map((role) => role.name).filter((name) => !isInvestorRole(name)), OTHER_TYPE];
+}
+
+/** Contactos ativos, sem investidores (o backend já os tira da lista). */
 export async function listContacts(): Promise<Contact[]> {
-  return USE_CONTACTS_API ? listFromApi() : store.list();
+  return listFromApi();
 }
 
 export async function getContact(id: number): Promise<Contact> {
-  return USE_CONTACTS_API ? fromApi(await apiFetch<ApiContact>(`/contacts/${id}`)) : store.get(id);
+  return fromApi(await apiFetch<ApiContact>(`/contacts/${id}`));
 }
 
 export async function createContact(input: ContactInput): Promise<Contact> {
-  if (!USE_CONTACTS_API) return store.create(input);
   const body = await toApi({ ...input, roles: input.roles });
   return fromApi(await apiFetch<ApiContact>("/contacts/add", { method: "POST", body: JSON.stringify(body) }));
 }
 
 export async function updateContact(id: number, changes: Partial<ContactInput>): Promise<Contact> {
-  if (!USE_CONTACTS_API) return store.update(id, changes);
   return fromApi(await apiFetch<ApiContact>(`/contacts/${id}`, { method: "PATCH", body: JSON.stringify(await toApi(changes)) }));
 }
 
 /** Soft delete: o contacto sai da lista mas o registo fica (deleted_at). */
 export async function deleteContact(id: number): Promise<void> {
-  if (!USE_CONTACTS_API) return store.remove(id);
   await apiFetch<void>(`/contacts/${id}`, { method: "DELETE" });
 }
 
@@ -181,8 +171,3 @@ export async function importContacts(rows: ContactInput[]): Promise<{ created: n
   return { created, skipped: rows.length - created };
 }
 
-/** Operações em que o contacto participa. */
-export async function getContactOperations(id: number): Promise<ContactOperation[]> {
-  // TODO: trocar pelo endpoint quando existir (GET /api/contacts/:id/operations).
-  return store.operations(id);
-}

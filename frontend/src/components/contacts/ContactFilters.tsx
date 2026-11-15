@@ -1,4 +1,5 @@
-import { contactTypeOptions, zoneOptions } from "../../temp";
+import { useContactTypes } from "../../hooks/useContacts";
+import { zoneOptions } from "../../temp";
 import Filters from "../ui/Filters";
 
 export type ContactFilterKey = "q" | "zona" | "tipo";
@@ -11,6 +12,7 @@ interface Props {
 }
 
 function ContactFilters({ query, zone, type, onChange }: Props) {
+  const contactTypeOptions = useContactTypes();
   return (
     <Filters
       search={{ placeholder: "Pesquisar por nome, empresa, email ou telemóvel...", value: query, onChange: (value) => onChange("q", value) }}

@@ -1,13 +1,17 @@
+import { contactErrors } from "../../lib/contactRules";
 import { investmentErrors, investorProfileErrors } from "../../lib/investorRules";
 import { investorsFixture } from "../../temp";
 import { ApiError } from "../client";
-import { INVESTOR_ROLE, createContact, getContact, updateContact, type Contact } from "../contactsApi";
+import { getContact, type ContactInput } from "../contactsApi";
 import type { InvestmentInput, Investor, InvestorDetail, InvestorProfile, InvestorRecord, NewInvestorInput } from "../investorsApi";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar.
-// O contacto é criado/atualizado pela API de contactos, por isso respeita USE_CONTACTS_API.
+// Ainda não há backend de investidores, por isso nunca altera os contactos reais: um contacto existente
+// só é lido (os dados são copiados) e um contacto novo fica só aqui.
 
 const LATENCY_MS = 150;
+/** Contactos reais que já deram origem a um investidor de exemplo. */
+const usedContactIds = new Set<number>();
 
 const respond = async <T,>(value: T): Promise<T> => {
   await new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
@@ -45,17 +49,17 @@ export async function get(id: number) {
 export async function create(input: NewInvestorInput) {
   await respond(null);
   rejectInvalid(investorProfileErrors(input.profile), "Perfil de investidor inválido");
-  let contact: Contact;
+  let contact: Pick<ContactInput, "name" | "email" | "phone" | "company" | "zone">;
   if ("contactId" in input) {
-    // Contacto existente: ganha o papel de investidor, não se cria outro.
-    if (investorsFixture.some((item) => item.id === input.contactId)) throw new ApiError(409, "Este contacto já é investidor");
-    const existing = await getContact(input.contactId);
-    contact = await updateContact(existing.id, { roles: [...existing.roles, INVESTOR_ROLE] });
+    if (usedContactIds.has(input.contactId)) throw new ApiError(409, "Este contacto já é investidor");
+    contact = await getContact(input.contactId);
+    usedContactIds.add(input.contactId);
   } else {
-    contact = await createContact({ ...input.contact, roles: [INVESTOR_ROLE] });
+    rejectInvalid(contactErrors(input.contact), "Contacto inválido");
+    contact = input.contact;
   }
   const record: InvestorRecord = {
-    id: contact.id,
+    id: Math.max(0, ...investorsFixture.map((item) => item.id)) + 1,
     name: contact.name,
     email: contact.email,
     phone: contact.phone,

@@ -1,7 +1,8 @@
 import type { ContactFormValues } from "../../lib/contactForm";
 import { CONTACT_TEXT_LIMITS, sanitizeNif, type ContactErrors } from "../../lib/contactRules";
 import { LEAD_TEXT_LIMITS, sanitizePhone } from "../../lib/leadRules";
-import { consentChannelOptions, contactTypeOptions, zoneOptions } from "../../temp";
+import { useContactTypes } from "../../hooks/useContacts";
+import { consentChannelOptions, zoneOptions } from "../../temp";
 import FormField from "../ui/FormField";
 import Select from "../ui/Select";
 import { inputClasses } from "../ui/inputClasses";
@@ -18,6 +19,7 @@ interface Props {
 
 /** Campos de um contacto. Partilhado por criar, editar e "Novo investidor". */
 function ContactForm({ values, onChange, errors, showErrors, showType = true }: Props) {
+  const contactTypeOptions = useContactTypes();
   const set = <K extends keyof ContactFormValues>(key: K, value: ContactFormValues[K]) => onChange({ ...values, [key]: value });
   const error = (key: keyof ContactErrors) => (showErrors ? errors[key] : undefined);
 

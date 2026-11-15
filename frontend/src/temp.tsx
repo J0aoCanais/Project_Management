@@ -6,7 +6,6 @@
 import { calcFinance } from "./lib/finance";
 import { OPPORTUNITY_PHASES } from "./lib/phases";
 import type { DashboardSummary } from "./api/dashboardApi";
-import type { Contact, ContactOperation } from "./api/contactsApi";
 import type { Lead, LeadContactEntry } from "./api/leadsApi";
 import type { InvestorRecord } from "./api/investorsApi";
 import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "./api/opportunitiesApi";
@@ -301,40 +300,8 @@ export const documentTypeOptions = ["Caderneta predial", "Certidão permanente",
 
 // ---- Contactos ----
 
-// Interruptor da API de contactos: true usa o Flask (/api/contacts, precisa do backend a correr e de
-// sessão iniciada); false usa os dados de exemplo abaixo. Os componentes não mudam.
-// TODO: pôr a true quando o backend correr em todos os PCs e depois apagar o interruptor.
-export const USE_CONTACTS_API = false;
-
-// TODO: trocar pelo endpoint (papéis em GET /api/contacts/roles). "Outro" = sem papel.
-export const contactTypeOptions = ["Proprietário", "Empreiteiro", "Outro"];
-
 // TODO: trocar pelo endpoint (canais de consentimento RGPD).
 export const consentChannelOptions = ["Formulário do website", "Email", "Telefone", "Presencial"];
-
-// TODO: trocar pelo endpoint quando existir. Pessoas fictícias. Os ids 5 a 8 são investidores (ver investorsFixture).
-export const contactsFixture: Contact[] = [
-  { id: 1, name: "Marta Ribeiro", roles: [], email: "marta.ribeiro@exemplo.pt", phone: "912 345 678", company: "Casa Certa", zone: "Baixa", nif: "247891320", address: "Rua Ferreira Borges, 54, Coimbra", notes: "Consultora imobiliária; traz oportunidades na Baixa.", consentGiven: true, consentDate: "2026-11-12T10:00:00.000Z", consentChannel: "Formulário do website" },
-  { id: 2, name: "Miguel Seabra", roles: ["Empreiteiro"], email: "miguel.seabra@exemplo.pt", phone: "935 221 094", company: "Seabra Construções", zone: "Celas", nif: "218645902", address: "", notes: "", consentGiven: true, consentDate: "2026-11-18T09:30:00.000Z", consentChannel: "Email" },
-  { id: 3, name: "Luís Paiva", roles: ["Proprietário"], email: "luis.paiva@exemplo.pt", phone: "966 018 443", company: "", zone: "Olivais", nif: "196287340", address: "Rua do Brasil, 120, Coimbra", notes: "", consentGiven: false, consentChannel: "" },
-  { id: 4, name: "Inês Tavares", roles: [], email: "ines.tavares@exemplo.pt", phone: "918 476 220", company: "Tavares Arquitetura", zone: "Alta", nif: "257903615", address: "", notes: "Arquiteta; faz os projetos de licenciamento.", consentGiven: true, consentDate: "2026-11-04T15:00:00.000Z", consentChannel: "Presencial" },
-  { id: 5, name: "Ana Lourenço", roles: ["Investidor"], email: "ana.lourenco@exemplo.pt", phone: "912 830 445", company: "", zone: "Alta", nif: "231456786", address: "", notes: "", consentGiven: true, consentDate: "2026-10-20T11:00:00.000Z", consentChannel: "Email" },
-  { id: 6, name: "Manuel Gouveia", roles: ["Investidor"], email: "manuel.gouveia@exemplo.pt", phone: "934 112 887", company: "Gouveia Capital", zone: "Celas", nif: "209876549", address: "", notes: "", consentGiven: true, consentDate: "2026-10-02T11:00:00.000Z", consentChannel: "Presencial" },
-  { id: 7, name: "Teresa Faria", roles: ["Investidor"], email: "teresa.faria@exemplo.pt", phone: "961 309 210", company: "", zone: "Baixa", nif: "277112230", address: "", notes: "", consentGiven: false, consentChannel: "" },
-  { id: 8, name: "Pedro Alvim", roles: ["Investidor"], email: "pedro.alvim@exemplo.pt", phone: "922 874 601", company: "", zone: "Solum", nif: "266554431", address: "", notes: "", consentGiven: true, consentDate: "2026-09-15T11:00:00.000Z", consentChannel: "Telefone" },
-  { id: 9, name: "Helena Antunes", roles: ["Proprietário"], email: "helena.antunes@exemplo.pt", phone: "917 552 908", company: "", zone: "Santa Clara", nif: "222334410", address: "Av. João das Regras, 15, Coimbra", notes: "", consentGiven: false, consentChannel: "" },
-];
-
-// TODO: trocar pelo endpoint quando existir (operações de um contacto).
-export const contactOperationsFixture: Record<number, ContactOperation[]> = {
-  2: [{ code: "OP-2026-001", role: "Empreiteiro", phase: "Em obra" }],
-  3: [{ code: "OP-2025-014", role: "Proprietário (vendedor)", phase: "Vendido" }],
-  5: [
-    { code: "OP-2026-001", role: "Investidor", phase: "Em obra" },
-    { code: "OP-2025-014", role: "Investidor", phase: "Vendido" },
-  ],
-  6: [{ code: "OP-2026-001", role: "Investidor", phase: "Em obra" }],
-};
 
 /** Linhas mostradas ao carregar um .xlsx na importação de contactos, que ainda não é lido a sério. */
 export const contactImportSample: string[][] = [
@@ -353,7 +320,7 @@ export const returnTypeOptions = ["Juro fixo", "Participação nos lucros"];
 // TODO: trocar pelo endpoint das operações quando existir.
 export const investmentOperationOptions = ["OP-2025-014", "OP-2026-001", "OP-2026-002", "OP-2026-003"];
 
-// TODO: trocar pelo endpoint quando existir. O id de cada investidor é o id do contacto (contactsFixture).
+// TODO: trocar pelo endpoint quando existir (ainda não há backend de investidores). Ficam só em memória.
 export const investorsFixture: InvestorRecord[] = [
   {
     id: 5, name: "Ana Lourenço", email: "ana.lourenco@exemplo.pt", phone: "912 830 445", company: "", zone: "Alta",

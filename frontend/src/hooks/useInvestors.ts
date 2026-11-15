@@ -39,12 +39,7 @@ export function useCreateInvestor() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (input: NewInvestorInput) => createInvestor(input),
-    onSuccess: (detail) => {
-      // O contacto passou a investidor (ou foi criado): sai da lista de contactos.
-      void client.invalidateQueries({ queryKey: ["contacts"] });
-      void client.invalidateQueries({ queryKey: ["contact", detail.id] });
-      return storeDetail(client, detail);
-    },
+    onSuccess: (detail) => storeDetail(client, detail),
   });
 }
 

@@ -5,10 +5,11 @@ import {
   createContact,
   deleteContact,
   getContact,
-  getContactOperations,
   importContacts,
+  listContactTypes,
   listContacts,
   updateContact,
+  OTHER_TYPE,
   type ContactInput,
 } from "../api/contactsApi";
 
@@ -26,8 +27,10 @@ export function useContact(id: number) {
   return useQuery({ queryKey: detailKey(id), queryFn: () => getContact(id), enabled: Number.isFinite(id), retry: retryUnlessMissing });
 }
 
-export function useContactOperations(id: number) {
-  return useQuery({ queryKey: ["contact-operations", id], queryFn: () => getContactOperations(id), enabled: Number.isFinite(id) });
+/** Tipos de contacto (papéis em GET /api/contacts/roles). Enquanto carregam, só há "Outro". */
+export function useContactTypes(): string[] {
+  const query = useQuery({ queryKey: ["contact-types"], queryFn: listContactTypes, staleTime: 5 * 60_000 });
+  return query.data ?? [OTHER_TYPE];
 }
 
 function useContactMutation<TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>, id?: number) {

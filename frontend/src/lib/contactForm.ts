@@ -1,5 +1,4 @@
 import { OTHER_TYPE, contactType, type Contact, type ContactInput } from "../api/contactsApi";
-import { contactTypeOptions } from "../temp";
 import type { ContactFields } from "./contactRules";
 
 /** O que o `ContactForm` edita: os campos do contacto e o tipo (um só papel). */
@@ -28,12 +27,12 @@ export function contactToForm(contact: Contact): ContactFormValues {
 }
 
 /**
- * Formulário → dados a enviar. Ao editar, mantém os papéis que o formulário não mostra
- * (ex.: Investidor) e a data do consentimento se ele já tinha sido dado.
+ * Formulário → dados a enviar. O formulário só mostra um papel (o tipo); ao editar, os outros
+ * (ex.: Investidor) ficam, tal como a data do consentimento se ele já tinha sido dado.
  */
 export function formToContactInput(form: ContactFormValues, previous?: Contact): ContactInput {
-  const editable = contactTypeOptions.map((type) => type.toLowerCase());
-  const kept = (previous?.roles ?? []).filter((role) => !editable.includes(role.toLowerCase()));
+  const shown = previous ? contactType(previous).toLowerCase() : "";
+  const kept = (previous?.roles ?? []).filter((role) => role.toLowerCase() !== shown && role.toLowerCase() !== form.type.toLowerCase());
   return {
     name: form.name.trim(),
     roles: form.type === OTHER_TYPE ? kept : [...kept, form.type],

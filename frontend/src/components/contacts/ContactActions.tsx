@@ -1,8 +1,7 @@
 import { useState } from "react";
 
-import { isInvestor, type Contact } from "../../api/contactsApi";
+import type { Contact } from "../../api/contactsApi";
 import Button from "../ui/Button";
-import ButtonLink from "../ui/ButtonLink";
 import DeleteContactDialog from "./DeleteContactDialog";
 import NewContactDrawer from "./NewContactDrawer";
 
@@ -18,7 +17,7 @@ function ContactActions({ contact, onDeleted }: Props) {
 
   return (
     <>
-      {isInvestor(contact) && <ButtonLink to={`/investidores/${contact.id}`} icon="wallet">Perfil de investidor</ButtonLink>}
+      {/* TODO: botão "Perfil de investidor" quando os investidores usarem o backend (hoje são de exemplo e os ids não correspondem). */}
       <Button variant="danger" onClick={() => setDeleting(true)}>
         Eliminar
       </Button>
