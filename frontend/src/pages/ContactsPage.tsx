@@ -46,21 +46,27 @@ function ContactsPage() {
   const zone = params.get("zona") ?? "";
   const type = params.get("tipo") ?? "";
 
-  const updateFilter = (key: ContactFilterKey, value: string) => {
-    const next = new URLSearchParams(params);
-    if (value) next.set(key, value);
-    else next.delete(key);
-    // Com outros filtros, a página onde se estava pode já não existir.
-    next.delete("pagina");
-    setParams(next, { replace: true });
-  };
+  // Parte do URL atual (não do render em que foi criada): a pesquisa só chega meio segundo depois de escrever.
+  const updateFilter = (key: ContactFilterKey, value: string) =>
+    setParams(
+      (previous) => {
+        const next = new URLSearchParams(previous);
+        if (value) next.set(key, value);
+        else next.delete(key);
+        // Com outros filtros, a página onde se estava pode já não existir.
+        next.delete("pagina");
+        return next;
+      },
+      { replace: true },
+    );
 
-  const goToPage = (value: number) => {
-    const next = new URLSearchParams(params);
-    if (value > 1) next.set("pagina", String(value));
-    else next.delete("pagina");
-    setParams(next);
-  };
+  const goToPage = (value: number) =>
+    setParams((previous) => {
+      const next = new URLSearchParams(previous);
+      if (value > 1) next.set("pagina", String(value));
+      else next.delete("pagina");
+      return next;
+    });
 
   // Uma opção por zona escrita de formas diferentes ("Baixa", "baixa "); fica a grafia com maiúscula, se houver.
   const zones = useMemo(() => {
