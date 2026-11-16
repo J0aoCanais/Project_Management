@@ -13,6 +13,10 @@ import DashboardPage from "./pages/DashboardPage";
 import OperationsPage from "./pages/OperationsPage";
 import OperationDetailPage from "./pages/OperationDetailPage";
 import SettingsPage from "./pages/SettingsPage";
+import ContactsPage from "./pages/ContactsPage";
+import ContactDetailPage from "./pages/ContactDetailPage";
+import InvestorsPage from "./pages/InvestorsPage";
+import InvestorDetailPage from "./pages/InvestorDetailPage";
 
 // Páginas do menu já implementadas.
 const pages: Record<string, ReactNode> = {
@@ -21,6 +25,8 @@ const pages: Record<string, ReactNode> = {
   "/oportunidades": <OpportunitiesPage />,
   "/operacoes": <OperationsPage />,
   "/definicoes": <SettingsPage />,
+  "/contactos": <ContactsPage />,
+  "/investidores": <InvestorsPage />,
 };
 
 function App() {
@@ -38,6 +44,8 @@ function App() {
         <Route path="leads/:id" element={<LeadDetailPage />} />
         <Route path="oportunidades/:id" element={<OpportunityDetailPage />} />
         <Route path="operacoes/:id" element={<OperationDetailPage />} />
+        <Route path="contactos/:id" element={<ContactDetailPage />} />
+        <Route path="investidores/:id" element={<InvestorDetailPage />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
       </Route>

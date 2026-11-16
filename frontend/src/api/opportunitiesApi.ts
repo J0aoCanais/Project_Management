@@ -1,3 +1,4 @@
+import type { DocumentRecord } from "./documentsApi";
 import * as store from "./fixtures/opportunitiesStore";
 
 // Alinhado com `Opportunity` e `Property` em app/models.py.
@@ -35,16 +36,8 @@ export interface ExtraCost {
   value: number;
 }
 
-export interface OpportunityDocument {
-  id: string;
-  name: string;
-  type: string;
-  propertyCode: string;
-  entity: string;
-  sizeBytes: number;
-  validUntil?: string;
-  status: string;
-}
+/** Documento de uma oportunidade; o mesmo formato que os outros documentos. */
+export type OpportunityDocument = DocumentRecord;
 
 export interface OpportunityDetail extends OpportunityCard {
   property: {

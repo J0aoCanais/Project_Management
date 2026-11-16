@@ -1,12 +1,14 @@
 import tailwindcss from "@tailwindcss/vite";
 import react from "@vitejs/plugin-react";
-import { defineConfig } from "vite";
+import { defineConfig, loadEnv } from "vite";
 
-// Where the dev server forwards /api calls. In Docker Compose set
-// API_PROXY_TARGET=http://web:8000 (the Flask service name).
+// Para onde o servidor de dev reencaminha os pedidos ao Flask. No Docker Compose,
+// API_PROXY_TARGET=http://web:8000 (o nome do serviço); fora do Docker, o Flask local.
 
 export default defineConfig(({ command, mode }) => {
-  const apiTarget = "http://web:8000";
+  const env = loadEnv(mode, ".", "");
+  const apiTarget = env.API_PROXY_TARGET || "http://localhost:8000";
+  const toFlask = { target: apiTarget };
 
   return {
     plugins: [react(), tailwindcss()],
@@ -20,8 +22,13 @@ export default defineConfig(({ command, mode }) => {
       strictPort: true,
       watch: { usePolling: true },     // file events don't cross Windows bind mounts
       proxy: {
-        // The browser only ever talks to :5173; /api goes to Flask, so there is one origin.
-        "/api": { target: apiTarget },
+        // O browser só fala com :5173. A API, o login e o token CSRF vão para o Flask,
+        // para haver uma só origem (e o cookie da sessão servir para os dois).
+        "/api": toFlask,
+        "/login": toFlask,
+        "/logout": toFlask,
+        "/csrf-token": toFlask,
+        "/static": toFlask,
       },
     },
 

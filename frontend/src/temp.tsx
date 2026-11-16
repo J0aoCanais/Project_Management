@@ -7,6 +7,7 @@ import { calcFinance } from "./lib/finance";
 import { OPERATION_PHASES, OPPORTUNITY_PHASES } from "./lib/phases";
 import type { DashboardSummary } from "./api/dashboardApi";
 import type { Lead, LeadContactEntry } from "./api/leadsApi";
+import type { InvestorRecord } from "./api/investorsApi";
 import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "./api/opportunitiesApi";
 import type { OperationDetail } from "./api/operationsApi";
 import type { LeadSource, MovementCategory, PhaseSetting, Role, SettingsUser } from "./api/settingsApi";
@@ -425,8 +426,8 @@ export const hasUnreadNotifications = true;
 export const leadStatusOptions = ["Nova", "Contactada", "Qualificada", "Convertida", "Descartada"];
 export const leadStatusChangeOptions = ["Nova", "Contactada", "Qualificada"];
 
-// TODO: trocar pelo endpoint (zonas).
-export const leadZoneOptions = ["Baixa", "Alta", "Celas", "Solum", "Santa Clara", "Olivais"];
+// TODO: trocar pelo endpoint (zonas). Usada em leads, oportunidades, contactos e investidores.
+export const zoneOptions = ["Baixa", "Alta", "Celas", "Solum", "Santa Clara", "Olivais"];
 
 // TODO: trocar pelo endpoint (motivos de descarte).
 export const discardReasonOptions = ["Sem interesse do proprietário", "Fora dos critérios de investimento", "Preço não negociável"];
@@ -439,3 +440,59 @@ export const typologyOptions = ["T0", "T1", "T2", "T3", "T4", "T5+"];
 
 // TODO: trocar pelo endpoint (tipos de documento).
 export const documentTypeOptions = ["Caderneta predial", "Certidão permanente", "Orçamento de obra", "Planta", "Licença de utilização", "Certificado energético", "Outro"];
+
+// ---- Contactos ----
+
+// TODO: trocar pelo endpoint (canais de consentimento RGPD).
+export const consentChannelOptions = ["Formulário do website", "Email", "Telefone", "Presencial"];
+
+/** Linhas mostradas ao carregar um .xlsx na importação de contactos, que ainda não é lido a sério. */
+export const contactImportSample: string[][] = [
+  ["Rita Carvalho", "Carvalho & Filhos", "rita.carvalho@exemplo.pt", "913 220 118", "Celas"],
+  ["Jorge Pinto", "", "jorge.pinto@exemplo.pt", "926 401 733", "Solum"],
+  ["Marta Ribeiro", "Casa Certa", "marta.ribeiro@exemplo.pt", "912 345 678", "Baixa"],
+];
+
+// ---- Investidores ----
+
+// TODO: trocar pelo endpoint (perfis de risco, estados da relação, tipos de retorno).
+export const riskProfileOptions = ["Conservador", "Moderado", "Agressivo"];
+export const relationStatusOptions = ["Ativo", "Prospeção", "Inativo"];
+export const returnTypeOptions = ["Juro fixo", "Participação nos lucros"];
+
+// TODO: trocar pelo endpoint das operações quando existir.
+export const investmentOperationOptions = ["OP-2025-014", "OP-2026-001", "OP-2026-002", "OP-2026-003"];
+
+// TODO: trocar pelo endpoint quando existir (ainda não há backend de investidores). Ficam só em memória.
+export const investorsFixture: InvestorRecord[] = [
+  {
+    id: 5, name: "Ana Lourenço", email: "ana.lourenco@exemplo.pt", phone: "912 830 445", company: "", zone: "Alta",
+    profile: { availableCapital: 180000, riskProfile: "Moderado", preferredZones: ["Alta", "Baixa"], minAmount: 50000, maxAmount: 120000, preferredTerms: "8 a 18 meses, retorno mínimo de 8%", relationStatus: "Ativo" },
+    investments: [
+      { id: 1, operationCode: "OP-2026-001", committedValue: 80000, participationPercent: 46.4, returnType: "Juro fixo", returnRate: 8, agreementDate: "2026-11-08" },
+      { id: 2, operationCode: "OP-2025-014", committedValue: 65000, participationPercent: 26.2, returnType: "Juro fixo", returnRate: 8, agreementDate: "2025-06-12" },
+    ],
+    documents: [
+      { id: "inv-doc-1", name: "Contrato_investimento_OP001.pdf", type: "Contrato de investimento", propertyCode: "IM-1042", entity: "Investimento · OP-2026-001", sizeBytes: 1003520, status: "Válido" },
+      { id: "inv-doc-2", name: "Contrato_investimento_OP014.pdf", type: "Contrato de investimento", propertyCode: "IM-0987", entity: "Investimento · OP-2025-014", sizeBytes: 954368, status: "Válido" },
+    ],
+  },
+  {
+    id: 6, name: "Manuel Gouveia", email: "manuel.gouveia@exemplo.pt", phone: "934 112 887", company: "Gouveia Capital", zone: "Celas",
+    profile: { availableCapital: 250000, riskProfile: "Agressivo", preferredZones: ["Celas", "Solum"], minAmount: 40000, maxAmount: 150000, preferredTerms: "Até 24 meses", relationStatus: "Ativo" },
+    investments: [{ id: 3, operationCode: "OP-2026-001", committedValue: 52000, participationPercent: 30.2, returnType: "Participação nos lucros", returnRate: 25, agreementDate: "2026-11-09" }],
+    documents: [{ id: "inv-doc-3", name: "Acordo_participacao_OP001.pdf", type: "Contrato de investimento", propertyCode: "IM-1042", entity: "Investimento · OP-2026-001", sizeBytes: 870400, status: "Válido" }],
+  },
+  {
+    id: 7, name: "Teresa Faria", email: "teresa.faria@exemplo.pt", phone: "961 309 210", company: "", zone: "Baixa",
+    profile: { availableCapital: 95000, riskProfile: "Conservador", preferredZones: ["Baixa"], minAmount: 20000, maxAmount: 60000, preferredTerms: "Juro fixo, até 12 meses", relationStatus: "Prospeção" },
+    investments: [],
+    documents: [],
+  },
+  {
+    id: 8, name: "Pedro Alvim", email: "pedro.alvim@exemplo.pt", phone: "922 874 601", company: "", zone: "Solum",
+    profile: { availableCapital: 120000, riskProfile: "Moderado", preferredZones: ["Solum", "Santa Clara"], minAmount: 30000, maxAmount: 90000, preferredTerms: "", relationStatus: "Inativo" },
+    investments: [],
+    documents: [],
+  },
+];
