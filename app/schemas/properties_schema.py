@@ -159,11 +159,8 @@ class PropertySearchSchema(BaseSchema):
 
     # exact filters
     zone = fields.String(load_default=None, validate=SHORT_TEXT)
-    property_condition = fields.String(load_default=None, validate=SHORT_TEXT)
-
-    #TODO: see related todo in sortable_fields
-    sort = fields.String(load_default="id", validate=validate.OneOf(SORTABLE_FIELDS))
-    order = fields.String(load_default="desc", validate=validate.OneOf(("asc", "desc")))
+    typology = fields.String(load_default=None, validate=SHORT_TEXT)
+    property_type = fields.String(load_default=None, validate=SHORT_TEXT)
 
     page = fields.Integer(load_default=1, validate=validate.Range(min=1))
     per_page = fields.Integer(load_default=20, validate=validate.Range(min=1, max=100))

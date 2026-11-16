@@ -147,7 +147,6 @@ def search_properties():
                 #TODO: naming conventions for properties: derive from id or set by user?
                 Property.zone.ilike(pattern, escape="\\"),
                 Property.address.ilike(pattern, escape="\\"),
-                Property.typology.ilike(pattern, escape="\\")
             )
             stmt = stmt.where(conditions)
         
@@ -158,6 +157,14 @@ def search_properties():
         property_condition_param = params.get("property_condition")
         if property_condition_param is not None:
             stmt = stmt.where(func.lower(Property.property_condition) == func.lower(property_condition_param))
+        
+        typology = params.get("typology")
+        if typology is not None:
+            stmt = stmt.where(func.lower(Property.typology) == typology.lower())
+            
+        property_type = params.get("property_type")
+        if property_type is not None:
+            stmt = stmt.where(func.lower(Property.property_type) == property_type.lower())
         
         stmt = stmt.order_by(Property.id.asc())
 
