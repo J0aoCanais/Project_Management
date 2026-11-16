@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { NavLink } from "react-router-dom";
 
+import { useLogout } from "../../hooks/useSession";
 import Icon from "../ui/Icon";
 import type { NavItem } from "./navigation";
 
@@ -11,6 +12,7 @@ interface Props {
 
 /** Folha inferior com as áreas que não cabem na barra de navegação em telemóvel. */
 function MobileMenuSheet({ items, onClose }: Props) {
+  const logout = useLogout();
   useEffect(() => {
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
     window.addEventListener("keydown", onKey);
@@ -40,6 +42,10 @@ function MobileMenuSheet({ items, onClose }: Props) {
             {item.label}
           </NavLink>
         ))}
+        <button type="button" disabled={logout.isPending} onClick={() => logout.mutate()} className="flex items-center gap-3 px-1 py-3 text-left text-danger disabled:opacity-45">
+          <Icon name="lock" />
+          {logout.isPending ? "A terminar sessão…" : "Terminar sessão"}
+        </button>
       </div>
     </div>
   );

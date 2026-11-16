@@ -35,19 +35,10 @@ export interface ExtraCost {
   value: number;
 }
 
-export interface OpportunityDocument {
-  id: string;
-  name: string;
-  type: string;
-  propertyCode: string;
-  entity: string;
-  sizeBytes: number;
-  validUntil?: string;
-  status: string;
-}
-
 export interface OpportunityDetail extends OpportunityCard {
   property: {
+    /** Imóvel em /imoveis, quando já está registado. */
+    id?: number;
     code: string;
     areaM2: number;
     visitDate?: string;
@@ -63,7 +54,6 @@ export interface OpportunityDetail extends OpportunityCard {
   extraCosts: ExtraCost[];
   phaseHistory: { from: string; to: string; date: string; note?: string }[];
   activity: { date: string; text: string }[];
-  documents: OpportunityDocument[];
   /** Preenchido quando foi marcada como rejeitada/perdida; sai do quadro. */
   rejection?: { reason: string; date: string };
   /** Preenchido quando foi convertida em operação; sai do quadro. */
@@ -77,6 +67,8 @@ export interface NewOpportunity {
   askingPrice: number;
   vvr: number;
   leadId?: number;
+  /** Imóvel já registado de onde foi criada. */
+  propertyId?: number;
 }
 
 export interface OpportunityOptions {
@@ -114,11 +106,6 @@ export async function moveOpportunityPhase(id: number, phaseIndex: number): Prom
 export async function saveOpportunityFinance(id: number, finance: FinanceValues, extraCosts: ExtraCost[]): Promise<OpportunityDetail> {
   // PUT /v1/opportunities/${id}/finance
   return store.saveFinance(id, finance, extraCosts);
-}
-
-export async function uploadOpportunityDocuments(id: number, files: File[], type: string): Promise<OpportunityDetail> {
-  // POST /v1/opportunities/${id}/documents
-  return store.addDocuments(id, files, type);
 }
 
 export async function rejectOpportunity(id: number, reason: string): Promise<OpportunityDetail> {

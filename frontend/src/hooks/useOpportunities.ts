@@ -10,7 +10,6 @@ import {
   moveOpportunityPhase,
   rejectOpportunity,
   saveOpportunityFinance,
-  uploadOpportunityDocuments,
   type ExtraCost,
   type FinanceValues,
   type NewOpportunity,
@@ -48,7 +47,13 @@ export function useCreateOpportunity() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (input: NewOpportunity) => createOpportunity(input),
-    onSuccess: (detail) => storeDetail(client, detail),
+    onSuccess: (detail) =>
+      Promise.all([
+        storeDetail(client, detail),
+        client.invalidateQueries({ queryKey: ["documentOwners", "opportunity"] }),
+        // O imóvel de onde foi criada passa a mostrá-la nas ligações.
+        detail.property.id !== undefined && client.invalidateQueries({ queryKey: ["property", detail.property.id] }),
+      ]),
   });
 }
 
@@ -88,14 +93,6 @@ export function useSaveFinance() {
   });
 }
 
-export function useUploadOpportunityDocuments() {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, files, type }: { id: number; files: File[]; type: string }) => uploadOpportunityDocuments(id, files, type),
-    onSuccess: (detail) => storeDetail(client, detail),
-  });
-}
-
 export function useRejectOpportunity() {
   const client = useQueryClient();
   return useMutation({
@@ -108,7 +105,13 @@ export function useConvertOpportunity() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (id: number) => convertOpportunity(id),
-    onSuccess: (_result, id) =>
-      Promise.all([client.invalidateQueries({ queryKey: listKey }), client.invalidateQueries({ queryKey: detailKey(id) })]),
+    onSuccess: (result, id) =>
+      Promise.all([
+        client.invalidateQueries({ queryKey: listKey }),
+        client.invalidateQueries({ queryKey: detailKey(id) }),
+        client.invalidateQueries({ queryKey: ["operations"] }),
+        client.invalidateQueries({ queryKey: ["operationOptions"] }),
+        client.invalidateQueries({ queryKey: ["operation", result.operationId] }),
+      ]),
   });
 }
