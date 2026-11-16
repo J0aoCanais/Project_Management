@@ -13,12 +13,19 @@ import PageHeading from "../components/ui/PageHeading";
 import Panel from "../components/ui/Panel";
 import { useMoveOpportunityPhase, useOpportunities } from "../hooks/useOpportunities";
 import { useOpportunityFilters } from "../hooks/useOpportunityFilters";
+import { OPPORTUNITY_PHASES } from "../lib/phases";
+import { usePhases } from "../hooks/useSettings";
 
 function OpportunitiesPage() {
   const { data: cards = [], isPending, isError, refetch } = useOpportunities();
+  const phasesQuery = usePhases();
   const filters = useOpportunityFilters(cards);
   const move = useMoveOpportunityPhase();
   const [creating, setCreating] = useState(false);
+  const phases = OPPORTUNITY_PHASES.map((phase, index) => ({
+    ...phase,
+    maxDaysStalled: phasesQuery.data?.find((setting) => setting.position === index + 1)?.maxDaysStalled ?? phase.maxDaysStalled,
+  }));
 
   const handleMove = (id: number, phaseIndex: number) => {
     // Largar na mesma coluna, ou largar algo que não é um cartão, não muda nada.
@@ -33,8 +40,8 @@ function OpportunitiesPage() {
   );
 
   const renderContent = () => {
-    if (isPending) return <LoadingState />;
-    if (isError) return <ErrorState onRetry={() => refetch()} />;
+    if (isPending || phasesQuery.isPending) return <LoadingState />;
+    if (isError || phasesQuery.isError) return <ErrorState onRetry={() => { void refetch(); void phasesQuery.refetch(); }} />;
     if (!cards.length) return <EmptyState message="Ainda não há oportunidades. Crie a primeira para começar o pipeline." />;
     if (!filters.filtered.length) {
       return <EmptyState message="Nenhuma oportunidade corresponde aos filtros." action={<Button onClick={filters.clear}>Limpar filtros</Button>} />;
@@ -42,11 +49,11 @@ function OpportunitiesPage() {
     if (filters.view === "lista") {
       return (
         <Panel className="overflow-hidden">
-          <OpportunitiesTable cards={filters.filtered} />
+          <OpportunitiesTable cards={filters.filtered} phases={phases} />
         </Panel>
       );
     }
-    return <OpportunityBoard cards={filters.filtered} onMove={handleMove} />;
+    return <OpportunityBoard cards={filters.filtered} phases={phases} onMove={handleMove} />;
   };
 
   return (

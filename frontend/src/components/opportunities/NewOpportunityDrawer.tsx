@@ -101,14 +101,12 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated }: Props) {
           </FormField>
         ) : (
           <FormField label="Lead de origem (opcional)">
-            <select className={inputClasses} value={leadId} onChange={(e) => setLeadId(e.target.value)}>
-              <option value="">Sem lead de origem</option>
-              {options?.leads.map((lead) => (
-                <option key={lead.id} value={lead.id}>
-                  {lead.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={leadId ? options?.leads.find((lead) => lead.id === Number(leadId))?.name ?? "" : ""}
+              onChange={(name) => setLeadId(String(options?.leads.find((lead) => lead.name === name)?.id ?? ""))}
+              options={options?.leads.map((lead) => lead.name) ?? []}
+              placeholder="Sem lead de origem"
+            />
           </FormField>
         )}
       </form>

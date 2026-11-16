@@ -105,6 +105,7 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - Um ficheiro por recurso em `src/api/` com os tipos da resposta, e um hook TanStack Query em `src/hooks/` (`useQuery` para ler, `useMutation` + `invalidateQueries` para escrever).
 - **Todas as listas e detalhes tratam quatro estados:** a carregar, erro (com "Tentar novamente"), vazio (com uma mensagem útil) e com dados.
 - **Se o endpoint ainda não existir:** cria dados de exemplo em `src/temp.tsx` (tudo o que é hard coded vive aí), devolvidos pela mesma função da API, com `// TODO: trocar pelo endpoint quando existir`. Os componentes não podem saber se os dados são reais ou de exemplo.
+- **Operações e definições:** os registos de exemplo, origens, níveis de acesso, direções, limites iniciais e listas de opções também ficam em `src/temp.tsx`. As stores em `src/api/fixtures/` só simulam validação e mutações e leem esses dados; não criam um segundo conjunto de fixtures.
 - Os dados de exemplo usam pessoas e emails fictícios (`@exemplo.pt`), nunca dados reais.
 
 ### Validação de formulários
