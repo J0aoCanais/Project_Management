@@ -24,8 +24,11 @@ async function csrfToken(): Promise<string> {
 }
 
 function goToLogin(): never {
-  const next = encodeURIComponent(window.location.pathname + window.location.search);
-  window.location.assign(`/login?next=${next}`);
+  // Já na página de login não há para onde ir (e não se volta para ela depois de entrar).
+  if (window.location.pathname !== "/login") {
+    const next = encodeURIComponent(window.location.pathname + window.location.search);
+    window.location.assign(`/login?next=${next}`);
+  }
   throw new ApiError(401, "Not authenticated");
 }
 
@@ -39,7 +42,12 @@ function errorMessage(body: unknown, fallback: string): { message: string; field
 }
 
 /** Pequeno invólucro de fetch para /api: cookies da sessão, CSRF e erros em JSON. */
-export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise<T> {
+interface ApiFetchOptions {
+  /** Com `false`, um 401 é devolvido como erro em vez de levar à página de login (ex.: o próprio login). */
+  loginRedirect?: boolean;
+}
+
+export async function apiFetch<T>(path: string, init: RequestInit = {}, { loginRedirect = true }: ApiFetchOptions = {}): Promise<T> {
   const method = (init.method ?? "GET").toUpperCase();
   const headers = new Headers(init.headers);
   headers.set("Accept", "application/json");
@@ -58,7 +66,8 @@ export async function apiFetch<T>(path: string, init: RequestInit = {}): Promise
   });
 
   // Sem sessão o Flask-Login redireciona para /login (o fetch segue o redirect e recebe HTML).
-  if (res.status === 401 || (res.redirected && new URL(res.url).pathname === "/login")) goToLogin();
+  const toLogin = res.status === 401 || (res.redirected && new URL(res.url).pathname === "/login");
+  if (toLogin && (loginRedirect || res.redirected)) goToLogin();
   if (res.status === 204) return undefined as T;
   if (!res.ok) {
     const body = await res.json().catch(() => null);

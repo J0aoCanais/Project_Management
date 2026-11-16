@@ -1,10 +1,10 @@
 import type { ReactNode } from "react";
 import { Route, Routes } from "react-router-dom";
 
-import AppLayout from "./components/layout/AppLayout";
 import AuthGate from "./components/layout/AuthGate";
 import { navItems } from "./components/layout/navigation";
 import HealthPage from "./pages/HealthPage";
+import LoginPage from "./pages/LoginPage";
 import OpportunitiesPage from "./pages/OpportunitiesPage";
 import OpportunityDetailPage from "./pages/OpportunityDetailPage";
 import PlaceholderPage from "./pages/PlaceholderPage";
@@ -43,30 +43,29 @@ const pages: Record<string, ReactNode> = {
 
 function App() {
   return (
-    <AuthGate>
-      <Routes>
-        <Route element={<AppLayout />}>
-          {/* TODO: substituir cada PlaceholderPage pela página real à medida que forem implementadas */}
-          {navItems.map((item) =>
-            item.path === "/" ? (
-              <Route key={item.path} index element={pages[item.path]} />
-            ) : (
-              <Route key={item.path} path={item.path.slice(1)} element={pages[item.path] ?? <PlaceholderPage title={item.label} />} />
-            ),
-          )}
-          <Route path="leads/:id" element={<LeadDetailPage />} />
-          <Route path="oportunidades/:id" element={<OpportunityDetailPage />} />
-          <Route path="operacoes/:id" element={<OperationDetailPage />} />
-          <Route path="contactos/:id" element={<ContactDetailPage />} />
-          <Route path="obras/:id" element={<WorkDetailPage />} />
-          <Route path="investidores/:id" element={<InvestorDetailPage />} />
-          <Route path="imoveis/:id" element={<PropertyDetailPage />} />
-          <Route path="financas/:id" element={<MovementDetailPage />} />
-          <Route path="health" element={<HealthPage />} />
-          <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
-        </Route>
-      </Routes>
-    </AuthGate>
+    <Routes>
+      <Route path="login" element={<LoginPage />} />
+      <Route element={<AuthGate />}>
+        {/* TODO: substituir cada PlaceholderPage pela página real à medida que forem implementadas */}
+        {navItems.map((item) =>
+          item.path === "/" ? (
+            <Route key={item.path} index element={pages[item.path]} />
+          ) : (
+            <Route key={item.path} path={item.path.slice(1)} element={pages[item.path] ?? <PlaceholderPage title={item.label} />} />
+          ),
+        )}
+        <Route path="leads/:id" element={<LeadDetailPage />} />
+        <Route path="oportunidades/:id" element={<OpportunityDetailPage />} />
+        <Route path="operacoes/:id" element={<OperationDetailPage />} />
+        <Route path="contactos/:id" element={<ContactDetailPage />} />
+        <Route path="obras/:id" element={<WorkDetailPage />} />
+        <Route path="investidores/:id" element={<InvestorDetailPage />} />
+        <Route path="imoveis/:id" element={<PropertyDetailPage />} />
+        <Route path="financas/:id" element={<MovementDetailPage />} />
+        <Route path="health" element={<HealthPage />} />
+        <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
+      </Route>
+    </Routes>
   );
 }
 
