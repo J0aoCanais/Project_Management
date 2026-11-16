@@ -6,6 +6,7 @@ import { useFinanceDraft } from "../../hooks/useFinanceDraft";
 import { useConvertOpportunity, useMoveOpportunityPhase, useSaveFinance } from "../../hooks/useOpportunities";
 import { formatIsoDate } from "../../lib/format";
 import { OPPORTUNITY_PHASES } from "../../lib/phases";
+import DocumentsPanel from "../documents/DocumentsPanel";
 import Button from "../ui/Button";
 import Notice from "../ui/Notice";
 import PhaseStepper from "../ui/PhaseStepper";
@@ -13,7 +14,6 @@ import Tabs from "../ui/Tabs";
 import FinanceAnalysis from "./FinanceAnalysis";
 import NewOpportunityDrawer from "./NewOpportunityDrawer";
 import OpportunityActivity from "./OpportunityActivity";
-import OpportunityDocuments from "./OpportunityDocuments";
 import OpportunityHeader from "./OpportunityHeader";
 import OpportunityReport from "./OpportunityReport";
 import OpportunitySummary from "./OpportunitySummary";
@@ -118,7 +118,13 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
           />
         )}
         {tab === "historico-de-fases" && <PhaseHistoryTable history={detail.phaseHistory} />}
-        {tab === "documentos" && <OpportunityDocuments detail={detail} />}
+        {tab === "documentos" && (
+          <DocumentsPanel
+            owner={{ kind: "opportunity", id: detail.id }}
+            title="Documentos da oportunidade"
+            notice={`Pode carregar documentos em qualquer fase, incluindo o due diligence (certidões, cadernetas, orçamentos de obra…). Ficam associados a esta oportunidade (imóvel ${detail.property.code}) e aparecem no menu Documentos.`}
+          />
+        )}
       </div>
 
       {editing && <NewOpportunityDrawer opportunity={detail} onClose={() => setEditing(false)} />}

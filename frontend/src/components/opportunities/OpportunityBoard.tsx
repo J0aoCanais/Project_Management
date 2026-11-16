@@ -1,36 +1,27 @@
 import type { OpportunityCard } from "../../api/opportunitiesApi";
-import { OPPORTUNITY_PHASES } from "../../lib/phases";
-import KanbanBoard, { type KanbanColumnConfig } from "../ui/KanbanBoard";
+import { OPPORTUNITY_PHASES, type Phase } from "../../lib/phases";
+import PipelineBoard from "../pipeline/PipelineBoard";
 import DealCard from "./DealCard";
 
 interface Props {
   cards: OpportunityCard[];
+  phases?: Phase[];
   onMove: (id: number, phaseIndex: number) => void;
 }
 
-// Cores dos pontos do mockup: neutro nas primeiras fases, âmbar a meio, verde no fim.
-function dotFor(index: number): string | undefined {
-  if (index === 4 || index === 5) return "bg-warning";
-  if (index >= 6) return "bg-success";
-  return undefined;
-}
+const dotFor = (index: number): string | undefined => (index === 4 || index === 5 ? "bg-warning" : index >= 6 ? "bg-success" : undefined);
 
-const columns: KanbanColumnConfig[] = OPPORTUNITY_PHASES.map((phase, index) => ({
-  id: String(index),
-  title: phase.name,
-  dotClassName: dotFor(index),
-}));
-
-function OpportunityBoard({ cards, onMove }: Props) {
+function OpportunityBoard({ cards, phases = OPPORTUNITY_PHASES, onMove }: Props) {
   return (
-    <KanbanBoard
-      columns={columns}
+    <PipelineBoard
       items={cards}
+      phases={phases}
       startAt={1}
+      getDotClassName={dotFor}
       getItemId={(card) => String(card.id)}
-      getColumnId={(card) => String(card.phaseIndex)}
-      renderCard={(card) => <DealCard card={card} onMove={(phaseIndex) => onMove(card.id, phaseIndex)} />}
-      onMove={(itemId, columnId) => onMove(Number(itemId), Number(columnId))}
+      getPhaseIndex={(card) => card.phaseIndex}
+      renderCard={(card) => <DealCard card={card} phases={phases} onMove={(phaseIndex) => onMove(card.id, phaseIndex)} />}
+      onMove={(itemId, phaseIndex) => onMove(Number(itemId), phaseIndex)}
     />
   );
 }

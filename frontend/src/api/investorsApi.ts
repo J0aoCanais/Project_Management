@@ -1,5 +1,4 @@
 import type { ContactInput } from "./contactsApi";
-import type { DocumentRecord } from "./documentsApi";
 import * as store from "./fixtures/investorsStore";
 
 // Alinhado com `InvestorProfile` e `Investment` em app/models.py.
@@ -49,7 +48,6 @@ export type InvestmentInput = Omit<Investment, "id">;
 
 export interface InvestorDetail extends Investor {
   investments: Investment[];
-  documents: DocumentRecord[];
 }
 
 /** Investidor guardado: o que o servidor tem antes de calcular os totais. */

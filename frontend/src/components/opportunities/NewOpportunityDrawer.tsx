@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 
-import type { OpportunityDetail } from "../../api/opportunitiesApi";
+import type { NewOpportunity, OpportunityDetail } from "../../api/opportunitiesApi";
 import { useCreateOpportunity, useOpportunityOptions, useUpdateOpportunity } from "../../hooks/useOpportunities";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
@@ -16,6 +16,8 @@ interface Props {
   onClose: () => void;
   /** Ao converter uma lead: fica como lead de origem (fixa) e preenche a zona. */
   fromLead?: { id: number; name: string; zone: string };
+  /** Valores iniciais, como os de um imóvel ("Criar oportunidade" no detalhe do imóvel). */
+  initial?: Partial<NewOpportunity>;
   /** Chamado depois de criar; por omissão fecha o drawer. */
   onCreated?: (detail: OpportunityDetail) => void;
   /** Com uma oportunidade, o drawer edita-a em vez de criar. */
@@ -24,17 +26,18 @@ interface Props {
 
 const FORM_ID = "nova-oportunidade";
 
-function NewOpportunityDrawer({ onClose, fromLead, onCreated, opportunity }: Props) {
+function NewOpportunityDrawer({ onClose, fromLead, initial = {}, onCreated, opportunity }: Props) {
   const { data: options } = useOpportunityOptions();
   const create = useCreateOpportunity();
   const update = useUpdateOpportunity(opportunity?.id ?? Number.NaN);
   const mutation = opportunity ? update : create;
-  const [title, setTitle] = useState(opportunity?.title ?? "");
-  const [typology, setTypology] = useState(opportunity?.typology ?? "T2");
-  const [zone, setZone] = useState(opportunity?.zone ?? fromLead?.zone ?? "");
-  const [askingPrice, setAskingPrice] = useState(opportunity?.askingPrice ?? 0);
-  const [vvr, setVvr] = useState(opportunity?.vvr ?? 0);
-  const [leadId, setLeadId] = useState(fromLead ? String(fromLead.id) : "");
+  const start = opportunity ?? initial;
+  const [title, setTitle] = useState(start.title?.slice(0, TEXT_LIMITS.title) ?? "");
+  const [typology, setTypology] = useState(start.typology ?? "T2");
+  const [zone, setZone] = useState(opportunity?.zone ?? fromLead?.zone ?? initial.zone ?? "");
+  const [askingPrice, setAskingPrice] = useState(start.askingPrice ?? 0);
+  const [vvr, setVvr] = useState(start.vvr ?? 0);
+  const [leadId, setLeadId] = useState(fromLead ? String(fromLead.id) : initial.leadId ? String(initial.leadId) : "");
   const [showErrors, setShowErrors] = useState(false);
 
   const errors = {
@@ -53,7 +56,7 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated, opportunity }: Pro
       return;
     }
     create.mutate(
-      { title: title.trim(), typology, zone, askingPrice, vvr, leadId: leadId ? Number(leadId) : undefined },
+      { title: title.trim(), typology, zone, askingPrice, vvr, leadId: leadId ? Number(leadId) : undefined, propertyId: initial.propertyId },
       { onSuccess: (detail) => (onCreated ? onCreated(detail) : onClose()) },
     );
   };
@@ -61,7 +64,15 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated, opportunity }: Pro
   return (
     <Drawer
       title={opportunity ? "Editar oportunidade" : fromLead ? "Converter lead em oportunidade" : "Nova oportunidade"}
-      subtitle={opportunity ? opportunity.title : fromLead ? `A partir da lead ${fromLead.name} · entra na fase Novo` : "Entra na fase Novo"}
+      subtitle={
+        opportunity
+          ? opportunity.title
+          : fromLead
+            ? `A partir da lead ${fromLead.name} · entra na fase Novo`
+            : initial.propertyId
+              ? "A partir do imóvel · entra na fase Novo"
+              : "Entra na fase Novo"
+      }
       onClose={onClose}
       footer={
         <>
@@ -109,14 +120,12 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated, opportunity }: Pro
           </FormField>
         ) : (
           <FormField label="Lead de origem (opcional)">
-            <select className={inputClasses} value={leadId} onChange={(e) => setLeadId(e.target.value)}>
-              <option value="">Sem lead de origem</option>
-              {options?.leads.map((lead) => (
-                <option key={lead.id} value={lead.id}>
-                  {lead.name}
-                </option>
-              ))}
-            </select>
+            <Select
+              value={leadId}
+              onChange={setLeadId}
+              options={(options?.leads ?? []).map((lead) => ({ value: String(lead.id), label: lead.name }))}
+              placeholder="Sem lead de origem"
+            />
           </FormField>
         )}
       </form>

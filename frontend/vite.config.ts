@@ -22,10 +22,10 @@ export default defineConfig(({ command, mode }) => {
       strictPort: true,
       watch: { usePolling: true },     // file events don't cross Windows bind mounts
       proxy: {
-        // O browser só fala com :5173. A API, o login e o token CSRF vão para o Flask,
+        // O browser só fala com :5173. A API, o logout e o token CSRF vão para o Flask
+        // (a página /login é do React e entra por POST /api/auth/login),
         // para haver uma só origem (e o cookie da sessão servir para os dois).
         "/api": toFlask,
-        "/login": toFlask,
         "/logout": toFlask,
         "/csrf-token": toFlask,
         "/static": toFlask,

@@ -1,9 +1,11 @@
 import { useCurrentUser } from "../../hooks/useCurrentUser";
+import { useLogout } from "../../hooks/useSession";
 import Avatar from "../ui/Avatar";
-import Icon from "../ui/Icon";
+import DropdownMenu from "../ui/DropdownMenu";
 
 function SidebarUser() {
   const { data: user, isLoading } = useCurrentUser();
+  const logout = useLogout();
 
   return (
     <div className="mt-auto flex items-center gap-2.5 border-t border-sidebar-line px-1 pt-[17px]">
@@ -16,9 +18,11 @@ function SidebarUser() {
             <strong className="block truncate text-[11px] text-white">{user.name}</strong>
             <small className="mt-0.5 block text-[11px] text-[#8ca9a8]">{user.role}</small>
           </div>
-          <button type="button" className="text-sidebar-text hover:text-white" aria-label="Opções da conta">
-            <Icon name="more" />
-          </button>
+          <DropdownMenu
+            label="Opções da conta"
+            buttonClassName="text-sidebar-text hover:bg-sidebar-hover hover:text-white"
+            items={[{ label: logout.isPending ? "A terminar sessão…" : "Terminar sessão", onSelect: () => logout.mutate(), disabled: logout.isPending }]}
+          />
         </>
       )}
     </div>
