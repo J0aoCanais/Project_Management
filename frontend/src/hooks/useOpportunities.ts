@@ -10,7 +10,6 @@ import {
   moveOpportunityPhase,
   rejectOpportunity,
   saveOpportunityFinance,
-  uploadOpportunityDocuments,
   type ExtraCost,
   type FinanceValues,
   type NewOpportunity,
@@ -48,7 +47,13 @@ export function useCreateOpportunity() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (input: NewOpportunity) => createOpportunity(input),
-    onSuccess: (detail) => storeDetail(client, detail),
+    onSuccess: (detail) =>
+      Promise.all([
+        storeDetail(client, detail),
+        client.invalidateQueries({ queryKey: ["documentOwners", "opportunity"] }),
+        // O imóvel de onde foi criada passa a mostrá-la nas ligações.
+        detail.property.id !== undefined && client.invalidateQueries({ queryKey: ["property", detail.property.id] }),
+      ]),
   });
 }
 
@@ -84,14 +89,6 @@ export function useSaveFinance() {
   return useMutation({
     mutationFn: ({ id, finance, extraCosts }: { id: number; finance: FinanceValues; extraCosts: ExtraCost[] }) =>
       saveOpportunityFinance(id, finance, extraCosts),
-    onSuccess: (detail) => storeDetail(client, detail),
-  });
-}
-
-export function useUploadOpportunityDocuments() {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, files, type }: { id: number; files: File[]; type: string }) => uploadOpportunityDocuments(id, files, type),
     onSuccess: (detail) => storeDetail(client, detail),
   });
 }

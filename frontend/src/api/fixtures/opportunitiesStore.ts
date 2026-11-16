@@ -3,23 +3,23 @@ import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, titleErro
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { ApiError } from "../client";
 import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityDetail } from "../opportunitiesApi";
-import { currentUserFixture, defaultFinance, opportunitiesFixture, opportunityOptionsFixture } from "../../temp";
+import { currentUserFixture, defaultFinance, opportunitiesFixture, opportunityOptionsFixture, propertiesFixture } from "../../temp";
+import { respond } from "./respond";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar a página.
 
-const LATENCY_MS = 150;
 let nextOperationId = 101;
-let nextDocumentId = 1;
-
-const respond = async <T,>(value: T): Promise<T> => {
-  await new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
-  return structuredClone(value);
-};
 
 function find(id: number): OpportunityDetail {
   const opportunity = opportunitiesFixture.find((item) => item.id === id);
   if (!opportunity) throw new ApiError(404, "Oportunidade não encontrada");
   return opportunity;
+}
+
+/** Regista uma linha na atividade da oportunidade (também usado pelos documentos). */
+export function recordActivity(id: number, text: string): void {
+  const opportunity = opportunitiesFixture.find((item) => item.id === id);
+  if (opportunity) record(opportunity, text);
 }
 
 function record(opportunity: OpportunityDetail, text: string): void {
@@ -51,6 +51,8 @@ export async function addOpportunity(input: NewOpportunity) {
   const invalid = titleError(input.title) ?? (!opportunityOptionsFixture.zones.includes(input.zone) ? "Zona inválida" : undefined);
   if (invalid) throw new ApiError(422, invalid);
   if (!fitsRule(input.askingPrice, MONEY) || input.askingPrice <= 0 || !fitsRule(input.vvr, MONEY) || input.vvr <= 0) throw new ApiError(422, "Valores inválidos");
+  const property = input.propertyId === undefined ? undefined : propertiesFixture.find((item) => item.id === input.propertyId);
+  if (input.propertyId !== undefined && !property) throw new ApiError(422, "Imóvel inválido");
   const id = Math.max(0, ...opportunitiesFixture.map((item) => item.id)) + 1;
   const lead = opportunityOptionsFixture.leads.find((item) => item.id === input.leadId);
   const finance = defaultFinance(input.askingPrice, input.vvr);
@@ -68,12 +70,13 @@ export async function addOpportunity(input: NewOpportunity) {
     owner: { name: currentUserFixture.name },
     contactName: lead?.name,
     updatedAt: now,
-    property: { code: `IM-${1100 + id}`, areaM2: 0 },
+    property: property
+      ? { id: property.id, code: property.code, areaM2: property.areaM2, visitDate: property.visitDate, notes: property.notes, constructionYear: property.constructionYear, condition: property.condition, energyCertificate: property.energyCertificate }
+      : { code: `IM-${1100 + id}`, areaM2: 0 },
     finance,
     extraCosts: [],
     phaseHistory: [],
-    activity: [{ date: now, text: lead ? `Oportunidade criada a partir da lead ${lead.name}` : "Oportunidade criada" }],
-    documents: [],
+    activity: [{ date: now, text: lead ? `Oportunidade criada a partir da lead ${lead.name}` : property ? `Oportunidade criada a partir do imóvel ${property.code}` : "Oportunidade criada" }],
   };
   opportunitiesFixture.push(opportunity);
   return structuredClone(opportunity);
@@ -103,24 +106,6 @@ export async function saveFinance(id: number, finance: FinanceValues, extraCosts
   opportunity.extraCosts = structuredClone(extraCosts);
   opportunity.estimatedProfit = calcFinance(finance, extraCosts).margin;
   record(opportunity, "Análise financeira atualizada");
-  return structuredClone(opportunity);
-}
-
-export async function addDocuments(id: number, files: File[], type: string) {
-  await respond(null);
-  const opportunity = find(id);
-  for (const file of files) {
-    opportunity.documents.push({
-      id: `upload-${nextDocumentId++}`,
-      name: file.name,
-      type,
-      propertyCode: opportunity.property.code,
-      entity: `Oportunidade · ${opportunity.title}`,
-      sizeBytes: file.size,
-      status: "Válido",
-    });
-  }
-  record(opportunity, files.length === 1 ? "Documento carregado" : `${files.length} documentos carregados`);
   return structuredClone(opportunity);
 }
 

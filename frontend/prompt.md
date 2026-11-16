@@ -93,6 +93,13 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
   - `components/ui/` — formulários: `FormField`, `NumberInput`, `SegmentedChoice`, `FileUploadButton`, `inputClasses` (classes para `input`, `select` e `textarea`).
   - `components/ui/` — sobreposições e navegação: `Dialog`, `Drawer`, `DropdownMenu`, `Tabs`, `FloatingActionButton`, `useEscape`.
   - `components/ui/` — fluxos: `KanbanBoard` (usa `KanbanColumn`), `PhaseStepper`, `ImportExcel` (usa `ImportStep` e `lib/csv.ts`).
+  - `Select` aceita texto (`"T2"`) ou `{ value, label }` (ex.: id e nome). **Nunca usar `<select>` solto** fora de `components/ui/`.
+  - `VerticalBarChart` aceita `compare` (segunda barra, ex.: previsto vs. realizado), `formatValue` e `legend`.
+- **Componentes de domínio partilhados (reutilizar, nunca duplicar):**
+  - `components/documents/DocumentsPanel` é **o** separador "Documentos" de qualquer registo: `<DocumentsPanel owner={{ kind: "operation", id }} />` (`opportunity`, `operation`, `work`, `investment`, `movement`, `property`). Os tipos permitidos e os obrigatórios por `kind` vêm de `src/temp.tsx`; os avisos de validade e de obrigatórios em falta aparecem sozinhos.
+  - `components/finance/MovementsTable` é **a** tabela de movimentos: nos detalhes de operação, investimento e obra usa `useMovements({ link: { kind, id } })` e `hideLink`.
+  - `hooks/useUrlFilters(keys)` guarda os filtros de uma lista no URL.
+  - `lib/links.ts` (`entityPath`) dá o caminho de qualquer entidade associada.
   - Se faltar alguma coisa a um destes componentes, alarga-o com uma prop opcional.
 - **Padrões do mockup ainda por criar (criar quando forem precisos):** quadros de domínio como o cartão de oportunidade, cartão escuro de resultados (`results-card`).
 - **Ícones:** usar o componente `Icon` (SVG de traço 1.8) com o mesmo conjunto de ícones do mockup. Não juntar outra biblioteca de ícones sem motivo.
@@ -105,6 +112,7 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - Um ficheiro por recurso em `src/api/` com os tipos da resposta, e um hook TanStack Query em `src/hooks/` (`useQuery` para ler, `useMutation` + `invalidateQueries` para escrever).
 - **Todas as listas e detalhes tratam quatro estados:** a carregar, erro (com "Tentar novamente"), vazio (com uma mensagem útil) e com dados.
 - **Se o endpoint ainda não existir:** cria dados de exemplo em `src/temp.tsx` (tudo o que é hard coded vive aí), devolvidos pela mesma função da API, com `// TODO: trocar pelo endpoint quando existir`. Os componentes não podem saber se os dados são reais ou de exemplo.
+- O servidor simulado fica em `src/api/fixtures/<recurso>Store.ts` (usa `respond` de `fixtures/respond.ts`), valida com as mesmas regras de `src/lib/` e responde 422 com a mensagem em pt-PT. Datas de exemplo relativas a hoje, para os estados (atrasado, a expirar) fazerem sentido em qualquer dia.
 - Os dados de exemplo usam pessoas e emails fictícios (`@exemplo.pt`), nunca dados reais.
 
 ### Validação de formulários
@@ -115,6 +123,11 @@ O mockup (`mockup/src`) é a referência visual. **Não tem de ser cópia exata,
 - **Nome da lead:** 2 a 80 caracteres. **Referenciado por:** até 80. **Mensagem:** até 500. **Contacto registado:** responsável até 80, resultado até 120, nota até 500.
 - Os erros aparecem por campo só depois de tentar submeter, em pt-PT. Se o servidor recusar, mostra-se um `Notice` no formulário.
 - Na importação de Excel, as linhas que não cumprem estas regras são ignoradas.
+- **Imóveis** (`lib/propertyRules.ts`): morada 3–60 (como o título das oportunidades), área 1–99 999 m² com 2 casas, ano de construção 1800–ano atual, preço pedido e VVR em `MONEY` e > 0, URL do anúncio `http(s)://` até 300, notas até 500.
+- **Movimentos** (`lib/financeRules.ts`): valor `MONEY` > 0, pelo menos uma data (prevista ou efetiva), data efetiva nunca no futuro, associação obrigatória quando se escolhe um tipo, notas até 500. Uma saída ligada a um item de orçamento não pode exceder o valor contratado em falta. O estado vem das datas (`movementStatus`): com data efetiva → Realizado; prevista já passada → Atrasado; senão Previsto.
+- **Financiamentos:** nome 2–80, montante `MONEY` > 0.
+- **Documentos** (`lib/documentRules.ts`): máximo 10 MB por ficheiro e 20 ficheiros por pedido, nome até 120, tipo da lista do `kind`, validade opcional. "A expirar" a menos de 30 dias.
+- Datas sem hora são texto `aaaa-mm-dd` (`todayIso`, `isValidIsoDate` em `lib/format.ts`) e comparam-se como texto.
 
 ## 7. Texto e formatação
 

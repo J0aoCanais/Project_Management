@@ -1,5 +1,6 @@
 import { useState, type FormEvent } from "react";
 
+import type { NewOpportunity } from "../../api/opportunitiesApi";
 import { useCreateOpportunity, useOpportunityOptions } from "../../hooks/useOpportunities";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
@@ -13,19 +14,21 @@ import { MONEY, TEXT_LIMITS, fitsRule, titleError } from "../../lib/opportunityR
 
 interface Props {
   onClose: () => void;
+  /** Valores iniciais, como os de um imóvel ("Criar oportunidade" no detalhe do imóvel). */
+  initial?: Partial<NewOpportunity>;
 }
 
 const FORM_ID = "nova-oportunidade";
 
-function NewOpportunityDrawer({ onClose }: Props) {
+function NewOpportunityDrawer({ onClose, initial = {} }: Props) {
   const { data: options } = useOpportunityOptions();
   const create = useCreateOpportunity();
-  const [title, setTitle] = useState("");
-  const [typology, setTypology] = useState("T2");
-  const [zone, setZone] = useState("");
-  const [askingPrice, setAskingPrice] = useState(0);
-  const [vvr, setVvr] = useState(0);
-  const [leadId, setLeadId] = useState("");
+  const [title, setTitle] = useState(initial.title?.slice(0, TEXT_LIMITS.title) ?? "");
+  const [typology, setTypology] = useState(initial.typology ?? "T2");
+  const [zone, setZone] = useState(initial.zone ?? "");
+  const [askingPrice, setAskingPrice] = useState(initial.askingPrice ?? 0);
+  const [vvr, setVvr] = useState(initial.vvr ?? 0);
+  const [leadId, setLeadId] = useState(initial.leadId ? String(initial.leadId) : "");
   const [showErrors, setShowErrors] = useState(false);
 
   const errors = {
@@ -40,7 +43,7 @@ function NewOpportunityDrawer({ onClose }: Props) {
     setShowErrors(true);
     if (Object.values(errors).some(Boolean)) return;
     create.mutate(
-      { title: title.trim(), typology, zone, askingPrice, vvr, leadId: leadId ? Number(leadId) : undefined },
+      { title: title.trim(), typology, zone, askingPrice, vvr, leadId: leadId ? Number(leadId) : undefined, propertyId: initial.propertyId },
       { onSuccess: onClose },
     );
   };
@@ -48,7 +51,7 @@ function NewOpportunityDrawer({ onClose }: Props) {
   return (
     <Drawer
       title="Nova oportunidade"
-      subtitle="Entra na fase Novo"
+      subtitle={initial.propertyId ? "A partir do imóvel · Entra na fase Novo" : "Entra na fase Novo"}
       onClose={onClose}
       footer={
         <>
@@ -91,14 +94,12 @@ function NewOpportunityDrawer({ onClose }: Props) {
           <NumberInput min={MONEY.min} max={MONEY.max} decimals={MONEY.decimals} suffix="€" value={vvr} onChange={setVvr} invalid={showErrors && !!errors.vvr} />
         </FormField>
         <FormField label="Lead de origem (opcional)">
-          <select className={inputClasses} value={leadId} onChange={(e) => setLeadId(e.target.value)}>
-            <option value="">Sem lead de origem</option>
-            {options?.leads.map((lead) => (
-              <option key={lead.id} value={lead.id}>
-                {lead.name}
-              </option>
-            ))}
-          </select>
+          <Select
+            value={leadId}
+            onChange={setLeadId}
+            options={(options?.leads ?? []).map((lead) => ({ value: String(lead.id), label: lead.name }))}
+            placeholder="Sem lead de origem"
+          />
         </FormField>
       </form>
     </Drawer>
