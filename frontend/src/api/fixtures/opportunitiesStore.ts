@@ -2,7 +2,7 @@ import { calcFinance } from "../../lib/finance";
 import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, titleError } from "../../lib/opportunityRules";
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { ApiError } from "../client";
-import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityDetail } from "../opportunitiesApi";
+import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityChanges, OpportunityDetail } from "../opportunitiesApi";
 import { currentUserFixture, defaultFinance, leads, opportunitiesFixture, opportunityOptionsFixture } from "../../temp";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar a página.
@@ -45,12 +45,16 @@ export function listOptions() {
   return respond(opportunityOptionsFixture);
 }
 
-export async function addOpportunity(input: NewOpportunity) {
-  await respond(null);
-  // O servidor valida sempre, mesmo que o formulário já o tenha feito.
+/** O servidor valida sempre, mesmo que o formulário já o tenha feito. */
+function validateOpportunity(input: OpportunityChanges): void {
   const invalid = titleError(input.title) ?? (!opportunityOptionsFixture.zones.includes(input.zone) ? "Zona inválida" : undefined);
   if (invalid) throw new ApiError(422, invalid);
   if (!fitsRule(input.askingPrice, MONEY) || input.askingPrice <= 0 || !fitsRule(input.vvr, MONEY) || input.vvr <= 0) throw new ApiError(422, "Valores inválidos");
+}
+
+export async function addOpportunity(input: NewOpportunity) {
+  await respond(null);
+  validateOpportunity(input);
   const id = Math.max(0, ...opportunitiesFixture.map((item) => item.id)) + 1;
   const sourceLead = leads.find((item) => item.id === input.leadId);
   if (input.leadId !== undefined && !sourceLead) throw new ApiError(422, "Lead de origem inválida");
@@ -78,6 +82,16 @@ export async function addOpportunity(input: NewOpportunity) {
     documents: [],
   };
   opportunitiesFixture.push(opportunity);
+  return structuredClone(opportunity);
+}
+
+export async function updateOpportunity(id: number, changes: OpportunityChanges) {
+  await respond(null);
+  const opportunity = find(id);
+  if (opportunity.rejection || opportunity.operationId) throw new ApiError(409, "Oportunidade fechada");
+  validateOpportunity(changes);
+  Object.assign(opportunity, { ...changes, title: changes.title.trim() });
+  record(opportunity, "Dados da oportunidade atualizados");
   return structuredClone(opportunity);
 }
 

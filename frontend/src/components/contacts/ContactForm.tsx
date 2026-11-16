@@ -2,7 +2,7 @@ import type { ContactFormValues } from "../../lib/contactForm";
 import { CONTACT_TEXT_LIMITS, sanitizeNif, type ContactErrors } from "../../lib/contactRules";
 import { LEAD_TEXT_LIMITS, sanitizePhone } from "../../lib/leadRules";
 import { useContactTypes } from "../../hooks/useContacts";
-import { consentChannelOptions, zoneOptions } from "../../temp";
+import { consentChannelOptions } from "../../temp";
 import FormField from "../ui/FormField";
 import Select from "../ui/Select";
 import { inputClasses } from "../ui/inputClasses";
@@ -42,8 +42,8 @@ function ContactForm({ values, onChange, errors, showErrors, showType = true }: 
       <FormField label="Empresa (opcional)" error={error("company")}>
         <input className={inputClasses} value={values.company} maxLength={CONTACT_TEXT_LIMITS.company} onChange={(e) => set("company", e.target.value)} />
       </FormField>
-      <FormField label="Zona (opcional)">
-        <Select value={values.zone} onChange={(value) => set("zone", value)} options={zoneOptions} placeholder="Sem zona" />
+      <FormField label="Zona (opcional)" error={error("zone")}>
+        <input className={inputClasses} placeholder="Ex.: Baixa de Coimbra" value={values.zone} maxLength={CONTACT_TEXT_LIMITS.zone} onChange={(e) => set("zone", e.target.value)} />
       </FormField>
       <FormField label="NIF (opcional)" error={error("nif")}>
         <input className={inputClasses} inputMode="numeric" placeholder="9 dígitos" value={values.nif} maxLength={CONTACT_TEXT_LIMITS.nif} onChange={(e) => set("nif", sanitizeNif(e.target.value))} />

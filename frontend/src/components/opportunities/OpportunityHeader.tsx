@@ -11,12 +11,13 @@ interface Props {
   backTo: string;
   busy: boolean;
   onReport: () => void;
+  onEdit: () => void;
   onReject: () => void;
   onAdvance: () => void;
   onConvert: () => void;
 }
 
-function OpportunityHeader({ detail, backTo, busy, onReport, onReject, onAdvance, onConvert }: Props) {
+function OpportunityHeader({ detail, backTo, busy, onReport, onEdit, onReject, onAdvance, onConvert }: Props) {
   const updated = isToday(detail.updatedAt) ? "hoje" : `em ${formatIsoDate(detail.updatedAt)}`;
   return (
     <EntityHeader
@@ -34,7 +35,7 @@ function OpportunityHeader({ detail, backTo, busy, onReport, onReject, onAdvance
           <span className="text-[11px] text-muted">Responsável: {detail.owner.name}</span>
         </div>
       }
-      actions={<OpportunityActions detail={detail} busy={busy} onReport={onReport} onReject={onReject} onAdvance={onAdvance} onConvert={onConvert} />}
+      actions={<OpportunityActions detail={detail} busy={busy} onReport={onReport} onEdit={onEdit} onReject={onReject} onAdvance={onAdvance} onConvert={onConvert} />}
     />
   );
 }

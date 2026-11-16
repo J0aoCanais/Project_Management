@@ -3,7 +3,6 @@ import type { ContactFields } from "./contactRules";
 
 /** O que o `ContactForm` edita: os campos do contacto e o tipo (um só papel). */
 export interface ContactFormValues extends ContactFields {
-  zone: string;
   type: string;
 }
 
@@ -39,7 +38,7 @@ export function formToContactInput(form: ContactFormValues, previous?: Contact):
     email: form.email.trim(),
     phone: form.phone.trim(),
     company: form.company.trim(),
-    zone: form.zone,
+    zone: form.zone.trim(),
     nif: form.nif.trim(),
     address: form.address.trim(),
     notes: form.notes.trim(),

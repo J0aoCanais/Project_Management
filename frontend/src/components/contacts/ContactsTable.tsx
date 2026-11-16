@@ -12,7 +12,7 @@ const columns: TableColumn<Contact>[] = [
   { key: "company", header: "Empresa", truncate: true, render: (contact) => contact.company || "—" },
   { key: "email", header: "Email", truncate: true, render: (contact) => contact.email || "—" },
   { key: "phone", header: "Telemóvel", render: (contact) => contact.phone || "—" },
-  { key: "zone", header: "Zona", render: (contact) => contact.zone || "—" },
+  { key: "zone", header: "Zona", truncate: true, render: (contact) => contact.zone || "—" },
   { key: "type", header: "Tipo", render: (contact) => <Pill>{contactType(contact)}</Pill> },
 ];
 

@@ -11,6 +11,7 @@ import Notice from "../ui/Notice";
 import PhaseStepper from "../ui/PhaseStepper";
 import Tabs from "../ui/Tabs";
 import FinanceAnalysis from "./FinanceAnalysis";
+import NewOpportunityDrawer from "./NewOpportunityDrawer";
 import OpportunityActivity from "./OpportunityActivity";
 import OpportunityDocuments from "./OpportunityDocuments";
 import OpportunityHeader from "./OpportunityHeader";
@@ -42,6 +43,7 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
   const tab = tabs.find((item) => item.value === params.get("tab"))?.value ?? "resumo";
   const [pendingTab, setPendingTab] = useState<TabValue | null>(null);
   const [rejecting, setRejecting] = useState(false);
+  const [editing, setEditing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
 
   const draft = useFinanceDraft(detail);
@@ -70,6 +72,7 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
         backTo={backTo}
         busy={move.isPending || convert.isPending}
         onReport={() => setReportOpen(true)}
+        onEdit={() => setEditing(true)}
         onReject={() => setRejecting(true)}
         onAdvance={() => move.mutate({ id: detail.id, phaseIndex: detail.phaseIndex + 1 })}
         onConvert={handleConvert}
@@ -118,6 +121,7 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
         {tab === "documentos" && <OpportunityDocuments detail={detail} />}
       </div>
 
+      {editing && <NewOpportunityDrawer opportunity={detail} onClose={() => setEditing(false)} />}
       {rejecting && <RejectOpportunityDialog opportunityId={detail.id} onClose={() => setRejecting(false)} />}
       {pendingTab && (
         <UnsavedChangesDialog

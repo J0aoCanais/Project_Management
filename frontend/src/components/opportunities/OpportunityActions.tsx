@@ -7,12 +7,13 @@ interface Props {
   detail: OpportunityDetail;
   busy: boolean;
   onReport: () => void;
+  onEdit: () => void;
   onReject: () => void;
   onAdvance: () => void;
   onConvert: () => void;
 }
 
-function OpportunityActions({ detail, busy, onReport, onReject, onAdvance, onConvert }: Props) {
+function OpportunityActions({ detail, busy, onReport, onEdit, onReject, onAdvance, onConvert }: Props) {
   const closed = Boolean(detail.rejection || detail.operationId);
   return (
     <>
@@ -27,6 +28,7 @@ function OpportunityActions({ detail, busy, onReport, onReject, onAdvance, onCon
       )}
       {!closed && (
         <>
+          <Button onClick={onEdit}>Editar</Button>
           <Button variant="danger" onClick={onReject}>
             Marcar como rejeitada/perdida
           </Button>

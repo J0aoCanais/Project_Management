@@ -1,7 +1,7 @@
 import { useState, type FormEvent } from "react";
 
 import type { OpportunityDetail } from "../../api/opportunitiesApi";
-import { useCreateOpportunity, useOpportunityOptions } from "../../hooks/useOpportunities";
+import { useCreateOpportunity, useOpportunityOptions, useUpdateOpportunity } from "../../hooks/useOpportunities";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
 import FormField from "../ui/FormField";
@@ -18,18 +18,22 @@ interface Props {
   fromLead?: { id: number; name: string; zone: string };
   /** Chamado depois de criar; por omissão fecha o drawer. */
   onCreated?: (detail: OpportunityDetail) => void;
+  /** Com uma oportunidade, o drawer edita-a em vez de criar. */
+  opportunity?: OpportunityDetail;
 }
 
 const FORM_ID = "nova-oportunidade";
 
-function NewOpportunityDrawer({ onClose, fromLead, onCreated }: Props) {
+function NewOpportunityDrawer({ onClose, fromLead, onCreated, opportunity }: Props) {
   const { data: options } = useOpportunityOptions();
   const create = useCreateOpportunity();
-  const [title, setTitle] = useState("");
-  const [typology, setTypology] = useState("T2");
-  const [zone, setZone] = useState(fromLead?.zone ?? "");
-  const [askingPrice, setAskingPrice] = useState(0);
-  const [vvr, setVvr] = useState(0);
+  const update = useUpdateOpportunity(opportunity?.id ?? Number.NaN);
+  const mutation = opportunity ? update : create;
+  const [title, setTitle] = useState(opportunity?.title ?? "");
+  const [typology, setTypology] = useState(opportunity?.typology ?? "T2");
+  const [zone, setZone] = useState(opportunity?.zone ?? fromLead?.zone ?? "");
+  const [askingPrice, setAskingPrice] = useState(opportunity?.askingPrice ?? 0);
+  const [vvr, setVvr] = useState(opportunity?.vvr ?? 0);
   const [leadId, setLeadId] = useState(fromLead ? String(fromLead.id) : "");
   const [showErrors, setShowErrors] = useState(false);
 
@@ -44,6 +48,10 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated }: Props) {
     e.preventDefault();
     setShowErrors(true);
     if (Object.values(errors).some(Boolean)) return;
+    if (opportunity) {
+      update.mutate({ title: title.trim(), typology, zone, askingPrice, vvr }, { onSuccess: onClose });
+      return;
+    }
     create.mutate(
       { title: title.trim(), typology, zone, askingPrice, vvr, leadId: leadId ? Number(leadId) : undefined },
       { onSuccess: (detail) => (onCreated ? onCreated(detail) : onClose()) },
@@ -52,20 +60,20 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated }: Props) {
 
   return (
     <Drawer
-      title={fromLead ? "Converter lead em oportunidade" : "Nova oportunidade"}
-      subtitle={fromLead ? `A partir da lead ${fromLead.name} · entra na fase Novo` : "Entra na fase Novo"}
+      title={opportunity ? "Editar oportunidade" : fromLead ? "Converter lead em oportunidade" : "Nova oportunidade"}
+      subtitle={opportunity ? opportunity.title : fromLead ? `A partir da lead ${fromLead.name} · entra na fase Novo` : "Entra na fase Novo"}
       onClose={onClose}
       footer={
         <>
           <Button onClick={onClose}>Cancelar</Button>
-          <Button variant="primary" type="submit" form={FORM_ID} disabled={create.isPending}>
-            {fromLead ? "Converter" : "Criar oportunidade"}
+          <Button variant="primary" type="submit" form={FORM_ID} disabled={mutation.isPending}>
+            {opportunity ? "Guardar alterações" : fromLead ? "Converter" : "Criar oportunidade"}
           </Button>
         </>
       }
     >
       <form id={FORM_ID} noValidate onSubmit={handleSubmit} className="grid gap-3 rounded-panel border border-line bg-white p-3.5">
-        {create.isError && <Notice tone="warning">Não foi possível criar a oportunidade. Tente novamente.</Notice>}
+        {mutation.isError && <Notice tone="warning">{opportunity ? "Não foi possível guardar as alterações." : "Não foi possível criar a oportunidade."} Tente novamente.</Notice>}
         <FormField label="Imóvel / morada" error={showErrors ? errors.title : undefined}>
           {/* Textarea para a morada passar para a linha de baixo; continua a ser uma só linha de texto. */}
           <textarea
@@ -95,7 +103,7 @@ function NewOpportunityDrawer({ onClose, fromLead, onCreated }: Props) {
         <FormField label="VVR" error={showErrors ? errors.vvr : undefined}>
           <NumberInput min={MONEY.min} max={MONEY.max} decimals={MONEY.decimals} suffix="€" value={vvr} onChange={setVvr} invalid={showErrors && !!errors.vvr} />
         </FormField>
-        {fromLead ? (
+        {opportunity ? null : fromLead ? (
           <FormField label="Lead de origem">
             <input className={inputClasses} value={fromLead.name} readOnly disabled />
           </FormField>

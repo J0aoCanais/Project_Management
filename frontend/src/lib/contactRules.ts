@@ -7,6 +7,7 @@ export const CONTACT_TEXT_LIMITS = {
   name: 80,
   email: 120,
   company: 80,
+  zone: 80,
   address: 200,
   notes: 500,
   nif: 9,
@@ -18,6 +19,7 @@ export interface ContactFields {
   email: string;
   phone: string;
   company: string;
+  zone: string;
   nif: string;
   address: string;
   notes: string;
@@ -58,6 +60,7 @@ export function contactErrors(contact: ContactFields): ContactErrors {
     email: emailError(contact.email),
     phone: contact.phone.trim() ? phoneError(contact.phone) : undefined,
     company: optionalTextError(contact.company, CONTACT_TEXT_LIMITS.company),
+    zone: optionalTextError(contact.zone, CONTACT_TEXT_LIMITS.zone),
     nif: nifError(contact.nif),
     address: optionalTextError(contact.address, CONTACT_TEXT_LIMITS.address),
     notes: optionalTextError(contact.notes, CONTACT_TEXT_LIMITS.notes),

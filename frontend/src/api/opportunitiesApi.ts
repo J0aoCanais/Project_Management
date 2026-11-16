@@ -72,6 +72,9 @@ export interface NewOpportunity {
   leadId?: number;
 }
 
+/** Dados que se podem editar depois de criada (a lead de origem não muda). */
+export type OpportunityChanges = Omit<NewOpportunity, "leadId">;
+
 export interface OpportunityOptions {
   zones: string[];
   managers: string[];
@@ -97,6 +100,11 @@ export async function getOpportunityOptions(): Promise<OpportunityOptions> {
 export async function createOpportunity(input: NewOpportunity): Promise<OpportunityDetail> {
   // POST /v1/opportunities
   return store.addOpportunity(input);
+}
+
+export async function updateOpportunity(id: number, changes: OpportunityChanges): Promise<OpportunityDetail> {
+  // PATCH /v1/opportunities/${id}
+  return store.updateOpportunity(id, changes);
 }
 
 export async function moveOpportunityPhase(id: number, phaseIndex: number): Promise<OpportunityDetail> {

@@ -10,10 +10,12 @@ import {
   moveOpportunityPhase,
   rejectOpportunity,
   saveOpportunityFinance,
+  updateOpportunity,
   uploadOpportunityDocuments,
   type ExtraCost,
   type FinanceValues,
   type NewOpportunity,
+  type OpportunityChanges,
   type OpportunityCard,
   type OpportunityDetail,
 } from "../api/opportunitiesApi";
@@ -48,6 +50,14 @@ export function useCreateOpportunity() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (input: NewOpportunity) => createOpportunity(input),
+    onSuccess: (detail) => storeDetail(client, detail),
+  });
+}
+
+export function useUpdateOpportunity(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (changes: OpportunityChanges) => updateOpportunity(id, changes),
     onSuccess: (detail) => storeDetail(client, detail),
   });
 }
