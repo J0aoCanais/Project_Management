@@ -2,8 +2,8 @@ import { useState } from "react";
 import { useParams, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
-import DocumentsTable from "../components/documents/DocumentsTable";
 import InvestmentsTable from "../components/investors/InvestmentsTable";
+import InvestorDocuments from "../components/investors/InvestorDocuments";
 import InvestorStatusPill from "../components/investors/InvestorStatusPill";
 import NewInvestorDrawer from "../components/investors/NewInvestorDrawer";
 import Button from "../components/ui/Button";
@@ -12,7 +12,6 @@ import EmptyState from "../components/ui/EmptyState";
 import EntityHeader from "../components/ui/EntityHeader";
 import ErrorState from "../components/ui/ErrorState";
 import LoadingState from "../components/ui/LoadingState";
-import Panel from "../components/ui/Panel";
 import RecordFields from "../components/ui/RecordFields";
 import Tabs from "../components/ui/Tabs";
 import { useInvestor } from "../hooks/useInvestors";
@@ -92,11 +91,7 @@ function InvestorDetailPage() {
         </div>
       )}
       {tab === "investimentos" && <InvestmentsTable investorId={investor.id} investorName={investor.name} investments={investor.investments} />}
-      {tab === "documentos" && (
-        <Panel className="overflow-hidden">
-          {investor.documents.length ? <DocumentsTable documents={investor.documents} /> : <EmptyState message="Ainda não há documentos ligados aos investimentos." />}
-        </Panel>
-      )}
+      {tab === "documentos" && <InvestorDocuments investments={investor.investments} />}
       {editing && <NewInvestorDrawer investor={investor} onClose={() => setEditing(false)} />}
     </>
   );

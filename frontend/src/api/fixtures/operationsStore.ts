@@ -4,13 +4,7 @@ import { leadContactOptions, leads, opportunitiesFixture, operationsFixture, opp
 import { ApiError } from "../client";
 import type { NewOperation, OperationCard, OperationDetail } from "../operationsApi";
 
-const LATENCY_MS = 150;
-let nextDocumentId = 1;
-
-const respond = async <T,>(value: T): Promise<T> => {
-  await new Promise((resolve) => setTimeout(resolve, LATENCY_MS));
-  return structuredClone(value);
-};
+import { respond } from "./respond";
 
 function find(id: number): OperationDetail {
   const operation = operationsFixture.find((item) => item.id === id);
@@ -19,8 +13,14 @@ function find(id: number): OperationDetail {
 }
 
 function toCard(operation: OperationDetail): OperationCard {
-  const { phaseHistory: _history, activity: _activity, documents: _documents, constructionWorks: _works, investments: _investments, ...card } = operation;
+  const { phaseHistory: _history, activity: _activity, constructionWorks: _works, investments: _investments, ...card } = operation;
   return card;
+}
+
+/** Regista uma linha na atividade da operação (também usado pelos documentos). */
+export function recordActivity(id: number, text: string): void {
+  const operation = operationsFixture.find((item) => item.id === id);
+  if (operation) record(operation, text);
 }
 
 function record(operation: OperationDetail, text: string) {
@@ -68,7 +68,6 @@ function createFromOpportunity(opportunityId: number, values?: Pick<NewOperation
     buyerName: values?.buyerName ?? opportunity.contactName ?? "",
     phaseHistory: [],
     activity: [{ date, text: `Operação criada a partir de ${opportunity.title}` }],
-    documents: [],
     constructionWorks: [],
     investments: [],
   };
@@ -148,24 +147,6 @@ export async function cancel(id: number, reason: string) {
   if (error) throw new ApiError(422, error);
   operation.cancellation = { reason: reason.trim(), date: new Date().toISOString() };
   record(operation, `Operação cancelada: ${reason.trim()}`);
-  return structuredClone(operation);
-}
-
-export async function addDocuments(id: number, files: File[], type: string) {
-  await respond(null);
-  const operation = find(id);
-  for (const file of files) {
-    operation.documents.push({
-      id: `operation-upload-${nextDocumentId++}`,
-      name: file.name,
-      type,
-      propertyCode: operation.propertyCode,
-      entity: operation.code,
-      sizeBytes: file.size,
-      status: "Válido",
-    });
-  }
-  record(operation, files.length === 1 ? "Documento carregado" : `${files.length} documentos carregados`);
   return structuredClone(operation);
 }
 

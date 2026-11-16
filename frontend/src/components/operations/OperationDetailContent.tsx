@@ -2,7 +2,7 @@ import { useState } from "react";
 import { Link, useSearchParams } from "react-router-dom";
 
 import type { OperationDetail } from "../../api/operationsApi";
-import { useMoveOperationPhase, useUploadOperationDocuments } from "../../hooks/useOperations";
+import { useMoveOperationPhase } from "../../hooks/useOperations";
 import { formatActivityDate, formatIsoDate, formatMoney } from "../../lib/format";
 import { OPERATION_PHASES } from "../../lib/phases";
 import Button from "../ui/Button";
@@ -19,7 +19,7 @@ import CancelOperationDialog from "./CancelOperationDialog";
 import OperationActions from "./OperationActions";
 import OperationSummary from "./OperationSummary";
 import PhaseHistoryTable from "../pipeline/PhaseHistoryTable";
-import DocumentsPanel from "../pipeline/DocumentsPanel";
+import DocumentsPanel from "../documents/DocumentsPanel";
 
 interface Props {
   operation: OperationDetail;
@@ -41,7 +41,6 @@ function OperationDetailContent({ operation, backTo }: Props) {
   const tab = tabs.find((item) => item.value === params.get("tab"))?.value ?? "resumo";
   const [cancelling, setCancelling] = useState(false);
   const move = useMoveOperationPhase();
-  const upload = useUploadOperationDocuments();
   const phase = OPERATION_PHASES[operation.phaseIndex];
 
   const workColumns: TableColumn<OperationDetail["constructionWorks"][number]>[] = [
@@ -83,9 +82,9 @@ function OperationDetailContent({ operation, backTo }: Props) {
           <Notice tone="warning">Cancelada em {formatIsoDate(operation.cancellation.date)}. Motivo: {operation.cancellation.reason}</Notice>
         </div>
       )}
-      {(move.isError || upload.isError) && (
+      {move.isError && (
         <div role="alert" className="mb-3">
-          <Notice tone="warning">{move.isError ? "Não foi possível mudar a fase. Tente novamente." : "Não foi possível carregar os documentos. Tente novamente."}</Notice>
+          <Notice tone="warning">Não foi possível mudar a fase. Tente novamente.</Notice>
         </div>
       )}
       <PhaseStepper steps={OPERATION_PHASES.map((item) => item.name)} current={operation.phaseIndex} startAt={9} />
@@ -130,14 +129,7 @@ function OperationDetailContent({ operation, backTo }: Props) {
         )}
         {tab === "historico-de-fases" && <PhaseHistoryTable history={operation.phaseHistory} />}
         {tab === "documentos" && (
-          <DocumentsPanel
-            documents={operation.documents}
-            propertyCode={operation.propertyCode}
-            entityLabel={operation.code}
-            uploading={upload.isPending}
-            uploadFailed={upload.isError}
-            onUpload={(files, type) => upload.mutate({ id: operation.id, files, type })}
-          />
+          <DocumentsPanel owner={{ kind: "operation", id: operation.id }} title="Documentos da operação" notice={`Ficam associados à operação ${operation.code} (imóvel ${operation.propertyCode}) e aparecem no menu Documentos.`} />
         )}
       </div>
       {cancelling && <CancelOperationDialog operationId={operation.id} onClose={() => setCancelling(false)} />}

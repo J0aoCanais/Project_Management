@@ -1,24 +1,63 @@
+import { Link } from "react-router-dom";
+
 import type { DocumentRecord } from "../../api/documentsApi";
-import { formatFileSize, formatIsoDate } from "../../lib/format";
-import Pill from "../ui/Pill";
+import { OWNER_KIND_LABELS, expiryStatus } from "../../lib/documentRules";
+import { formatFileSize, formatIsoDate, todayIso } from "../../lib/format";
+import { entityPath } from "../../lib/links";
 import Table, { type TableColumn } from "../ui/Table";
 
 interface Props {
   documents: DocumentRecord[];
+  /** Mostra a coluna "Associado a" (na biblioteca; no separador de um registo não é precisa). */
+  showOwner?: boolean;
+  onDelete: (document: DocumentRecord) => void;
 }
 
-const columns: TableColumn<DocumentRecord>[] = [
-  { key: "name", header: "Documento", truncate: true, render: (document) => document.name },
-  { key: "type", header: "Tipo", render: (document) => document.type },
-  { key: "property", header: "Imóvel", render: (document) => document.propertyCode },
-  { key: "entity", header: "Entidade associada", truncate: true, render: (document) => document.entity },
-  { key: "size", header: "Tamanho", align: "right", render: (document) => formatFileSize(document.sizeBytes) },
-  { key: "validity", header: "Validade", render: (document) => (document.validUntil ? formatIsoDate(document.validUntil) : "—") },
-  { key: "status", header: "Estado", render: (document) => <Pill tone={document.status === "Válido" ? "green" : "amber"}>{document.status}</Pill> },
-];
+const expiryClasses = { "Sem validade": "", Válido: "", "A expirar": "font-semibold text-warning", Expirado: "font-semibold text-danger" };
 
-/** Lista de documentos, igual em oportunidades, investidores e (mais tarde) no menu Documentos. */
-function DocumentsTable({ documents }: Props) {
+function Validity({ document }: { document: DocumentRecord }) {
+  const status = expiryStatus(document.expiryDate, todayIso());
+  if (!document.expiryDate) return <>—</>;
+  return (
+    <span className={expiryClasses[status]}>
+      {formatIsoDate(document.expiryDate)}
+      {(status === "A expirar" || status === "Expirado") && ` · ${status}`}
+    </span>
+  );
+}
+
+function DocumentsTable({ documents, showOwner = false, onDelete }: Props) {
+  const columns: TableColumn<DocumentRecord>[] = [
+    { key: "name", header: "Nome", render: (document) => <span className="block max-w-[280px] truncate" title={document.name}>{document.name}</span> },
+    { key: "type", header: "Tipo", render: (document) => document.type },
+    ...(showOwner
+      ? [
+          {
+            key: "owner",
+            header: "Associado a",
+            render: (document: DocumentRecord) => (
+              <Link to={entityPath(document.owner)} className="text-brand hover:underline">
+                <span className="text-muted">{OWNER_KIND_LABELS[document.owner.kind]} · </span>
+                {document.owner.label}
+              </Link>
+            ),
+          },
+        ]
+      : []),
+    { key: "size", header: "Tamanho", align: "right", render: (document) => formatFileSize(document.sizeBytes) },
+    { key: "uploaded", header: "Carregado em", render: (document) => formatIsoDate(document.uploadedAt) },
+    { key: "validity", header: "Validade", render: (document) => <Validity document={document} /> },
+    {
+      key: "actions",
+      header: "Ações",
+      align: "right",
+      render: (document) => (
+        <button type="button" aria-label={`Eliminar ${document.name}`} onClick={() => onDelete(document)} className="text-xs font-semibold text-danger hover:underline">
+          Eliminar
+        </button>
+      ),
+    },
+  ];
   return <Table columns={columns} rows={documents} getRowKey={(document) => document.id} />;
 }
 

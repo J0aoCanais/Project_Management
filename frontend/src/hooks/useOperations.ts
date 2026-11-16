@@ -8,7 +8,6 @@ import {
   getOperationOptions,
   getOperations,
   moveOperationPhase,
-  uploadOperationDocuments,
   type NewOperation,
   type OperationCard,
   type OperationDetail,
@@ -83,14 +82,6 @@ export function useCancelOperation() {
   const client = useQueryClient();
   return useMutation({
     mutationFn: ({ id, reason }: { id: number; reason: string }) => cancelOperation(id, reason),
-    onSuccess: (detail) => storeDetail(client, detail),
-  });
-}
-
-export function useUploadOperationDocuments() {
-  const client = useQueryClient();
-  return useMutation({
-    mutationFn: ({ id, files, type }: { id: number; files: File[]; type: string }) => uploadOperationDocuments(id, files, type),
     onSuccess: (detail) => storeDetail(client, detail),
   });
 }

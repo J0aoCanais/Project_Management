@@ -1,5 +1,4 @@
 import * as store from "./fixtures/operationsStore";
-import type { OpportunityDocument } from "./opportunitiesApi";
 
 export interface OperationCard {
   id: number;
@@ -44,7 +43,6 @@ export interface OperationDetail extends OperationCard {
   saleDeedDate?: string;
   phaseHistory: { from: string; to: string; date: string; note?: string }[];
   activity: { date: string; text: string }[];
-  documents: OpportunityDocument[];
   constructionWorks: ConstructionWork[];
   investments: OperationInvestment[];
   cancellation?: { reason: string; date: string };
@@ -87,8 +85,4 @@ export async function moveOperationPhase(id: number, phaseIndex: number): Promis
 
 export async function cancelOperation(id: number, reason: string): Promise<OperationDetail> {
   return store.cancel(id, reason);
-}
-
-export async function uploadOperationDocuments(id: number, files: File[], type: string): Promise<OperationDetail> {
-  return store.addDocuments(id, files, type);
 }

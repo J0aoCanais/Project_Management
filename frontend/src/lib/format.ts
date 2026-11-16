@@ -77,3 +77,45 @@ export function formatLongDate(date: Date): string {
   const text = longDate.format(date);
   return text.charAt(0).toUpperCase() + text.slice(1);
 }
+
+const compactCurrency = new Intl.NumberFormat("pt-PT", {
+  style: "currency",
+  currency: "EUR",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/** 45000 → "45 mil €"; para rótulos curtos em gráficos. */
+export function formatCompactMoney(value: number): string {
+  return compactCurrency.format(value);
+}
+
+/** Entradas com "+" e saídas com "−": (45000, true) → "+45 000 €"; (390, false) → "−390 €". */
+export function formatSignedMoney(value: number, inflow: boolean): string {
+  return `${inflow ? "+" : "−"}${currency.format(Math.abs(value))}`;
+}
+
+/** Hoje como "2026-11-05". As datas sem hora comparam-se como texto. */
+export function todayIso(): string {
+  return toIsoDate(new Date());
+}
+
+/** É uma data "aaaa-mm-dd" que existe no calendário? */
+export function isValidIsoDate(text: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+  const date = parseIsoDate(text);
+  return toIsoDate(date) === text;
+}
+
+/** Dias de `from` até `to` (ambas "aaaa-mm-dd"); negativo se `to` já passou. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((parseIsoDate(to).getTime() - parseIsoDate(from).getTime()) / 86_400_000);
+}
+
+const monthName = new Intl.DateTimeFormat("pt-PT", { month: "short" });
+
+/** "2026-11" → "nov. 26" */
+export function formatMonth(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-").map(Number);
+  return `${monthName.format(new Date(year, month - 1, 1))} ${String(year).slice(2)}`;
+}

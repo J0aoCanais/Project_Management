@@ -17,6 +17,11 @@ import ContactsPage from "./pages/ContactsPage";
 import ContactDetailPage from "./pages/ContactDetailPage";
 import InvestorsPage from "./pages/InvestorsPage";
 import InvestorDetailPage from "./pages/InvestorDetailPage";
+import DocumentsPage from "./pages/DocumentsPage";
+import FinancePage from "./pages/FinancePage";
+import MovementDetailPage from "./pages/MovementDetailPage";
+import PropertiesPage from "./pages/PropertiesPage";
+import PropertyDetailPage from "./pages/PropertyDetailPage";
 
 // Páginas do menu já implementadas.
 const pages: Record<string, ReactNode> = {
@@ -27,6 +32,9 @@ const pages: Record<string, ReactNode> = {
   "/definicoes": <SettingsPage />,
   "/contactos": <ContactsPage />,
   "/investidores": <InvestorsPage />,
+  "/imoveis": <PropertiesPage />,
+  "/financas": <FinancePage />,
+  "/documentos": <DocumentsPage />,
 };
 
 function App() {
@@ -46,6 +54,8 @@ function App() {
         <Route path="operacoes/:id" element={<OperationDetailPage />} />
         <Route path="contactos/:id" element={<ContactDetailPage />} />
         <Route path="investidores/:id" element={<InvestorDetailPage />} />
+        <Route path="imoveis/:id" element={<PropertyDetailPage />} />
+        <Route path="financas/:id" element={<MovementDetailPage />} />
         <Route path="health" element={<HealthPage />} />
         <Route path="*" element={<PlaceholderPage title="Página não encontrada" />} />
       </Route>

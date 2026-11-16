@@ -29,7 +29,7 @@ function toDetail(record: InvestorRecord): InvestorDetail {
 }
 
 function toListItem(record: InvestorRecord): Investor {
-  const { investments: _investments, documents: _documents, ...investor } = toDetail(record);
+  const { investments: _investments, ...investor } = toDetail(record);
   return investor;
 }
 
@@ -67,7 +67,6 @@ export async function create(input: NewInvestorInput) {
     zone: contact.zone,
     profile: structuredClone(input.profile),
     investments: [],
-    documents: [],
   };
   investorsFixture.push(record);
   return structuredClone(toDetail(record));
