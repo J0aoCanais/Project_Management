@@ -31,6 +31,17 @@ def get_csrf_token():
         "csrf_token": generate_csrf()
     })
 
+@auth_bp.get("/api/me")
+def me():
+    """Utilizador da sessão. O frontend chama-o ao abrir: sem sessão, o pedido é
+    redirecionado para /login (como qualquer página privada) antes de mostrar a aplicação."""
+    return jsonify({
+        "id": current_user.id,
+        "email": current_user.email,
+        "access_level": current_user.access_level,
+    })
+
+
 @auth_bp.route("/login", methods=["GET", "POST"])
 @limiter.limit("5 per minute", methods=["POST"])
 def login():
