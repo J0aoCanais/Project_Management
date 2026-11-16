@@ -1,5 +1,6 @@
 import type { DocumentOwnerKind, DocumentRecord } from "../api/documentsApi";
 import { documentTypesByOwner, requiredDocumentTypes } from "../temp";
+import { PHOTO_STAGES } from "./workRules";
 import { daysBetween, isValidIsoDate } from "./format";
 
 // Regras dos documentos. Usadas pelo formulário de carregamento e pelo servidor simulado.
@@ -68,6 +69,20 @@ export function filesError(files: Pick<File, "name" | "size">[]): string | undef
 export function expiryDateError(expiryDate: string | undefined): string | undefined {
   if (!expiryDate) return undefined;
   return isValidIsoDate(expiryDate) ? undefined : "Data de validade inválida.";
+}
+
+/** Tipos de documento que são fotografias e pedem a fase (Antes, Durante, Depois). */
+export const PHOTO_DOCUMENT_TYPES = ["Fotografia de obra"];
+
+export function isPhotoType(type: string): boolean {
+  return PHOTO_DOCUMENT_TYPES.includes(type);
+}
+
+/** Erro da fase de uma fotografia: obrigatória nas fotografias, proibida nos outros tipos. */
+export function photoStageError(type: string, photoStage: string | undefined): string | undefined {
+  if (!isPhotoType(type)) return photoStage ? "Só as fotografias têm fase." : undefined;
+  if (!photoStage) return "Escolha a fase da fotografia.";
+  return (PHOTO_STAGES as readonly string[]).includes(photoStage) ? undefined : "Fase inválida.";
 }
 
 /** Erro do tipo escolhido para esta entidade. */

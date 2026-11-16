@@ -3,7 +3,8 @@ import { useState, type ReactNode } from "react";
 import { ApiError } from "../../api/client";
 import type { DocumentOwner, DocumentRecord } from "../../api/documentsApi";
 import { useDocuments, useUploadDocuments } from "../../hooks/useDocuments";
-import { documentTypesFor, expiryDateError, filesError } from "../../lib/documentRules";
+import { documentTypesFor, expiryDateError, filesError, isPhotoType, photoStageError } from "../../lib/documentRules";
+import { PHOTO_STAGES } from "../../lib/workRules";
 import EmptyState from "../ui/EmptyState";
 import ErrorState from "../ui/ErrorState";
 import FileUploadButton from "../ui/FileUploadButton";
@@ -32,15 +33,18 @@ function DocumentsPanel({ owner, title = "Documentos", notice }: Props) {
   const upload = useUploadDocuments();
   const [type, setType] = useState(types[0]);
   const [expiryDate, setExpiryDate] = useState("");
+  const [photoStage, setPhotoStage] = useState("");
+  const photo = isPhotoType(type);
   const [error, setError] = useState<string>();
   const [deleting, setDeleting] = useState<DocumentRecord | null>(null);
 
   const handleFiles = (files: File[]) => {
-    const invalid = filesError(files) ?? expiryDateError(expiryDate);
+    const stage = photo ? photoStage : undefined;
+    const invalid = filesError(files) ?? photoStageError(type, stage) ?? expiryDateError(expiryDate);
     setError(invalid);
     if (invalid) return;
     upload.mutate(
-      { owner, type, expiryDate: expiryDate || undefined, files },
+      { owner, type, expiryDate: expiryDate || undefined, photoStage: stage, files },
       {
         onSuccess: () => setExpiryDate(""),
         onError: (failure) => setError(failure instanceof ApiError && failure.status === 422 ? failure.message : "Não foi possível carregar os documentos. Tente novamente."),
@@ -61,6 +65,11 @@ function DocumentsPanel({ owner, title = "Documentos", notice }: Props) {
         <FormField label="Tipo de documento" className="min-[721px]:w-48">
           <Select value={type} onChange={setType} options={types} />
         </FormField>
+        {photo && (
+          <FormField label="Fase da fotografia" className="min-[721px]:w-36">
+            <Select value={photoStage} onChange={setPhotoStage} options={[...PHOTO_STAGES]} placeholder="Escolher…" />
+          </FormField>
+        )}
         <FormField label="Validade (opcional)" className="min-[721px]:w-40">
           <input type="date" className={inputClasses} value={expiryDate} onChange={(e) => setExpiryDate(e.target.value)} />
         </FormField>

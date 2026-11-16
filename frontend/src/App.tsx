@@ -23,6 +23,8 @@ import FinancePage from "./pages/FinancePage";
 import MovementDetailPage from "./pages/MovementDetailPage";
 import PropertiesPage from "./pages/PropertiesPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
+import WorksPage from "./pages/WorksPage";
+import WorkDetailPage from "./pages/WorkDetailPage";
 
 // Páginas do menu já implementadas.
 const pages: Record<string, ReactNode> = {
@@ -36,6 +38,7 @@ const pages: Record<string, ReactNode> = {
   "/imoveis": <PropertiesPage />,
   "/financas": <FinancePage />,
   "/documentos": <DocumentsPage />,
+  "/obras": <WorksPage />,
 };
 
 function App() {
@@ -55,6 +58,7 @@ function App() {
           <Route path="oportunidades/:id" element={<OpportunityDetailPage />} />
           <Route path="operacoes/:id" element={<OperationDetailPage />} />
           <Route path="contactos/:id" element={<ContactDetailPage />} />
+          <Route path="obras/:id" element={<WorkDetailPage />} />
           <Route path="investidores/:id" element={<InvestorDetailPage />} />
           <Route path="imoveis/:id" element={<PropertyDetailPage />} />
           <Route path="financas/:id" element={<MovementDetailPage />} />

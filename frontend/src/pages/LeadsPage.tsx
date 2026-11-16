@@ -45,7 +45,7 @@ function LeadsPage() {
   const updateFilter = (key: "q" | "estado" | "origem" | "zona", value: string) => {
     const next = new URLSearchParams(params);
     if (value) next.set(key, value); else next.delete(key);
-    setParams(next);
+    setParams(next, { replace: true });
   };
   const filtered = useMemo(() => (leadsQuery.data ?? []).filter((lead) => {
     const text = query.toLowerCase();

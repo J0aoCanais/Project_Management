@@ -2,7 +2,7 @@ import { NO_OPERATION, effectiveDateError, financingErrors, movementErrors, move
 import { todayIso } from "../../lib/format";
 import { ApiError } from "../client";
 import type { Financing, FinancingInput, Movement, MovementFilters, MovementInput, MovementLink, MovementOptions } from "../financeApi";
-import { budgetItemsFixture, financingsFixture, investorsFixture, movementCategoriesFixture, movementsFixture, operationsFixture } from "../../temp";
+import { financingsFixture, worksFixture, investorsFixture, movementCategoriesFixture, movementsFixture, operationsFixture } from "../../temp";
 import { respond } from "./respond";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar a página.
@@ -23,7 +23,10 @@ function options(): MovementOptions {
     categories: movementCategoriesFixture,
     operations: operationsFixture.map((item) => ({ id: item.id, label: `${item.code} · ${item.zone}` })),
     investments: investorsFixture.flatMap((investor) => investor.investments.map((item) => ({ id: item.id, label: `${investor.name} · ${item.operationCode}`, investorId: investor.id }))),
-    budgetItems: budgetItemsFixture.map((item) => ({ ...item, used: budgetUsed(item.id) })),
+    // Os itens de orçamento são os das obras (tarefa 06).
+    budgetItems: worksFixture.flatMap((work) =>
+      work.budgetItems.map((item) => ({ id: item.id, label: `${item.categoryName} · ${work.name}`, workId: work.id, contracted: item.contractedValue, used: budgetUsed(item.id) })),
+    ),
     financings: financingsFixture.map((item) => ({ id: item.id, label: item.name })),
   };
 }

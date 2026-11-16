@@ -1,7 +1,7 @@
-import { documentTypeError, expiryDateError, filesError } from "../../lib/documentRules";
+import { documentTypeError, expiryDateError, filesError, photoStageError } from "../../lib/documentRules";
 import { ApiError } from "../client";
 import type { DocumentFilters, DocumentOwner, DocumentOwnerKind, DocumentRecord, OwnerRef, UploadDocumentsInput } from "../documentsApi";
-import { documentsFixture, investorsFixture, movementCategoriesFixture, movementsFixture, operationsFixture, opportunitiesFixture, propertiesFixture, workRefs } from "../../temp";
+import { documentsFixture, investorsFixture, movementCategoriesFixture, movementsFixture, operationsFixture, opportunitiesFixture, propertiesFixture, worksFixture } from "../../temp";
 import { recordActivity as recordOperationActivity } from "./operationsStore";
 import { recordActivity } from "./opportunitiesStore";
 import { respond } from "./respond";
@@ -18,7 +18,7 @@ function owners(kind: DocumentOwnerKind): OwnerRef[] {
     case "operation":
       return operationsFixture.filter((item) => !item.cancellation).map((item) => ({ id: item.id, label: `${item.code} · ${item.zone}` }));
     case "work":
-      return workRefs.map((item) => ({ id: item.id, label: item.label }));
+      return worksFixture.map((item) => ({ id: item.id, label: `${item.name} · ${item.operationCode}` }));
     case "investment":
       return investorsFixture.flatMap((investor) => investor.investments.map((item) => ({ id: item.id, label: `${investor.name} · ${item.operationCode}`, parentId: investor.id })));
     case "movement":
@@ -68,11 +68,11 @@ function fakeHash(file: File): string {
   return `sha256-simulado-${hash.toString(16).padStart(8, "0")}`;
 }
 
-export async function addDocuments({ owner, type, expiryDate, files }: UploadDocumentsInput) {
+export async function addDocuments({ owner, type, expiryDate, photoStage, files }: UploadDocumentsInput) {
   await respond(null);
   // O servidor valida sempre, mesmo que o formulário já o tenha feito.
   if (!findOwner(owner)) throw new ApiError(422, "Escolha o registo a que o documento pertence.");
-  const invalid = filesError(files) ?? documentTypeError(owner.kind, type) ?? expiryDateError(expiryDate);
+  const invalid = filesError(files) ?? documentTypeError(owner.kind, type) ?? photoStageError(type, photoStage) ?? expiryDateError(expiryDate);
   if (invalid) throw new ApiError(422, invalid);
 
   const now = new Date().toISOString();
@@ -85,6 +85,7 @@ export async function addDocuments({ owner, type, expiryDate, files }: UploadDoc
     fileHash: fakeHash(file),
     uploadedAt: now,
     expiryDate: expiryDate || undefined,
+    photoStage: photoStage || undefined,
     owner: { kind: owner.kind, id: owner.id },
   }));
   documentsFixture.push(...created);

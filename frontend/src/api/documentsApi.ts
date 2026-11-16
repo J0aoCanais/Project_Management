@@ -28,6 +28,8 @@ export interface DocumentRecord {
   uploadedAt: string;
   /** "aaaa-mm-dd" */
   expiryDate?: string;
+  /** Fase de uma fotografia de obra: Antes, Durante ou Depois (`photo_stage`). */
+  photoStage?: string;
   owner: DocumentOwner & Omit<OwnerRef, "id">;
 }
 
@@ -42,6 +44,7 @@ export interface UploadDocumentsInput {
   owner: DocumentOwner;
   type: string;
   expiryDate?: string;
+  photoStage?: string;
   files: File[];
 }
 

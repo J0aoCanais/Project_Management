@@ -29,7 +29,7 @@ function Validity({ document }: { document: DocumentRecord }) {
 function DocumentsTable({ documents, showOwner = false, onDelete }: Props) {
   const columns: TableColumn<DocumentRecord>[] = [
     { key: "name", header: "Nome", render: (document) => <span className="block max-w-[280px] truncate" title={document.name}>{document.name}</span> },
-    { key: "type", header: "Tipo", render: (document) => document.type },
+    { key: "type", header: "Tipo", render: (document) => (document.photoStage ? `${document.type} (${document.photoStage})` : document.type) },
     ...(showOwner
       ? [
           {

@@ -7,7 +7,7 @@ import { calcFinance } from "./lib/finance";
 import { OPERATION_PHASES, OPPORTUNITY_PHASES } from "./lib/phases";
 import type { DashboardSummary } from "./api/dashboardApi";
 import type { DocumentOwner, DocumentOwnerKind, DocumentRecord } from "./api/documentsApi";
-import type { BudgetItemRef, MovementInput } from "./api/financeApi";
+import type { MovementInput } from "./api/financeApi";
 import type { PropertyDetail } from "./api/propertiesApi";
 import type { Lead, LeadContactEntry } from "./api/leadsApi";
 import type { InvestorRecord } from "./api/investorsApi";
@@ -15,6 +15,8 @@ import type { FinanceValues, OpportunityDetail, OpportunityOptions } from "./api
 import type { OperationDetail } from "./api/operationsApi";
 import type { LeadSource, MovementCategory, PhaseSetting, Role, SettingsUser } from "./api/settingsApi";
 import type { CurrentUser } from "./api/userApi";
+import type { WorkDetail, WorkOptions } from "./api/worksApi";
+import { BUDGET_CATEGORIES, PHOTO_STAGES, WORK_DOCUMENT_TYPES, WORK_STATES } from "./lib/workRules";
 
 // TODO: trocar pelo endpoint (zonas). Usado por leads, oportunidades e imóveis.
 export const zoneOptions = ["Baixa", "Alta", "Celas", "Solum", "Santa Clara", "Olivais"];
@@ -510,17 +512,6 @@ export const propertiesFixture: Omit<PropertyDetail, "estimatedProfit" | "relate
   { id: 987, code: "IM-0987", address: "Rua Dom João III, 21, Coimbra", zone: "Olivais", typology: "T2", propertyType: "Apartamento", areaM2: 104, askingPrice: 198000, vvr: 248000, constructionYear: 1980, condition: "Renovado" },
 ];
 
-// ---- Obras (só o que as outras páginas precisam para ligar registos) ----
-
-// TODO: trocar pelos endpoints das obras (tarefa 06). As operações e os investimentos vêm de operationsFixture e investorsFixture.
-export const workRefs = [{ id: 1, label: "OB-2026-003 · Renovação integral (OP-2026-001)", operationId: 100 }];
-
-export const budgetItemsFixture: Omit<BudgetItemRef, "used">[] = [
-  { id: 1, label: "Eletricidade · Obra OB-2026-003", workId: 1, contracted: 24000 },
-  { id: 2, label: "Canalização · Obra OB-2026-003", workId: 1, contracted: 9500 },
-  { id: 3, label: "Cozinha · Obra OB-2026-003", workId: 1, contracted: 14000 },
-];
-
 // ---- Finanças ----
 
 // TODO: trocar pelo endpoint quando existir.
@@ -531,16 +522,16 @@ export const financingsFixture = [
 
 // TODO: trocar pelo endpoint quando existir. O estado é calculado pelo servidor simulado a partir das datas.
 export const movementsFixture: (MovementInput & { id: number })[] = [
-  { id: 1, categoryId: 3, amount: 12500, expectedDate: dayFromToday(2), link: { kind: "budgetItem", id: 1 }, notes: "Adiantamento ao empreiteiro (eletricidade)" },
+  { id: 1, categoryId: 3, amount: 2000, expectedDate: dayFromToday(2), link: { kind: "budgetItem", id: 2 }, notes: "Segunda tranche da eletricidade" },
   { id: 2, categoryId: 7, amount: 45000, expectedDate: dayFromToday(-4), effectiveDate: dayFromToday(-4), link: { kind: "investment", id: 3 }, notes: "Tranche do investidor" },
   { id: 3, categoryId: 4, amount: 390, expectedDate: dayFromToday(-8), effectiveDate: dayFromToday(-8), notes: "Software de gestão" },
   { id: 4, categoryId: 2, amount: 24800, expectedDate: dayFromToday(4), link: { kind: "operation", id: 103 }, notes: "Sinal do CPCV de venda" },
   { id: 5, categoryId: 1, amount: 172400, expectedDate: dayFromToday(-40), effectiveDate: dayFromToday(-38), link: { kind: "operation", id: 100 }, notes: "Escritura de compra" },
   { id: 6, categoryId: 8, amount: 8400, expectedDate: dayFromToday(-40), effectiveDate: dayFromToday(-40), link: { kind: "operation", id: 100 }, notes: "IMT" },
-  { id: 7, categoryId: 3, amount: 5000, expectedDate: dayFromToday(-6), link: { kind: "budgetItem", id: 2 }, notes: "Primeira fatura da canalização" },
+  { id: 7, categoryId: 3, amount: 4000, expectedDate: dayFromToday(-6), link: { kind: "budgetItem", id: 3 }, notes: "Fatura da canalização" },
   { id: 8, categoryId: 9, amount: 90000, expectedDate: dayFromToday(-36), effectiveDate: dayFromToday(-35), link: { kind: "financing", id: 1 }, notes: "Desembolso do crédito" },
   { id: 9, categoryId: 5, amount: 650, expectedDate: dayFromToday(-5), effectiveDate: dayFromToday(-5), link: { kind: "financing", id: 1 } },
-  { id: 10, categoryId: 3, amount: 6000, expectedDate: dayFromToday(-20), effectiveDate: dayFromToday(-21), link: { kind: "budgetItem", id: 1 }, notes: "Sinal ao empreiteiro (eletricidade)" },
+  { id: 10, categoryId: 3, amount: 3000, expectedDate: dayFromToday(-20), effectiveDate: dayFromToday(-21), link: { kind: "budgetItem", id: 2 }, notes: "Sinal ao empreiteiro (eletricidade)" },
   { id: 11, categoryId: 7, amount: 80000, expectedDate: dayFromToday(-60), effectiveDate: dayFromToday(-60), link: { kind: "investment", id: 1 }, notes: "Capital comprometido" },
   { id: 12, categoryId: 2, amount: 248000, expectedDate: dayFromToday(25), link: { kind: "operation", id: 103 }, notes: "Escritura de venda" },
   { id: 13, categoryId: 6, amount: 12400, expectedDate: dayFromToday(25), link: { kind: "operation", id: 103 }, notes: "Comissão da agência" },
@@ -553,7 +544,7 @@ export const documentTypesByOwner: Record<DocumentOwnerKind, string[]> = {
   opportunity: ["Caderneta predial", "Certidão permanente", "Orçamento de obra", "Planta", "Licença de utilização", "Certificado energético", "Outro"],
   property: ["Caderneta predial", "Certidão permanente", "Licença de utilização", "Certificado energético", "Planta", "Outro"],
   operation: ["CPCV", "Escritura", "Contrato", "Certidão permanente", "Outro"],
-  work: ["Orçamento de obra", "Contrato de empreitada", "Licença de obra", "Outro"],
+  work: [...WORK_DOCUMENT_TYPES],
   investment: ["Contrato de investimento", "Comprovativo de transferência", "Outro"],
   movement: ["Fatura", "Recibo", "Comprovativo de pagamento", "Outro"],
 };
@@ -563,7 +554,7 @@ export const requiredDocumentTypes: Partial<Record<DocumentOwnerKind, string[]>>
   property: ["Caderneta predial", "Certidão permanente", "Certificado energético"],
 };
 
-function documentFixture(id: number, name: string, type: string, owner: DocumentOwner, sizeBytes: number, uploadedDaysAgo: number, expiryOffset?: number): Omit<DocumentRecord, "owner"> & { owner: DocumentOwner } {
+function documentFixture(id: number, name: string, type: string, owner: DocumentOwner, sizeBytes: number, uploadedDaysAgo: number, expiryOffset?: number, photoStage?: string): Omit<DocumentRecord, "owner"> & { owner: DocumentOwner } {
   return {
     id,
     name,
@@ -573,6 +564,7 @@ function documentFixture(id: number, name: string, type: string, owner: Document
     fileHash: `sha256-exemplo-${id.toString(16).padStart(8, "0")}`,
     uploadedAt: daysAgo(uploadedDaysAgo),
     expiryDate: expiryOffset === undefined ? undefined : dayFromToday(expiryOffset),
+    photoStage,
     owner,
   };
 }
@@ -583,6 +575,17 @@ export const documentsFixture = [
   documentFixture(2, "Certidão_permanente_IM1042.pdf", "Certidão permanente", { kind: "property", id: 1042 }, 860160, 9, 6),
   documentFixture(3, "Caderneta_predial_IM1042.pdf", "Caderneta predial", { kind: "property", id: 1042 }, 419840, 9),
   documentFixture(4, "Orçamento_eletricidade.xlsx", "Orçamento de obra", { kind: "work", id: 1 }, 229376, 25),
+  documentFixture(20, "Caderno_Encargos_Obra_Baixa.pdf", "Orçamento de obra", { kind: "work", id: 1 }, 1420000, 10),
+  documentFixture(21, "Planta_Intervencao_Baixa.pdf", "Planta", { kind: "work", id: 1 }, 2840000, 11),
+  documentFixture(22, "Licenca_Camara_Obras_Baixa.pdf", "Licença", { kind: "work", id: 1 }, 920000, 12, 75),
+  documentFixture(23, "Sala_Antes_Demolicao.jpg", "Fotografia de obra", { kind: "work", id: 1 }, 3400000, 13, undefined, "Antes"),
+  documentFixture(24, "Reforco_Estrutural_Cozinha.jpg", "Fotografia de obra", { kind: "work", id: 1 }, 2900000, 14, undefined, "Durante"),
+  documentFixture(25, "Fatura_Adiantamento_Silva.pdf", "Fatura", { kind: "work", id: 1 }, 310000, 15),
+  documentFixture(26, "Orcamento_Geral_Solum.xlsx", "Orçamento de obra", { kind: "work", id: 2 }, 450000, 16),
+  documentFixture(27, "Foto_Frente_Inicio.jpg", "Fotografia de obra", { kind: "work", id: 2 }, 2200000, 17, undefined, "Antes"),
+  documentFixture(28, "Projeto_Arquitetura_SantaClara.pdf", "Planta", { kind: "work", id: 3 }, 5600000, 18),
+  documentFixture(29, "Auto_Recepcao_Obra_Olivais.pdf", "Outro", { kind: "work", id: 4 }, 620000, 19),
+  documentFixture(30, "Sala_Final.jpg", "Fotografia de obra", { kind: "work", id: 4 }, 3100000, 20, undefined, "Depois"),
   documentFixture(5, "Planta_IM1042.pdf", "Planta", { kind: "opportunity", id: 3 }, 1258291, 6),
   documentFixture(6, "Relatório_visita_Baixa.pdf", "Outro", { kind: "opportunity", id: 3 }, 342016, 2),
   documentFixture(7, "Contrato_investimento_OP001.pdf", "Contrato de investimento", { kind: "investment", id: 1 }, 1003520, 60),
@@ -593,3 +596,242 @@ export const documentsFixture = [
   documentFixture(10, "Escritura_compra_OP001.pdf", "Escritura", { kind: "operation", id: 100 }, 2516582, 38),
   documentFixture(11, "Licença_utilização_IM1053.pdf", "Licença de utilização", { kind: "property", id: 1053 }, 512000, 80, 400),
 ];
+// ---- Obras ----
+
+// TODO: trocar pelo endpoint quando existir.
+/** Operações que se podem escolher numa obra: as mesmas de Operações (tarefa 05). */
+export const workOperationOptions = operationsFixture.map((operation) => ({ id: operation.id, code: operation.code, name: `${operation.code} · ${operation.zone}` }));
+
+export const workContractorOptions = [
+  { id: 1, name: "Construções Silva & Filhos, Lda." },
+  { id: 2, name: "Reabilita Coimbra, Unipessoal" },
+  { id: 3, name: "Instalações Elétricas Mondego" },
+  { id: 4, name: "Climatização do Centro" },
+  { id: 5, name: "Carpintaria Moderna, Lda." },
+  { id: 6, name: "Pinturas & Remodelações Beira" },
+];
+
+export const workOptionsFixture: WorkOptions = {
+  operations: workOperationOptions,
+  states: [...WORK_STATES],
+  categories: [...BUDGET_CATEGORIES],
+  contractors: workContractorOptions,
+  documentTypes: [...WORK_DOCUMENT_TYPES],
+  photoStages: [...PHOTO_STAGES],
+};
+
+export const worksFixture: WorkDetail[] = [
+  {
+    id: 1,
+    name: "Obra Baixa",
+    state: "Atrasada",
+    plannedStartDate: "2026-08-01",
+    plannedEndDate: "2026-11-01",
+    realStartDate: "2026-08-10",
+    operationId: 100,
+    operationCode: "OP-2026-001",
+    operationName: "Baixa de Coimbra",
+    notes: "Remodelação profunda de apartamento T2. Atraso devido a reforço estrutural não previsto na parede da cozinha.",
+    totalBudget: 42500,
+    totalContracted: 42800,
+    totalExecuted: 24500,
+    totalInvoiced: 21000,
+    totalPaid: 19500,
+    executedPercent: 57.2,
+    budgetItems: [
+      {
+        id: 1,
+        categoryName: "Demolições e Estrutura",
+        contractorId: 1,
+        contractorName: "Construções Silva & Filhos, Lda.",
+        budgetedValue: 8000,
+        contractedValue: 8500,
+        executedValue: 8500,
+        invoicedValue: 8500,
+        paidValue: 8500,
+      },
+      {
+        id: 2,
+        categoryName: "Eletricidade e ITED",
+        contractorId: 3,
+        contractorName: "Instalações Elétricas Mondego",
+        budgetedValue: 6500,
+        contractedValue: 6200,
+        executedValue: 5000,
+        invoicedValue: 4000,
+        paidValue: 3000,
+      },
+      {
+        id: 3,
+        categoryName: "Canalização e Climatização",
+        contractorId: 4,
+        contractorName: "Climatização do Centro",
+        budgetedValue: 9000,
+        contractedValue: 8800,
+        executedValue: 6000,
+        invoicedValue: 5000,
+        paidValue: 4500,
+      },
+      {
+        id: 4,
+        categoryName: "Carpintarias e Caixilharias",
+        contractorId: 5,
+        contractorName: "Carpintaria Moderna, Lda.",
+        budgetedValue: 12000,
+        contractedValue: 12500,
+        executedValue: 4000,
+        invoicedValue: 3500,
+        paidValue: 3500,
+      },
+      {
+        id: 5,
+        categoryName: "Pinturas e Acabamentos",
+        contractorId: 6,
+        contractorName: "Pinturas & Remodelações Beira",
+        budgetedValue: 7000,
+        contractedValue: 6800,
+        executedValue: 1000,
+        invoicedValue: 0,
+        paidValue: 0,
+      },
+    ],
+  },
+  {
+    id: 2,
+    name: "Obra Solum - Renovações",
+    state: "Em curso",
+    plannedStartDate: "2026-10-01",
+    plannedEndDate: "2027-01-31",
+    realStartDate: "2026-10-05",
+    operationId: 101,
+    operationCode: "OP-2026-002",
+    operationName: "Solum",
+    notes: "Atualização de redes e acabamentos da fração Solum.",
+    totalBudget: 15500,
+    totalContracted: 15200,
+    totalExecuted: 9300,
+    totalInvoiced: 7800,
+    totalPaid: 7800,
+    executedPercent: 61.2,
+    budgetItems: [
+      {
+        id: 6,
+        categoryName: "Demolições e Estrutura",
+        contractorId: 2,
+        contractorName: "Reabilita Coimbra, Unipessoal",
+        budgetedValue: 5000,
+        contractedValue: 4800,
+        executedValue: 4800,
+        invoicedValue: 4800,
+        paidValue: 4800,
+      },
+      {
+        id: 7,
+        categoryName: "Eletricidade e ITED",
+        contractorId: 3,
+        contractorName: "Instalações Elétricas Mondego",
+        budgetedValue: 4500,
+        contractedValue: 4500,
+        executedValue: 3000,
+        invoicedValue: 2000,
+        paidValue: 2000,
+      },
+      {
+        id: 8,
+        categoryName: "Pinturas e Acabamentos",
+        contractorId: 6,
+        contractorName: "Pinturas & Remodelações Beira",
+        budgetedValue: 6000,
+        contractedValue: 5900,
+        executedValue: 1500,
+        invoicedValue: 1000,
+        paidValue: 1000,
+      },
+    ],
+  },
+  {
+    id: 3,
+    name: "Obra Santa Clara - Moradia",
+    state: "Planeada",
+    plannedStartDate: "2026-12-01",
+    plannedEndDate: "2027-04-30",
+    operationId: 102,
+    operationCode: "OP-2026-003",
+    operationName: "Santa Clara",
+    notes: "Preparação de projeto e consulta ao mercado para adjudicação.",
+    totalBudget: 25000,
+    totalContracted: 24500,
+    totalExecuted: 0,
+    totalInvoiced: 0,
+    totalPaid: 0,
+    executedPercent: 0,
+    budgetItems: [
+      {
+        id: 9,
+        categoryName: "Demolições e Estrutura",
+        contractorId: 2,
+        contractorName: "Reabilita Coimbra, Unipessoal",
+        budgetedValue: 14000,
+        contractedValue: 13500,
+        executedValue: 0,
+        invoicedValue: 0,
+        paidValue: 0,
+      },
+      {
+        id: 10,
+        categoryName: "Canalização e Climatização",
+        contractorId: 4,
+        contractorName: "Climatização do Centro",
+        budgetedValue: 11000,
+        contractedValue: 11000,
+        executedValue: 0,
+        invoicedValue: 0,
+        paidValue: 0,
+      },
+    ],
+  },
+  {
+    id: 4,
+    name: "Obra Olivais - Remodelação T1",
+    state: "Concluída",
+    plannedStartDate: "2026-03-01",
+    plannedEndDate: "2026-06-30",
+    realStartDate: "2026-03-05",
+    realEndDate: "2026-06-25",
+    operationId: 103,
+    operationCode: "OP-2025-014",
+    operationName: "Olivais",
+    notes: "Obra concluída com sucesso dentro do prazo e abaixo do orçamento previsto.",
+    totalBudget: 17500,
+    totalContracted: 17000,
+    totalExecuted: 17000,
+    totalInvoiced: 17000,
+    totalPaid: 17000,
+    executedPercent: 100,
+    budgetItems: [
+      {
+        id: 11,
+        categoryName: "Pinturas e Acabamentos",
+        contractorId: 6,
+        contractorName: "Pinturas & Remodelações Beira",
+        budgetedValue: 8000,
+        contractedValue: 7800,
+        executedValue: 7800,
+        invoicedValue: 7800,
+        paidValue: 7800,
+      },
+      {
+        id: 12,
+        categoryName: "Carpintarias e Caixilharias",
+        contractorId: 5,
+        contractorName: "Carpintaria Moderna, Lda.",
+        budgetedValue: 9500,
+        contractedValue: 9200,
+        executedValue: 9200,
+        invoicedValue: 9200,
+        paidValue: 9200,
+      },
+    ],
+  },
+];
+
