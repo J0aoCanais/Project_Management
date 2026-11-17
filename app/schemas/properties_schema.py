@@ -88,7 +88,13 @@ def check_proposal_order(first_proposal, max_proposal):
 # Input
 # --------------------------------------------------------------------------- #
 class PropertyCreateSchema(BaseSchema):
-    #TODO: define required fields
+    """Schema to create a property, with valid required fields"""
+
+    zone = fields.String(required=True, validate=SHORT_TEXT)
+    property_type = fields.String(required=True, validate=validate.Length(max=MAX_SHORT_TEXT))
+    sale_motive = fields.String(required=True, validate=validate.Length(max=MAX_SHORT_TEXT))
+    contact_owns = fields.Boolean(required=True)
+    lead_id = fields.Integer(required=True)
 
     # Listing the property came from. http/https only: a "javascript:" URL
     # rendered as a link in React would be an XSS vector.
@@ -98,24 +104,22 @@ class PropertyCreateSchema(BaseSchema):
         validate=validate.Length(max=MAX_URL),
     )
 
-    address = fields.String(required=True, validate=SHORT_TEXT)
-    typology = fields.String(required=True, validate=SHORT_TEXT)  
-    zone = fields.String(required=True, validate=SHORT_TEXT)
+    address = fields.String(allow_none=True, validate=SHORT_TEXT)
+    typology = fields.String(allow_none=True, validate=SHORT_TEXT)  
 
-    area_m2 = _area(required=True, validate=POSITIVE_AREA)
+    area_m2 = _area(allow_none=True, validate=POSITIVE_AREA)
 
-    asking_price = _money(required=True, validate=POSITIVE_MONEY)
-    vvr = _money(required=True, validate=POSITIVE_MONEY)
-    profit = _money(required=True, validate=SIGNED_MONEY)  # may be negative
-    max_proposal = _money(required=True, validate=POSITIVE_MONEY)
-    first_proposal = _money(required=True, validate=POSITIVE_MONEY)
+    asking_price = _money(allow_none=True, validate=POSITIVE_MONEY)
+    vvr = _money(allow_none=True, validate=POSITIVE_MONEY)
+    profit = _money(allow_none=True, validate=SIGNED_MONEY)  # may be negative
+    max_proposal = _money(allow_none=True, validate=POSITIVE_MONEY)
+    first_proposal = _money(allow_none=True, validate=POSITIVE_MONEY)
 
     # TODO: consider adding timezone to datetime types
-    visit_date = fields.DateTime(required=True)
+    visit_date = fields.DateTime(allow_none=True)
 
     notes = fields.String(allow_none=True, validate=validate.Length(max=MAX_LONG_TEXT))
     admin_location = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
-    property_type = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     property_condition = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     construction_year = fields.Integer(
         allow_none=True,
@@ -127,7 +131,6 @@ class PropertyCreateSchema(BaseSchema):
     usage_license = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     energy_certificate = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
 
-    #TODO: see if this is worth keeping
     @validates_schema
     def _proposals_are_ordered(self, data, **kwargs):
         check_proposal_order(data.get("first_proposal"), data.get("max_proposal"))
@@ -175,20 +178,25 @@ class PropertyResponseSchema(Schema):
 
     id = fields.Integer() #TODO: Decide between having a name variable or derive it from id
     code = fields.Method("get_code")
-    source_url = fields.String()
-    address = fields.String()
-    typology = fields.String()
     zone = fields.String()
-    area_m2 = _area()
-    asking_price = _money()
-    vvr = _money()
-    profit = _money()
-    max_proposal = _money()
-    first_proposal = _money()
-    visit_date = fields.DateTime()
+    property_type = fields.String()
+    sale_motive = fields.String()
+    contact_owns = fields.Boolean()
+    lead_id = fields.Integer()
+    contact_id = fields.Integer()
+
+    source_url = fields.String(allow_none=True)
+    address = fields.String(allow_none=True)
+    typology = fields.String(allow_none=True)
+    area_m2 = _area(allow_none=True)
+    asking_price = _money(allow_none=True)
+    vvr = _money(allow_none=True)
+    profit = _money(allow_none=True)
+    max_proposal = _money(allow_none=True)
+    first_proposal = _money(allow_none=True)
+    visit_date = fields.DateTime(allow_none=True)
     notes = fields.String(allow_none=True)
     admin_location = fields.String(allow_none=True)
-    property_type = fields.String(allow_none=True)
     property_condition = fields.String(allow_none=True)
     construction_year = fields.Integer(allow_none=True)
     matricial_article = fields.String(allow_none=True)
