@@ -49,7 +49,7 @@ VALUES
     'Valid',
     'B',
     NULL,
-    3
+    901
 ),
 (
     'Investment',
@@ -75,5 +75,5 @@ VALUES
     'Pending',
     'C',
     NULL,
-    4
+    900
 );

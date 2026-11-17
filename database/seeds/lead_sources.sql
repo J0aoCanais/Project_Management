@@ -1,7 +1,8 @@
 INSERT INTO lead_source (
+    id,
     name,
     is_active
 )
 VALUES
-    ('Facebook', TRUE),
-    ('Website', TRUE);
+    (800, 'Facebook', TRUE),
+    (801, 'Website', TRUE);

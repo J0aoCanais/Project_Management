@@ -1,4 +1,5 @@
 INSERT INTO lead (
+    id,
     status,
     message,
     discard_reason,
@@ -12,6 +13,7 @@ INSERT INTO lead (
 )
 VALUES
 (
+    900,
     'NEW',
     'Interested in purchasing a property in Lisbon.',
     NULL,
@@ -19,11 +21,12 @@ VALUES
     'Facebook Campaign 2026',
     'Lisbon Property Ad',
     'Property Interest Form',
-    1,
-    1,
-    1
+    800,
+    700,
+    700
 ),
 (
+    901,
     'CONTACTED',
     'Interested in a property investment opportunity.',
     NULL,
@@ -31,7 +34,7 @@ VALUES
     'Google Ads Campaign 2026',
     'Investment Property Ad',
     'Investment Lead Form',
-    2,
-    2,
-    2
+    801,
+    701,
+    701
 );
