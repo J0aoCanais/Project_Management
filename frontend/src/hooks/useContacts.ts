@@ -1,4 +1,4 @@
-import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { keepPreviousData, useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
 
 import { ApiError } from "../api/client";
 import {
@@ -6,11 +6,14 @@ import {
   deleteContact,
   getContact,
   importContacts,
+  listContactRoles,
   listContactTypes,
   listContacts,
+  searchContacts,
   updateContact,
   OTHER_TYPE,
   type ContactInput,
+  type ContactSearch,
 } from "../api/contactsApi";
 
 const listKey = ["contacts"] as const;
@@ -19,8 +22,20 @@ const detailKey = (id: number) => ["contact", id] as const;
 /** Um registo que não existe não passa a existir por tentar de novo. */
 const retryUnlessMissing = (failures: number, error: Error) => !(error instanceof ApiError && error.status === 404) && failures < 3;
 
-export function useContacts() {
-  return useQuery({ queryKey: listKey, queryFn: listContacts });
+/** Todos os contactos (lê as páginas todas). `enabled` evita o pedido enquanto não é preciso. */
+export function useContacts(enabled = true) {
+  return useQuery({ queryKey: [...listKey, "all"], queryFn: listContacts, enabled });
+}
+
+/** Uma página da lista, filtrada e paginada no backend. Mantém a página anterior enquanto a nova carrega. */
+export function useContactSearch(search: ContactSearch) {
+  return useQuery({ queryKey: [...listKey, "search", search], queryFn: () => searchContacts(search), placeholderData: keepPreviousData });
+}
+
+/** Nomes dos papéis para o filtro por tipo. */
+export function useContactRoleNames(): string[] {
+  const query = useQuery({ queryKey: ["contact-roles"], queryFn: listContactRoles, staleTime: 5 * 60_000 });
+  return (query.data ?? []).map((role) => role.name);
 }
 
 export function useContact(id: number) {

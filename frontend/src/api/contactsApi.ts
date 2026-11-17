@@ -65,8 +65,27 @@ interface ApiContact {
 
 interface Paginated<T> {
   data: T[];
-  pagination: { has_next: boolean };
+  pagination: { page: number; per_page: number; total: number; pages: number; has_next: boolean };
 }
+
+/** Filtros que o GET /api/contacts/search aceita. */
+export interface ContactSearch {
+  /** Nome, email, telemóvel ou NIF. O backend só pesquisa a partir de 2 letras. */
+  q?: string;
+  /** Nome do papel (tipo). É convertido no id do papel. */
+  type?: string;
+  page: number;
+  perPage: number;
+}
+
+export interface ContactPage {
+  contacts: Contact[];
+  total: number;
+  pages: number;
+}
+
+/** Tamanho mínimo da pesquisa no backend (ContactSearchSchema). */
+export const MIN_SEARCH_LENGTH = 2;
 
 function fromApi(contact: ApiContact): Contact {
   return {
@@ -114,7 +133,6 @@ async function toApi(input: Partial<ContactInput>): Promise<Record<string, unkno
 }
 
 async function listFromApi(): Promise<Contact[]> {
-  // TODO: quando a lista crescer, passar a pesquisa e os filtros para o servidor em vez de ler todas as páginas.
   const contacts: Contact[] = [];
   for (let page = 1; ; page++) {
     const result = await apiFetch<Paginated<ApiContact>>(`/contacts/?page=${page}&per_page=100`);
@@ -131,9 +149,30 @@ export async function listContactTypes(): Promise<string[]> {
   return [...roles.map((role) => role.name).filter((name) => !isInvestorRole(name)), OTHER_TYPE];
 }
 
-/** Contactos ativos, sem investidores (o backend já os tira da lista). */
+/** Papéis que se podem usar no filtro por tipo (sem Investidor; "Outro" não existe no backend). */
+export async function listContactRoles(): Promise<ApiRole[]> {
+  const roles = await apiFetch<ApiRole[]>("/contacts/roles");
+  return roles.filter((role) => !isInvestorRole(role.name));
+}
+
+/** Todos os contactos ativos, sem investidores. Só para escolher um contacto ou ver repetidos ao importar. */
 export async function listContacts(): Promise<Contact[]> {
   return listFromApi();
+}
+
+/** Uma página de contactos, com a pesquisa, o filtro e a paginação feitos no backend. */
+export async function searchContacts({ q = "", type = "", page, perPage }: ContactSearch): Promise<ContactPage> {
+  const params = new URLSearchParams({ page: String(page), per_page: String(perPage) });
+  const text = q.trim();
+  if (text.length >= MIN_SEARCH_LENGTH) params.set("q", text);
+  if (type) {
+    const role = (await listContactRoles()).find((item) => item.name.toLowerCase() === type.toLowerCase());
+    // Um tipo que já não existe não tem contactos.
+    if (!role) return { contacts: [], total: 0, pages: 0 };
+    params.set("role_id", String(role.id));
+  }
+  const result = await apiFetch<Paginated<ApiContact>>(`/contacts/search?${params}`);
+  return { contacts: result.data.map(fromApi), total: result.pagination.total, pages: result.pagination.pages };
 }
 
 export async function getContact(id: number): Promise<Contact> {

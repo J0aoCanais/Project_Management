@@ -1,7 +1,7 @@
-import { useMemo, useState } from "react";
+import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { OTHER_TYPE, contactType, type ContactInput } from "../api/contactsApi";
+import { MIN_SEARCH_LENGTH, OTHER_TYPE, type ContactInput } from "../api/contactsApi";
 import ContactFilters, { type ContactFilterKey } from "../components/contacts/ContactFilters";
 import ContactsTable from "../components/contacts/ContactsTable";
 import NewContactDrawer from "../components/contacts/NewContactDrawer";
@@ -14,15 +14,13 @@ import Notice from "../components/ui/Notice";
 import PageHeading from "../components/ui/PageHeading";
 import Pagination from "../components/ui/Pagination";
 import Panel from "../components/ui/Panel";
-import { useContacts, useImportContacts } from "../hooks/useContacts";
+import { useContactSearch, useContacts, useImportContacts } from "../hooks/useContacts";
 import { emptyContactForm, formToContactInput } from "../lib/contactForm";
 import { sanitizePhone } from "../lib/leadRules";
 import { contactImportSample } from "../temp";
 
+/** Contactos por página, pedidos ao backend (per_page). */
 const PAGE_SIZE = 20;
-
-/** Para comparar zonas escritas à mão: sem espaços a mais e sem diferença de maiúsculas. */
-const normalizeZone = (zone: string) => zone.trim().replace(/\s+/g, " ").toLowerCase();
 
 const importConfig: ImportConfig = {
   title: "Importar contactos",
@@ -40,11 +38,14 @@ function ContactsPage() {
   const [params, setParams] = useSearchParams();
   const [creating, setCreating] = useState(false);
   const [importing, setImporting] = useState(false);
-  const contactsQuery = useContacts();
   const importMutation = useImportContacts();
   const query = params.get("q") ?? "";
-  const zone = params.get("zona") ?? "";
   const type = params.get("tipo") ?? "";
+  const page = Math.max(1, Math.floor(Number(params.get("pagina")) || 1));
+  const contactsQuery = useContactSearch({ q: query, type, page, perPage: PAGE_SIZE });
+  // A lista completa só é lida ao importar, para avisar dos nomes repetidos.
+  const allContacts = useContacts(importing);
+  const hasFilters = query.trim().length >= MIN_SEARCH_LENGTH || Boolean(type);
 
   // Parte do URL atual (não do render em que foi criada): a pesquisa só chega meio segundo depois de escrever.
   const updateFilter = (key: ContactFilterKey, value: string) =>
@@ -68,33 +69,6 @@ function ContactsPage() {
       return next;
     });
 
-  // Uma opção por zona escrita de formas diferentes ("Baixa", "baixa "); fica a grafia com maiúscula, se houver.
-  const zones = useMemo(() => {
-    const byKey = new Map<string, string>();
-    for (const contact of contactsQuery.data ?? []) {
-      const key = normalizeZone(contact.zone);
-      const label = contact.zone.trim().replace(/\s+/g, " ");
-      const current = byKey.get(key);
-      if (key && (!current || (current[0] === current[0].toLowerCase() && label[0] !== label[0].toLowerCase()))) byKey.set(key, label);
-    }
-    return [...byKey.values()].sort((a, b) => a.localeCompare(b, "pt"));
-  }, [contactsQuery.data]);
-
-  const filtered = useMemo(() => {
-    const text = query.trim().toLowerCase();
-    return (contactsQuery.data ?? []).filter(
-      (contact) =>
-        (!text || [contact.name, contact.company, contact.email, contact.phone].some((value) => value.toLowerCase().includes(text))) &&
-        (!zone || normalizeZone(contact.zone) === normalizeZone(zone)) &&
-        (!type || contactType(contact) === type),
-    );
-  }, [contactsQuery.data, query, zone, type]);
-
-  const pageCount = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
-  const requestedPage = Number(params.get("pagina")) || 1;
-  const page = Math.min(Math.max(1, Math.floor(requestedPage)), pageCount);
-  const pageRows = filtered.slice((page - 1) * PAGE_SIZE, page * PAGE_SIZE);
-
   const search = params.toString() ? `?${params.toString()}` : "";
   const actions = (
     <>
@@ -108,12 +82,19 @@ function ContactsPage() {
   const renderContent = () => {
     if (contactsQuery.isPending) return <LoadingState />;
     if (contactsQuery.isError) return <ErrorState onRetry={() => void contactsQuery.refetch()} />;
-    if (!contactsQuery.data.length) return <EmptyState message="Ainda não há contactos. Crie o primeiro ou importe uma lista do Excel." />;
-    if (!filtered.length) return <EmptyState message="Nenhum contacto corresponde aos filtros." action={<Button onClick={() => setParams({})}>Limpar filtros</Button>} />;
+    const { contacts, total, pages } = contactsQuery.data;
+    // Página que já não existe (ex.: depois de apagar contactos): o backend devolve-a vazia.
+    if (!contacts.length && page > 1 && total > 0)
+      return <EmptyState message="Esta página já não tem contactos." action={<Button onClick={() => goToPage(pages)}>Ir para a última página</Button>} />;
+    if (!total && !hasFilters) return <EmptyState message="Ainda não há contactos. Crie o primeiro ou importe uma lista do Excel." />;
+    if (!total) return <EmptyState message="Nenhum contacto corresponde aos filtros." action={<Button onClick={() => setParams({})}>Limpar filtros</Button>} />;
     return (
       <>
-        <ContactsTable contacts={pageRows} onRowClick={(contact) => navigate(`/contactos/${contact.id}${search}`)} />
-        <Pagination page={page} pageSize={PAGE_SIZE} total={filtered.length} onChange={goToPage} />
+        {/* Enquanto a nova página chega, a anterior fica esbatida. */}
+        <div aria-busy={contactsQuery.isPlaceholderData} className={contactsQuery.isPlaceholderData ? "opacity-60 transition-opacity" : "transition-opacity"}>
+          <ContactsTable contacts={contacts} onRowClick={(contact) => navigate(`/contactos/${contact.id}${search}`)} />
+        </div>
+        <Pagination page={page} pageSize={PAGE_SIZE} total={total} onChange={goToPage} />
       </>
     );
   };
@@ -121,7 +102,7 @@ function ContactsPage() {
   return (
     <>
       <PageHeading title="Contactos" actions={actions} />
-      <ContactFilters query={query} zone={zone} type={type} zones={zone && !zones.some((item) => normalizeZone(item) === normalizeZone(zone)) ? [...zones, zone] : zones} onChange={updateFilter} />
+      <ContactFilters query={query} type={type} onChange={updateFilter} />
       {importMutation.isSuccess && (
         <div role="status" className="mb-2">
           <Notice>
@@ -140,7 +121,7 @@ function ContactsPage() {
       {importing && (
         <ImportExcel
           config={importConfig}
-          existingNames={(contactsQuery.data ?? []).map((contact) => contact.name)}
+          existingNames={(allContacts.data ?? []).map((contact) => contact.name)}
           onClose={() => setImporting(false)}
           onImport={(rows) => importMutation.mutate(rows.map(rowToInput))}
         />

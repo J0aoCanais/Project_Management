@@ -1,26 +1,23 @@
-import { useContactTypes } from "../../hooks/useContacts";
+import { useContactRoleNames } from "../../hooks/useContacts";
 import Filters from "../ui/Filters";
 
-export type ContactFilterKey = "q" | "zona" | "tipo";
+export type ContactFilterKey = "q" | "tipo";
 
 interface Props {
   query: string;
-  zone: string;
   type: string;
-  /** Zonas que existem nos contactos (a zona é texto livre). */
-  zones: string[];
   onChange: (key: ContactFilterKey, value: string) => void;
 }
 
-function ContactFilters({ query, zone, type, zones, onChange }: Props) {
-  const contactTypeOptions = useContactTypes();
+// Só os filtros que o GET /api/contacts/search aceita (q e role_id). Não há filtro por zona no backend.
+function ContactFilters({ query, type, onChange }: Props) {
+  const roleNames = useContactRoleNames();
+  // Um tipo vindo do URL aparece mesmo antes de os papéis carregarem.
+  const options = type && !roleNames.includes(type) ? [...roleNames, type] : roleNames;
   return (
     <Filters
-      search={{ placeholder: "Pesquisar por nome, empresa, email ou telemóvel...", value: query, onChange: (value) => onChange("q", value) }}
-      selects={[
-        { id: "zona", allLabel: "Todas as zonas", options: zones, value: zone, onChange: (value) => onChange("zona", value) },
-        { id: "tipo", allLabel: "Todos os tipos", options: contactTypeOptions, value: type, onChange: (value) => onChange("tipo", value) },
-      ]}
+      search={{ placeholder: "Pesquisar por nome, email, telemóvel ou NIF...", value: query, onChange: (value) => onChange("q", value) }}
+      selects={[{ id: "tipo", allLabel: "Todos os tipos", options, value: type, onChange: (value) => onChange("tipo", value) }]}
     />
   );
 }
