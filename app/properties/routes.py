@@ -1,10 +1,11 @@
 from flask import flash, jsonify, render_template, request, session, url_for, Blueprint
 from datetime import datetime
-from sqlalchemy import or_, func
+from sqlalchemy import or_, func, cast, String
 from sqlalchemy.orm import selectinload
 from marshmallow import ValidationError
 from flask_login import current_user
 from http import HTTPStatus
+import re
 
 from ..extensions import db
 from ..models import Property, Role
@@ -108,7 +109,7 @@ def get_property_links(property_id: int):
     if property is None:
         return jsonify({"errors": {"id": ["Property not found"]}}), HTTPStatus.NOT_FOUND
 
-    #TODO: add logic for operation and works when they are implemented
+    #TODO: add logic for leads operation and works when they are implemented
     links = []
     links.append(oportunity_link_schema.dump(property.opportunity))
    
@@ -122,7 +123,6 @@ def get_property_links(property_id: int):
 @owner_required
 def search_properties():
     """Searches properties"""
-    #TODO: define search fields. Temp fields are id, zone, address adn typology
     try:
         # Validate query parameters
         params = search_schema.load(request.args)
@@ -135,16 +135,14 @@ def search_properties():
         search_term = params.get("q")
         if search_term and len(search_term.strip()) >= 2:
             search_term = (
-                search_term.strip()
+                search_term.strip().lower()
                 .replace("\\", "\\\\")
                 .replace("%", "\\%")
                 .replace("_", "\\_")
             )
             pattern = f"%{search_term}%"
 
-           
             conditions = or_(
-                #TODO: naming conventions for properties: derive from id or set by user?
                 Property.zone.ilike(pattern, escape="\\"),
                 Property.address.ilike(pattern, escape="\\"),
             )
@@ -153,10 +151,6 @@ def search_properties():
         zone_param = params.get("zone")
         if zone_param is not None:
             stmt = stmt.where(func.lower(Property.zone) == func.lower(zone_param))
-        
-        property_condition_param = params.get("property_condition")
-        if property_condition_param is not None:
-            stmt = stmt.where(func.lower(Property.property_condition) == func.lower(property_condition_param))
         
         typology = params.get("typology")
         if typology is not None:

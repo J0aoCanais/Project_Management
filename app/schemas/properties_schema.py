@@ -62,12 +62,6 @@ SIGNED_MONEY = validate.Range(min=-MAX_MONEY, max=MAX_MONEY)
 POSITIVE_AREA = validate.Range(min=Decimal(0), max=MAX_AREA_M2, min_inclusive=False)
 SHORT_TEXT = validate.Length(min=1, max=MAX_SHORT_TEXT)
 
-# Whitelist for ?sort=. The route maps these names to columns, so user input
-# never reaches order_by directly.
-#TODO: Discuss this with frontend, I dont think they have anything inplace so prob just delete
-SORTABLE_FIELDS = ("visit_date", "asking_price", "profit", "area_m2", "address", "zone", "id")
-
-
 def _money(**kwargs):
     return fields.Decimal(places=2, as_string=True, allow_nan=False, **kwargs)
 
@@ -115,8 +109,7 @@ class PropertyCreateSchema(BaseSchema):
     max_proposal = _money(allow_none=True, validate=POSITIVE_MONEY)
     first_proposal = _money(allow_none=True, validate=POSITIVE_MONEY)
 
-    # TODO: consider adding timezone to datetime types
-    visit_date = fields.DateTime(allow_none=True)
+    visit_date = fields.Date(allow_none=True)
 
     notes = fields.String(allow_none=True, validate=validate.Length(max=MAX_LONG_TEXT))
     admin_location = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
@@ -144,7 +137,6 @@ class PropertyUpdateSchema(PropertyCreateSchema):
         kwargs.setdefault("partial", True)
         super().__init__(*args, **kwargs)
 
-    #TODO: validate this idea or remove this check
     @validates_schema
     def _at_least_one_field(self, data, **kwargs):
         if not data:
@@ -176,7 +168,7 @@ class PropertySearchSchema(BaseSchema):
 class PropertyResponseSchema(Schema):
     """Every column. Used for create/update responses and as the detail base."""
 
-    id = fields.Integer() #TODO: Decide between having a name variable or derive it from id
+    id = fields.Integer()
     code = fields.Method("get_code")
     zone = fields.String()
     property_type = fields.String()
