@@ -1,5 +1,7 @@
 from marshmallow import Schema, fields, validate, pre_load, EXCLUDE
 
+from .zones_schema import ZoneResponseSchema
+
 class BaseSchema(Schema):
     """Shared behaviour: trim strings, turn blank strings into None."""
  
@@ -37,7 +39,7 @@ class ContactCreateSchema(BaseSchema):
     phone_number = fields.String(allow_none=True, validate=validate.Length(max=512))
     address = fields.String(allow_none=True, validate=validate.Length(max=512))
     company_name = fields.String(allow_none=True, validate=validate.Length(max=512))
-    zone = fields.String(allow_none=True, validate=validate.Length(max=512))
+    zone_id = fields.Integer(allow_none=True)
     notes = fields.String(allow_none=True, validate=validate.Length(max=512))
     nif = fields.String(allow_none=True, validate=validate.Length(max=512))
     consent_given = fields.Boolean(allow_none=True, load_default=False)
@@ -54,7 +56,7 @@ class ContactResponseSchema(BaseSchema):
     phone_number = fields.String(allow_none=True)
     address = fields.String(allow_none=True)
     company_name = fields.String(allow_none=True)
-    zone = fields.String(allow_none=True)
+    zone = fields.Nested(ZoneResponseSchema)
     notes = fields.String(allow_none=True)
     nif = fields.String(allow_none=True)
     consent_given = fields.Boolean(allow_none=True)

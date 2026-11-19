@@ -208,13 +208,17 @@ class Contact(Base):
     phone_number: Mapped[Optional[str]] = mapped_column(String(512))
     address: Mapped[Optional[str]] = mapped_column(Text)
     company_name: Mapped[Optional[str]] = mapped_column(String(512))
-    zone: Mapped[Optional[str]] = mapped_column(String(512))
     notes: Mapped[Optional[str]] = mapped_column(String(512))
     nif: Mapped[Optional[str]] = mapped_column(String(512))
     consent_given: Mapped[Optional[bool]] = mapped_column(Boolean)
     consent_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     consent_channel: Mapped[Optional[str]] = mapped_column(String(512))
     deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
+    zone: Mapped[Optional["Zone"]] = relationship(back_populates="contacts")
+    zone_id: Mapped[Optional[int]] = mapped_column(
+        BigInteger, ForeignKey("zone.id", ondelete="SET NULL"), nullable=True
+    )
 
     # relationships
     operations: Mapped[List["Operation"]] = relationship(back_populates="contact")
@@ -253,6 +257,15 @@ class Role(Base):
     contacts: Mapped[List["Contact"]] = relationship(
         secondary=contact_role, back_populates="roles"
     )
+
+
+class Zone(Base):
+    __tablename__ = "zone"
+    
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
+
+    contacts: Mapped[List["Contact"]] = relationship(back_populates="zone", passive_deletes=True)
 
 
 class User(UserMixin, Base):
