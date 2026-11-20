@@ -8,7 +8,7 @@ from flask_login import current_user
 from http import HTTPStatus
 
 from ..extensions import db
-from ..models import Contact, Role
+from ..models import Contact, Role, Zone
 from ..security import owner_required
 from ..schemas.contacts_schema import (
     ContactCreateSchema,
@@ -217,6 +217,17 @@ def search_contacts():
 #  2.Contact Write Endpoints (POST/PATCH)
 #===============================================
 
+def _load_roles(role_ids):
+    """Roles for the given ids, or None if any id doesn't exist."""
+    wanted = set(role_ids)
+    roles = db.session.execute(db.select(Role).where(Role.id.in_(wanted))).scalars().all()
+    return roles if len(roles) == len(wanted) else None
+
+
+def _zone_exists(zone_id):
+    """A missing zone_id (None) is valid: the zone is optional."""
+    return zone_id is None or db.session.get(Zone, zone_id) is not None
+
 @contacts_bp.route("/add", methods=["POST"])
 @owner_required
 def create_contact():
@@ -230,15 +241,15 @@ def create_contact():
             payload["role_ids"] = [payload["role_ids"]]
         data = contact_create_schema.load(payload)
         
-        role_ids = data.pop("role_ids", [])
+        role_ids = data.pop("role_ids")
+        roles = _load_roles(role_ids)
+        if roles is None:
+            return jsonify({"errors": {"role_ids": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
+        if not _zone_exists(data.get("zone_id")):
+            return jsonify({"errors": {"zone_id": ["Zone id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
 
         contact = Contact(**data)
-        
-        if role_ids:
-            roles = db.session.execute(db.select(Role).where(Role.id.in_(role_ids))).scalars().all()
-            if roles is None:
-                return jsonify({"errors": {"body": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
-            contact.roles = roles
+        contact.roles = roles
 
         db.session.add(contact)
         db.session.commit()
@@ -273,18 +284,20 @@ def edit_contact(contact_id):
     except ValidationError as error:
         return jsonify({"errors": error.messages}), HTTPStatus.BAD_REQUEST
     
+    role_ids = data.pop("role_ids", None)
+    roles = None if role_ids is None else _load_roles(role_ids)
+    if role_ids is not None and roles is None:
+        return jsonify({"errors": {"role_ids": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
+    if not _zone_exists(data.get("zone_id")):
+        return jsonify({"errors": {"zone_id": ["Zone id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
+
     try:
-        role_ids = data.pop("role_ids", None)
-        
         for key, value in data.items():
             setattr(contact, key, value)
-        
-        if role_ids is not None:
-            roles = db.session.execute(db.select(Role).where(Role.id.in_(role_ids))).scalars().all()
-            if roles is None:
-                return jsonify({"errors": {"body": ["Role id must be a valid id"]}}), HTTPStatus.BAD_REQUEST
+
+        if roles is not None:
             contact.roles = roles
-            
+
         db.session.commit()
         return jsonify(contact_response_schema.dump(contact)), HTTPStatus.OK
     

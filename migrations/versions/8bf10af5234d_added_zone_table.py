@@ -49,6 +49,17 @@ def upgrade():
     with op.batch_alter_table('contact', schema=None) as batch_op:
         batch_op.add_column(sa.Column('zone_id', sa.BigInteger(), nullable=True))
         batch_op.create_foreign_key('contact_zone_id_fkey', 'zone', ['zone_id'], ['id'], ondelete='SET NULL')
+
+    # Keep the zones of the contacts that already exist: each distinct text becomes a zone.
+    op.execute("""
+        INSERT INTO zone (name)
+        SELECT DISTINCT TRIM(zone) FROM contact
+        WHERE zone IS NOT NULL AND TRIM(zone) <> ''
+        ON CONFLICT (name) DO NOTHING
+    """)
+    op.execute("UPDATE contact SET zone_id = zone.id FROM zone WHERE TRIM(contact.zone) = zone.name")
+
+    with op.batch_alter_table('contact', schema=None) as batch_op:
         batch_op.drop_column('zone')
 
     with op.batch_alter_table('financial_movement', schema=None) as batch_op:
@@ -202,6 +213,10 @@ def downgrade():
 
     with op.batch_alter_table('contact', schema=None) as batch_op:
         batch_op.add_column(sa.Column('zone', sa.VARCHAR(length=512), autoincrement=False, nullable=True))
+
+    op.execute("UPDATE contact SET zone = zone.name FROM zone WHERE contact.zone_id = zone.id")
+
+    with op.batch_alter_table('contact', schema=None) as batch_op:
         batch_op.drop_constraint('contact_zone_id_fkey', type_='foreignkey')
         batch_op.drop_column('zone_id')
 

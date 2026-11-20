@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { useNavigate, useSearchParams } from "react-router-dom";
 
-import { MIN_SEARCH_LENGTH, OTHER_TYPE, type ContactInput } from "../api/contactsApi";
+import { MIN_SEARCH_LENGTH, type ContactImportRow } from "../api/contactsApi";
 import ContactFilters, { type ContactFilterKey } from "../components/contacts/ContactFilters";
 import ContactsTable from "../components/contacts/ContactsTable";
 import NewContactDrawer from "../components/contacts/NewContactDrawer";
@@ -25,12 +25,14 @@ const PAGE_SIZE = 20;
 const importConfig: ImportConfig = {
   title: "Importar contactos",
   templateName: "template_contactos.csv",
-  columns: ["Nome", "Empresa", "Email", "Telemóvel", "Zona"],
+  columns: ["Nome", "Tipo", "Empresa", "Email", "Telemóvel", "Zona"],
   sample: contactImportSample,
 };
 
-function rowToInput([name = "", company = "", email = "", phone = "", zone = ""]: string[]): ContactInput {
-  return formToContactInput({ ...emptyContactForm, type: OTHER_TYPE, name, company, email: email.trim(), phone: sanitizePhone(phone), zone });
+/** O tipo é obrigatório e a zona tem de existir na tabela de zonas; as linhas que falham são ignoradas ao importar. */
+function rowToInput([name = "", type = "", company = "", email = "", phone = "", zone = ""]: string[]): ContactImportRow {
+  const { zoneId: _zoneId, ...input } = formToContactInput({ ...emptyContactForm, type: type.trim(), name, company, email: email.trim(), phone: sanitizePhone(phone) });
+  return { ...input, zoneName: zone };
 }
 
 function ContactsPage() {

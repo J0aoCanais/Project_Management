@@ -11,7 +11,7 @@ import {
   listContacts,
   searchContacts,
   updateContact,
-  OTHER_TYPE,
+  type ContactImportRow,
   type ContactInput,
   type ContactSearch,
 } from "../api/contactsApi";
@@ -42,10 +42,10 @@ export function useContact(id: number) {
   return useQuery({ queryKey: detailKey(id), queryFn: () => getContact(id), enabled: Number.isFinite(id), retry: retryUnlessMissing });
 }
 
-/** Tipos de contacto (papéis em GET /api/contacts/roles). Enquanto carregam, só há "Outro". */
+/** Tipos de contacto (papéis em GET /api/contacts/roles, sem Investidor). Vazio enquanto carregam. */
 export function useContactTypes(): string[] {
   const query = useQuery({ queryKey: ["contact-types"], queryFn: listContactTypes, staleTime: 5 * 60_000 });
-  return query.data ?? [OTHER_TYPE];
+  return query.data ?? [];
 }
 
 function useContactMutation<TVariables, TResult>(mutationFn: (variables: TVariables) => Promise<TResult>, id?: number) {
@@ -79,5 +79,5 @@ export function useDeleteContact(id: number) {
 }
 
 export function useImportContacts() {
-  return useContactMutation((rows: ContactInput[]) => importContacts(rows));
+  return useContactMutation((rows: ContactImportRow[]) => importContacts(rows));
 }

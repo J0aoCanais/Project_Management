@@ -1,11 +1,12 @@
 import { contactErrors } from "../lib/contactRules";
 import { apiFetch } from "./client";
+import { findZoneId, listZones, type Zone } from "./zonesApi";
 
 // Contactos: endpoints do Flask em /api/contacts (ver docs/api/contacts.md).
 
 /** Papel que transforma um contacto em investidor. O backend esconde estes contactos da lista. */
 export const INVESTOR_ROLE = "Investidor";
-/** Tipo de um contacto sem papel conhecido. Não corresponde a nenhum papel no backend. */
+/** Tipo mostrado de um contacto sem papel (contactos antigos). Não se pode escolher: o tipo é obrigatório. */
 export const OTHER_TYPE = "Outro";
 
 // Alinhado com `Contact` em app/models.py. Campos opcionais vazios vêm como "".
@@ -17,6 +18,9 @@ export interface Contact {
   email: string;
   phone: string;
   company: string;
+  /** Id da zona (tabela editável em /api/zones), ou null sem zona. */
+  zoneId: number | null;
+  /** Nome da zona, só para mostrar. */
   zone: string;
   nif: string;
   address: string;
@@ -27,7 +31,10 @@ export interface Contact {
   consentChannel: string;
 }
 
-export type ContactInput = Omit<Contact, "id">;
+export type ContactInput = Omit<Contact, "id" | "zone">;
+
+/** Linha da importação: a zona e o tipo vêm como texto e são convertidos nos ids do backend. */
+export type ContactImportRow = Omit<ContactInput, "zoneId"> & { zoneName: string };
 
 const isInvestorRole = (role: string) => role.toLowerCase() === INVESTOR_ROLE.toLowerCase();
 
@@ -55,7 +62,7 @@ interface ApiContact {
   phone_number: string | null;
   address: string | null;
   company_name: string | null;
-  zone: string | null;
+  zone: Zone | null;
   notes: string | null;
   nif: string | null;
   consent_given: boolean | null;
@@ -95,7 +102,8 @@ function fromApi(contact: ApiContact): Contact {
     email: contact.email ?? "",
     phone: contact.phone_number ?? "",
     company: contact.company_name ?? "",
-    zone: contact.zone ?? "",
+    zoneId: contact.zone?.id ?? null,
+    zone: contact.zone?.name ?? "",
     nif: contact.nif ?? "",
     address: contact.address ?? "",
     notes: contact.notes ?? "",
@@ -123,7 +131,7 @@ async function roleIds(names: string[]): Promise<number[]> {
 async function toApi(input: Partial<ContactInput>): Promise<Record<string, unknown>> {
   const body: Record<string, unknown> = {};
   const map: [keyof ContactInput, string][] = [
-    ["name", "name"], ["email", "email"], ["phone", "phone_number"], ["company", "company_name"], ["zone", "zone"],
+    ["name", "name"], ["email", "email"], ["phone", "phone_number"], ["company", "company_name"], ["zoneId", "zone_id"],
     ["nif", "nif"], ["address", "address"], ["notes", "notes"], ["consentGiven", "consent_given"], ["consentChannel", "consent_channel"],
   ];
   for (const [key, apiKey] of map) if (input[key] !== undefined) body[apiKey] = input[key];
@@ -143,10 +151,10 @@ async function listFromApi(): Promise<Contact[]> {
 
 // ---- Pedidos ----
 
-/** Tipos que se podem escolher: os papéis do backend (sem Investidor) e "Outro" (sem papel). */
+/** Tipos que se podem escolher: os papéis do backend, sem Investidor. */
 export async function listContactTypes(): Promise<string[]> {
   const roles = await apiFetch<ApiRole[]>("/contacts/roles");
-  return [...roles.map((role) => role.name).filter((name) => !isInvestorRole(name)), OTHER_TYPE];
+  return roles.map((role) => role.name).filter((name) => !isInvestorRole(name));
 }
 
 /** Papéis que se podem usar no filtro por tipo (sem Investidor; "Outro" não existe no backend). */
@@ -193,16 +201,21 @@ export async function deleteContact(id: number): Promise<void> {
   await apiFetch<void>(`/contacts/${id}`, { method: "DELETE" });
 }
 
-/** Cria as linhas válidas; as inválidas e as repetidas (mesmo email ou nome) são ignoradas. */
-export async function importContacts(rows: ContactInput[]): Promise<{ created: number; skipped: number }> {
-  const existing = await listContacts();
+/**
+ * Cria as linhas válidas; são ignoradas as inválidas, as sem tipo, as com uma zona que não existe na tabela
+ * de zonas e as repetidas (mesmo email ou nome).
+ */
+export async function importContacts(rows: ContactImportRow[]): Promise<{ created: number; skipped: number }> {
+  const [existing, zones] = await Promise.all([listContacts(), listZones()]);
   const names = new Set(existing.map((contact) => contact.name.toLowerCase()));
   const emails = new Set(existing.map((contact) => contact.email.toLowerCase()).filter(Boolean));
   let created = 0;
-  for (const row of rows) {
+  for (const { zoneName, ...row } of rows) {
     const email = row.email.trim().toLowerCase();
-    if (Object.keys(contactErrors(row)).length || names.has(row.name.trim().toLowerCase()) || (email && emails.has(email))) continue;
-    await createContact(row);
+    const zoneId = findZoneId(zones, zoneName) ?? null;
+    if (Object.keys(contactErrors(row)).length || !row.roles.length || (zoneName.trim() && zoneId === null)) continue;
+    if (names.has(row.name.trim().toLowerCase()) || (email && emails.has(email))) continue;
+    await createContact({ ...row, zoneId });
     names.add(row.name.trim().toLowerCase());
     if (email) emails.add(email);
     created += 1;
