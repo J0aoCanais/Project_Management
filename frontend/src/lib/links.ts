@@ -2,7 +2,7 @@ import type { DocumentOwnerKind } from "../api/documentsApi";
 
 // Para onde leva o link de uma entidade associada (documentos, movimentos…).
 
-export type EntityKind = DocumentOwnerKind | "budgetItem" | "financing";
+export type EntityKind = DocumentOwnerKind | "budgetItem" | "financing" | "contact";
 
 export interface EntityLink {
   kind: EntityKind;
@@ -29,5 +29,7 @@ export function entityPath({ kind, id, parentId }: EntityLink): string {
       return "/financas?tab=financiamentos";
     case "property":
       return `/imoveis/${id}`;
+    case "contact":
+      return `/contactos/${id}`;
   }
 }

@@ -1,3 +1,4 @@
+import type { CaepTerm, InvestorKind } from "../lib/taxRules";
 import type { ContactInput } from "./contactsApi";
 import * as store from "./fixtures/investorsStore";
 
@@ -5,14 +6,19 @@ import * as store from "./fixtures/investorsStore";
 // Um investidor é um contacto com perfil de investidor: o id do investidor é o id do contacto.
 
 export interface InvestorProfile {
+  /** Particular ou Empresa: decide o imposto sobre o lucro (IRS ou IRC). "" enquanto não se escolhe. */
+  investorKind: InvestorKind | "";
+  /** Prazo do CAEP. Só conta numa empresa. */
+  caepTerm: CaepTerm;
   availableCapital: number;
   /** Conservador, Moderado ou Agressivo. */
   riskProfile: string;
+  /** Nomes das zonas (tabela de zonas). */
   preferredZones: string[];
-  minAmount: number;
-  maxAmount: number;
   preferredTerms: string;
+  /** Inativo, Por contactar, Qualificado ou Ativo. */
   relationStatus: string;
+  notes: string;
 }
 
 /** Dados do contacto mostrados com o investidor. */
@@ -25,8 +31,9 @@ export interface InvestorContact {
 }
 
 export interface Investor extends InvestorContact {
-  /** O mesmo id do contacto. */
   id: number;
+  /** Contacto em /contactos. Os investidores de exemplo ainda não têm (não há backend de investidores). */
+  contactId?: number;
   profile: InvestorProfile;
   /** Soma dos valores comprometidos nos investimentos. */
   committedCapital: number;

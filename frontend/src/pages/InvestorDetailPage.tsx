@@ -16,6 +16,9 @@ import RecordFields from "../components/ui/RecordFields";
 import Tabs from "../components/ui/Tabs";
 import { useInvestor } from "../hooks/useInvestors";
 import { formatMoney } from "../lib/format";
+import { investorKindLabel } from "../lib/investorRules";
+import { entityPath } from "../lib/links";
+import { taxRate } from "../lib/taxRules";
 
 const tabs = [
   { value: "perfil", label: "Perfil" },
@@ -57,7 +60,7 @@ function InvestorDetailPage() {
         meta={<InvestorStatusPill status={profile.relationStatus} />}
         actions={
           <>
-            {/* TODO: botão "Ver contacto" quando os investidores usarem o backend (hoje são de exemplo e os ids não correspondem). */}
+            {investor.contactId !== undefined && <ButtonLink to={entityPath({ kind: "contact", id: investor.contactId })}>Ver contacto</ButtonLink>}
             <Button variant="primary" onClick={() => setEditing(true)}>
               Editar perfil
             </Button>
@@ -70,13 +73,15 @@ function InvestorDetailPage() {
           <RecordFields
             title="Perfil de investidor"
             fields={[
+              { label: "Estrutura", value: investorKindLabel(profile) },
+              { label: "Imposto sobre o lucro", value: profile.investorKind ? `${taxRate(profile.investorKind, profile.caepTerm)}%` : "—" },
+              { label: "Zona", value: profile.preferredZones.join(" · ") || "—" },
               { label: "Capital disponível", value: formatMoney(profile.availableCapital) },
               { label: "Capital comprometido", value: formatMoney(investor.committedCapital) },
               { label: "Perfil de risco", value: profile.riskProfile },
-              { label: "Montantes", value: `${formatMoney(profile.minAmount)} – ${formatMoney(profile.maxAmount)}` },
-              { label: "Zonas preferidas", value: profile.preferredZones.join(" · ") || "—" },
-              { label: "Estado da relação", value: <InvestorStatusPill status={profile.relationStatus} /> },
+              { label: "Estado", value: <InvestorStatusPill status={profile.relationStatus} /> },
               { label: "Prazos preferidos", value: profile.preferredTerms || "—", wide: true },
+              { label: "Notas", value: profile.notes || "—", wide: true },
             ]}
           />
           <RecordFields
@@ -90,7 +95,7 @@ function InvestorDetailPage() {
           />
         </div>
       )}
-      {tab === "investimentos" && <InvestmentsTable investorId={investor.id} investorName={investor.name} investments={investor.investments} />}
+      {tab === "investimentos" && <InvestmentsTable investorId={investor.id} investorName={investor.name} profile={profile} investments={investor.investments} />}
       {tab === "documentos" && <InvestorDocuments investments={investor.investments} />}
       {editing && <NewInvestorDrawer investor={investor} onClose={() => setEditing(false)} />}
     </>

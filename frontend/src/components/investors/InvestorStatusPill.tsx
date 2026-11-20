@@ -6,7 +6,8 @@ interface Props {
 
 const tones: Record<string, PillTone> = {
   Ativo: "green",
-  Prospeção: "amber",
+  Qualificado: "blue",
+  "Por contactar": "amber",
   Inativo: "neutral",
 };
 

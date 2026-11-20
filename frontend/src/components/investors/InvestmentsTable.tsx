@@ -1,6 +1,6 @@
 import { useState } from "react";
 
-import type { Investment } from "../../api/investorsApi";
+import type { Investment, InvestorProfile } from "../../api/investorsApi";
 import { formatIsoDate, formatMoney, formatPercent } from "../../lib/format";
 import Button from "../ui/Button";
 import Panel from "../ui/Panel";
@@ -10,6 +10,7 @@ import NewInvestmentDrawer from "./NewInvestmentDrawer";
 interface Props {
   investorId: number;
   investorName: string;
+  profile: InvestorProfile;
   investments: Investment[];
 }
 
@@ -25,7 +26,7 @@ const columns: TableColumn<Investment>[] = [
   { key: "date", header: "Data do acordo", render: (investment) => formatIsoDate(investment.agreementDate) },
 ];
 
-function InvestmentsTable({ investorId, investorName, investments }: Props) {
+function InvestmentsTable({ investorId, investorName, profile, investments }: Props) {
   const [creating, setCreating] = useState(false);
   const total = investments.reduce((sum, investment) => sum + investment.committedValue, 0);
 
@@ -44,7 +45,7 @@ function InvestmentsTable({ investorId, investorName, investments }: Props) {
           <p className="px-3 py-6 text-center text-xs text-muted">Ainda não há investimentos registados.</p>
         )}
       </Panel>
-      {creating && <NewInvestmentDrawer investorId={investorId} investorName={investorName} onClose={() => setCreating(false)} />}
+      {creating && <NewInvestmentDrawer investorId={investorId} investorName={investorName} profile={profile} onClose={() => setCreating(false)} />}
     </>
   );
 }

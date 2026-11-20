@@ -1,11 +1,13 @@
 import { useState, type FormEvent } from "react";
+import { Link } from "react-router-dom";
 
+import { INVESTOR_ROLE } from "../../api/contactsApi";
 import type { InvestorDetail } from "../../api/investorsApi";
 import { useContacts } from "../../hooks/useContacts";
 import { useCreateInvestor, useUpdateInvestor } from "../../hooks/useInvestors";
-import { emptyContactForm, formToContactInput } from "../../lib/contactForm";
-import { contactErrors } from "../../lib/contactRules";
+import { contactFormErrors, emptyContactForm, formToContactInput } from "../../lib/contactForm";
 import { emptyInvestorProfile, investorProfileErrors } from "../../lib/investorRules";
+import { entityPath } from "../../lib/links";
 import ContactForm from "../contacts/ContactForm";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
@@ -24,7 +26,7 @@ interface Props {
 const FORM_ID = "investidor";
 
 function NewInvestorDrawer({ onClose, investor }: Props) {
-  const contacts = useContacts();
+  const contacts = useContacts(!investor);
   const create = useCreateInvestor();
   const update = useUpdateInvestor(investor?.id ?? Number.NaN);
   const mutation = investor ? update : create;
@@ -35,7 +37,8 @@ function NewInvestorDrawer({ onClose, investor }: Props) {
   const [showErrors, setShowErrors] = useState(false);
 
   const profileErrors = investorProfileErrors(profile);
-  const newContactErrors = !investor && mode === "new" ? contactErrors(contact) : {};
+  // O papel de um contacto novo é sempre Investidor, por isso o tipo não aparece nem é pedido.
+  const newContactErrors = !investor && mode === "new" ? contactFormErrors(contact, false) : {};
   const contactIdError = !investor && mode === "existing" && !contactId ? "Escolha o contacto." : undefined;
   const contactOptions = (contacts.data ?? []).map((item) => ({ value: String(item.id), label: item.email ? `${item.name} · ${item.email}` : item.name }));
 
@@ -45,7 +48,51 @@ function NewInvestorDrawer({ onClose, investor }: Props) {
     if (Object.keys(profileErrors).length || Object.keys(newContactErrors).length || contactIdError) return;
     if (investor) update.mutate(profile, { onSuccess: onClose });
     else if (mode === "existing") create.mutate({ profile, contactId: Number(contactId) }, { onSuccess: onClose });
-    else create.mutate({ profile, contact: formToContactInput(contact) }, { onSuccess: onClose });
+    else create.mutate({ profile, contact: formToContactInput({ ...contact, type: INVESTOR_ROLE }) }, { onSuccess: onClose });
+  };
+
+  const renderContact = () => {
+    if (investor) {
+      return investor.contactId ? (
+        <Link to={entityPath({ kind: "contact", id: investor.contactId })} className="text-xs font-semibold text-brand hover:underline">
+          {investor.name} · ver contacto
+        </Link>
+      ) : (
+        <p className="text-xs">{investor.name}</p>
+      );
+    }
+    return (
+      <>
+        <SegmentedChoice
+          label="Contacto do investidor"
+          value={mode}
+          onChange={setMode}
+          options={[
+            { value: "existing", label: "Contacto existente" },
+            { value: "new", label: "Novo contacto" },
+          ]}
+        />
+        {mode === "existing" ? (
+          <FormField label="Contacto" error={showErrors ? contactIdError : undefined}>
+            <Select
+              searchable
+              label="Contacto"
+              value={contactId}
+              onChange={setContactId}
+              options={contactOptions}
+              placeholder={contacts.isPending ? "A carregar contactos…" : "Selecionar contacto…"}
+            />
+          </FormField>
+        ) : (
+          <ContactForm embedded values={contact} onChange={setContact} errors={newContactErrors} showErrors={showErrors} showType={false} />
+        )}
+        {mode === "existing" && contactId && (
+          <Link to={entityPath({ kind: "contact", id: Number(contactId) })} className="text-xs font-semibold text-brand hover:underline">
+            Ver contacto
+          </Link>
+        )}
+      </>
+    );
   };
 
   return (
@@ -64,27 +111,10 @@ function NewInvestorDrawer({ onClose, investor }: Props) {
     >
       <form id={FORM_ID} noValidate onSubmit={handleSubmit} className="grid gap-3">
         {mutation.isError && <Notice tone="warning">Não foi possível guardar o investidor. Confirme os dados e tente novamente.</Notice>}
-        {!investor && (
-          <section className="grid gap-3 rounded-panel border border-line bg-white p-3.5">
-            <h3 className="text-xs font-bold">Contacto</h3>
-            <SegmentedChoice
-              label="Contacto do investidor"
-              value={mode}
-              onChange={setMode}
-              options={[
-                { value: "existing", label: "Contacto existente" },
-                { value: "new", label: "Novo contacto" },
-              ]}
-            />
-            {mode === "existing" ? (
-              <FormField label="Contacto" error={showErrors ? contactIdError : undefined}>
-                <Select value={contactId} onChange={setContactId} options={contactOptions} placeholder={contacts.isPending ? "A carregar contactos…" : "Selecionar contacto…"} />
-              </FormField>
-            ) : (
-              <ContactForm values={contact} onChange={setContact} errors={newContactErrors} showErrors={showErrors} showType={false} />
-            )}
-          </section>
-        )}
+        <section className="grid gap-3 rounded-panel border border-line bg-white p-3.5">
+          <h3 className="text-xs font-bold">Contacto</h3>
+          {renderContact()}
+        </section>
         <section className="grid gap-3 rounded-panel border border-line bg-white p-3.5">
           <h3 className="text-xs font-bold">Perfil de investidor</h3>
           <InvestorProfileForm values={profile} onChange={setProfile} errors={profileErrors} showErrors={showErrors} />

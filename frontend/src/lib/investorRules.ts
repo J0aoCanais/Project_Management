@@ -1,13 +1,18 @@
 import type { InvestmentInput, InvestorProfile } from "../api/investorsApi";
 import { optionalTextError } from "./leadRules";
 import { MONEY, PERCENT, fitsRule } from "./opportunityRules";
+import { CAEP_TERMS, INVESTOR_KINDS } from "./taxRules";
 
 // Limites do perfil de investidor e dos investimentos. Usados pelos formulários
 // e pelo servidor simulado (recusa o que chegar fora disto).
 
 export const INVESTOR_TEXT_LIMITS = {
   preferredTerms: 200,
+  notes: 1000,
 } as const;
+
+/** Prazo previsto de um investimento, em meses, só para simular o retorno líquido. */
+export const TERM_MONTHS = { min: 1, max: 120, decimals: 0 } as const;
 
 /** Datas de acordo aceites: de 2000 até 10 anos à frente (um ano 0001 ou 275760 é um erro de escrita). */
 export const AGREEMENT_DATE_RANGE = {
@@ -17,13 +22,14 @@ export const AGREEMENT_DATE_RANGE = {
 
 /** Perfil de um investidor novo: tudo por preencher. */
 export const emptyInvestorProfile: InvestorProfile = {
+  investorKind: "",
+  caepTerm: "Menos de 1 ano",
   availableCapital: 0,
   riskProfile: "",
   preferredZones: [],
-  minAmount: 0,
-  maxAmount: 0,
   preferredTerms: "",
   relationStatus: "",
+  notes: "",
 };
 
 export type InvestorProfileErrors = Partial<Record<keyof InvestorProfile, string>>;
@@ -35,23 +41,32 @@ function withoutEmpty<T extends object>(errors: T): T {
   return Object.fromEntries(Object.entries(errors).filter(([, message]) => message)) as T;
 }
 
-/** Erros do perfil, por campo. Regra principal: mínimo ≤ máximo ≤ capital disponível. */
+/** Erros do perfil, por campo. */
 export function investorProfileErrors(profile: InvestorProfile): InvestorProfileErrors {
-  const { availableCapital: capital, minAmount: min, maxAmount: max } = profile;
-  const errors: InvestorProfileErrors = {
-    availableCapital: positiveMoney(capital) ? undefined : "Indique o capital disponível.",
-    minAmount: positiveMoney(min) ? undefined : "Indique o montante mínimo.",
-    maxAmount: positiveMoney(max) ? undefined : "Indique o montante máximo.",
+  return withoutEmpty<InvestorProfileErrors>({
+    investorKind: profile.investorKind && INVESTOR_KINDS.includes(profile.investorKind) ? undefined : "Escolha se é particular ou empresa.",
+    caepTerm: CAEP_TERMS.includes(profile.caepTerm) ? undefined : "Escolha o prazo do CAEP.",
+    availableCapital: positiveMoney(profile.availableCapital) ? undefined : "Indique o capital disponível.",
     riskProfile: profile.riskProfile ? undefined : "Escolha o perfil de risco.",
     relationStatus: profile.relationStatus ? undefined : "Escolha o estado da relação.",
     preferredTerms: optionalTextError(profile.preferredTerms, INVESTOR_TEXT_LIMITS.preferredTerms),
-  };
-  if (!errors.minAmount && !errors.maxAmount && min > max) errors.maxAmount = "O máximo tem de ser igual ou maior que o mínimo.";
-  if (!errors.availableCapital) {
-    if (!errors.minAmount && min > capital) errors.minAmount = "O mínimo não pode passar o capital disponível.";
-    if (!errors.maxAmount && max > capital) errors.maxAmount = "O máximo não pode passar o capital disponível.";
-  }
-  return withoutEmpty(errors);
+    notes: optionalTextError(profile.notes, INVESTOR_TEXT_LIMITS.notes),
+  });
+}
+
+/** "Particular" ou "Empresa · CAEP mais de 1 ano". */
+export function investorKindLabel({ investorKind, caepTerm }: Pick<InvestorProfile, "investorKind" | "caepTerm">): string {
+  if (!investorKind) return "—";
+  return investorKind === "Empresa" ? `Empresa · CAEP ${caepTerm.toLowerCase()}` : investorKind;
+}
+
+/**
+ * Lucro do investidor num investimento, antes do imposto. Juro fixo: valor comprometido × taxa.
+ * Participação nos lucros: margem prevista da operação × taxa (a parte do lucro que lhe cabe).
+ */
+export function investmentGrossProfit(investment: Pick<InvestmentInput, "committedValue" | "returnType" | "returnRate">, operationMargin: number): number {
+  const base = investment.returnType === "Participação nos lucros" ? operationMargin : investment.committedValue;
+  return (base * investment.returnRate) / 100;
 }
 
 /** Erros de um investimento novo, por campo. */

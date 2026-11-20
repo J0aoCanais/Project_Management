@@ -1,6 +1,6 @@
 import type { ReactNode } from "react";
 
-export type PillTone = "neutral" | "green" | "amber" | "red";
+export type PillTone = "neutral" | "green" | "blue" | "amber" | "red";
 
 interface Props {
   tone?: PillTone;
@@ -10,6 +10,7 @@ interface Props {
 const tones: Record<PillTone, string> = {
   neutral: "bg-surface text-muted",
   green: "bg-success-soft text-success",
+  blue: "bg-info-soft text-info",
   amber: "bg-warning-soft text-warning",
   red: "bg-danger-soft text-danger",
 };

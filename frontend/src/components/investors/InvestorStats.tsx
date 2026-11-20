@@ -13,11 +13,12 @@ const borderClasses = ["border-b border-line min-[721px]:border-r min-[721px]:bo
 function InvestorStats({ investors }: Props) {
   const available = investors.reduce((total, investor) => total + investor.profile.availableCapital, 0);
   const committed = investors.reduce((total, investor) => total + investor.committedCapital, 0);
-  const active = investors.filter((investor) => investor.profile.relationStatus === "Ativo").length;
+  const count = (status: string) => investors.filter((investor) => investor.profile.relationStatus === status).length;
+  const active = count("Ativo");
   const cards = [
     { label: "Capital disponível", value: formatMoney(available), meta: `${investors.length} investidores` },
     { label: "Capital comprometido", value: formatMoney(committed), meta: "Soma dos investimentos" },
-    { label: "Investidores ativos", value: String(active), meta: `de ${investors.length}` },
+    { label: "Investidores ativos", value: String(active), meta: `de ${investors.length} · ${count("Qualificado")} qualificados · ${count("Por contactar")} por contactar` },
   ];
 
   return (

@@ -1,6 +1,6 @@
 import { useState, type FormEvent } from "react";
 
-import type { InvestmentInput } from "../../api/investorsApi";
+import type { InvestmentInput, InvestorProfile } from "../../api/investorsApi";
 import { useCreateInvestment } from "../../hooks/useInvestors";
 import { toIsoDate } from "../../lib/format";
 import { AGREEMENT_DATE_RANGE, investmentErrors } from "../../lib/investorRules";
@@ -13,16 +13,19 @@ import Notice from "../ui/Notice";
 import NumberInput from "../ui/NumberInput";
 import Select from "../ui/Select";
 import { inputClasses } from "../ui/inputClasses";
+import InvestmentNetReturn from "./InvestmentNetReturn";
 
 interface Props {
   investorId: number;
   investorName: string;
+  /** Estrutura do investidor (particular/empresa e CAEP), para o retorno líquido. */
+  profile: InvestorProfile;
   onClose: () => void;
 }
 
 const FORM_ID = "novo-investimento";
 
-function NewInvestmentDrawer({ investorId, investorName, onClose }: Props) {
+function NewInvestmentDrawer({ investorId, investorName, profile, onClose }: Props) {
   const create = useCreateInvestment(investorId);
   const [values, setValues] = useState<InvestmentInput>(() => ({
     operationCode: "",
@@ -77,6 +80,7 @@ function NewInvestmentDrawer({ investorId, investorName, onClose }: Props) {
         <FormField label="Data do acordo" error={error("agreementDate")}>
           <input className={inputClasses} type="date" min={AGREEMENT_DATE_RANGE.min} max={AGREEMENT_DATE_RANGE.max} value={values.agreementDate} onChange={(e) => set("agreementDate", e.target.value)} />
         </FormField>
+        <InvestmentNetReturn investment={values} profile={profile} />
       </form>
     </Drawer>
   );

@@ -1,6 +1,7 @@
 import type { Investor } from "../../api/investorsApi";
 import { formatMoney } from "../../lib/format";
 import Table, { type TableColumn } from "../ui/Table";
+import { investorKindLabel } from "../../lib/investorRules";
 import InvestorStatusPill from "./InvestorStatusPill";
 
 interface Props {
@@ -11,12 +12,7 @@ interface Props {
 const columns: TableColumn<Investor>[] = [
   { key: "name", header: "Investidor", truncate: true, render: (investor) => investor.name },
   { key: "capital", header: "Capital disponível", align: "right", render: (investor) => formatMoney(investor.profile.availableCapital) },
-  {
-    key: "range",
-    header: "Montante mín.–máx.",
-    align: "right",
-    render: (investor) => `${formatMoney(investor.profile.minAmount)} – ${formatMoney(investor.profile.maxAmount)}`,
-  },
+  { key: "kind", header: "Estrutura", render: (investor) => investorKindLabel(investor.profile) },
   { key: "risk", header: "Perfil de risco", render: (investor) => investor.profile.riskProfile },
   { key: "zones", header: "Zonas preferidas", truncate: true, render: (investor) => investor.profile.preferredZones.join(" · ") || "—" },
   { key: "status", header: "Estado", render: (investor) => <InvestorStatusPill status={investor.profile.relationStatus} /> },

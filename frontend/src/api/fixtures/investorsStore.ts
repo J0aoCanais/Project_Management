@@ -2,8 +2,9 @@ import { contactErrors } from "../../lib/contactRules";
 import { investmentErrors, investorProfileErrors } from "../../lib/investorRules";
 import { investorsFixture } from "../../temp";
 import { ApiError } from "../client";
-import { getContact, type ContactInput } from "../contactsApi";
-import type { InvestmentInput, Investor, InvestorDetail, InvestorProfile, InvestorRecord, NewInvestorInput } from "../investorsApi";
+import { getContact } from "../contactsApi";
+import { listZones } from "../zonesApi";
+import type { InvestmentInput, Investor, InvestorContact, InvestorDetail, InvestorProfile, InvestorRecord, NewInvestorInput } from "../investorsApi";
 
 // TODO: trocar pelo endpoint quando existir. Simula o servidor: as alterações ficam em memória até recarregar.
 // Ainda não há backend de investidores, por isso nunca altera os contactos reais: um contacto existente
@@ -49,17 +50,21 @@ export async function get(id: number) {
 export async function create(input: NewInvestorInput) {
   await respond(null);
   rejectInvalid(investorProfileErrors(input.profile), "Perfil de investidor inválido");
-  let contact: Pick<ContactInput, "name" | "email" | "phone" | "company" | "zone">;
+  let contact: InvestorContact;
+  let contactId: number | undefined;
   if ("contactId" in input) {
     if (usedContactIds.has(input.contactId)) throw new ApiError(409, "Este contacto já é investidor");
     contact = await getContact(input.contactId);
+    contactId = input.contactId;
     usedContactIds.add(input.contactId);
   } else {
     rejectInvalid(contactErrors(input.contact), "Contacto inválido");
-    contact = input.contact;
+    const zones = input.contact.zoneId === null ? [] : await listZones();
+    contact = { ...input.contact, zone: zones.find((zone) => zone.id === input.contact.zoneId)?.name ?? "" };
   }
   const record: InvestorRecord = {
     id: Math.max(0, ...investorsFixture.map((item) => item.id)) + 1,
+    contactId,
     name: contact.name,
     email: contact.email,
     phone: contact.phone,

@@ -20,6 +20,9 @@
   --color-danger-soft: #fbeceb;
   --color-warning: #a56b14;
   --color-warning-soft: #fff5df;
+  /* Estado informativo (ex.: investidor qualificado). Não existe no mockup. */
+  --color-info: #2f5d9a;
+  --color-info-soft: #e9f0f9;
 
   --color-sidebar: #0d2f31;
   --color-sidebar-hover: #174446;
