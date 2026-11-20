@@ -2,6 +2,7 @@ from flask import flash, jsonify, render_template, request, session, url_for, Bl
 from datetime import datetime
 from sqlalchemy import or_, func
 from sqlalchemy.orm import selectinload
+from sqlalchemy.exc import IntegrityError
 from marshmallow import ValidationError
 from flask_login import current_user
 from http import HTTPStatus
@@ -57,10 +58,14 @@ def create_role():
         db.session.add(role)
         db.session.commit()
 
-        return jsonify(contact_response_schema.dump(role)), HTTPStatus.CREATED
+        return jsonify(role_response_schema.dump(role)), HTTPStatus.CREATED
 
     except ValidationError as err:
         return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
+
+    except IntegrityError:
+        db.session.rollback()
+        return jsonify({"errors": {"name": ["A role with this name already exists"]}}), HTTPStatus.CONFLICT
 
     except Exception:
         db.session.rollback()
@@ -71,7 +76,7 @@ def create_role():
 def delete_role(role_id):
     role = db.session.get(Role, role_id)
     if role is None:
-        return jsonify({"errors": {"id": ["Contact not found"]}}), HTTPStatus.NOT_FOUND
+        return jsonify({"errors": {"id": ["Role not found"]}}), HTTPStatus.NOT_FOUND
 
     try:
         db.session.delete(role)

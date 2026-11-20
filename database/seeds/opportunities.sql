@@ -1,4 +1,5 @@
 INSERT INTO opportunity (
+    id,
     current_status,
     purchase_price,
     acquisition_costs,
@@ -13,6 +14,7 @@ INSERT INTO opportunity (
 )
 VALUES
 (
+    1000,
     'Active',
     150000.00,
     5000.00,
@@ -26,6 +28,7 @@ VALUES
     1
 ),
 (
+    1001,
     'Under Review',
     200000.00,
     7500.00,
