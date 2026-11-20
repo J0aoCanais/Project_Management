@@ -23,6 +23,7 @@ export const TEXT_LIMITS = {
   title: 60,
   extraCostLabel: 80,
   rejectionReason: 500,
+  phaseNote: 500,
 } as const;
 
 export const MIN_TITLE_LENGTH = 3;
@@ -37,6 +38,7 @@ export const FINANCE_RULES: Record<keyof FinanceValues, NumberRule> = {
   commissionPercent: PERCENT,
   commissionVatPercent: PERCENT,
   termMonths: MONTHS,
+  investorSharePercent: PERCENT,
 };
 
 /** Dentro dos limites e com as casas decimais permitidas. */
@@ -66,6 +68,11 @@ export function financeErrors(values: FinanceValues): Partial<Record<keyof Finan
   if (!errors.expectedSalePrice && values.expectedSalePrice <= 0) errors.expectedSalePrice = "Indique o preço de venda previsto.";
   if (!errors.termMonths && values.termMonths < 1) errors.termMonths = "Indique o prazo (pelo menos 1 mês).";
   return errors;
+}
+
+/** Erro de uma nota do histórico de fases (opcional, até 500). */
+export function phaseNoteError(note: string): string | undefined {
+  return note.trim().length > TEXT_LIMITS.phaseNote ? `Máximo de ${TEXT_LIMITS.phaseNote} caracteres.` : undefined;
 }
 
 /** Erros de cada linha de "Outros custos", pelo id da linha. */

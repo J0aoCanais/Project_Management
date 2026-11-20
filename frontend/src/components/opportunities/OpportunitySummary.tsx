@@ -1,5 +1,8 @@
+import { Link } from "react-router-dom";
+
 import type { OpportunityDetail } from "../../api/opportunitiesApi";
 import { formatIsoDate, formatMoney } from "../../lib/format";
+import { entityPath } from "../../lib/links";
 import RecordFields from "../ui/RecordFields";
 
 interface Props {
@@ -17,7 +20,17 @@ function OpportunitySummary({ detail }: Props) {
         { label: "Área", value: property.areaM2 ? `${property.areaM2} m²` : "—" },
         { label: "Preço pedido", value: formatMoney(detail.askingPrice) },
         { label: "VVR", value: formatMoney(detail.vvr) },
-        { label: "Contacto", value: detail.contactName ?? "—" },
+        {
+          label: "Contacto",
+          value:
+            detail.contactId !== undefined ? (
+              <Link to={entityPath({ kind: "contact", id: detail.contactId })} className="text-brand hover:underline">
+                {detail.contactName ?? "Ver contacto"}
+              </Link>
+            ) : (
+              (detail.contactName ?? "—")
+            ),
+        },
         { label: "Data de visita", value: property.visitDate ? formatIsoDate(property.visitDate) : "—" },
       ]}
     >

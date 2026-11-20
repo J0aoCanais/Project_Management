@@ -19,6 +19,7 @@ const fields: { label: string; key: keyof FinanceValues; suffix: string }[] = [
   { label: "Custo da obra", key: "workCost", suffix: "€" },
   { label: "Preço de venda previsto", key: "expectedSalePrice", suffix: "€" },
   { label: "Prazo previsto (meses)", key: "termMonths", suffix: "meses" },
+  { label: "Percentagem do investidor ativo", key: "investorSharePercent", suffix: "%" },
 ];
 
 function FinanceAssumptionsForm({ values, errors, onChange }: Props) {

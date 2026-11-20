@@ -11,6 +11,7 @@ import Select from "../ui/Select";
 import { inputClasses } from "../ui/inputClasses";
 import { typologyOptions } from "../../temp";
 import { MONEY, TEXT_LIMITS, fitsRule, titleError } from "../../lib/opportunityRules";
+import OpportunityContactField from "./OpportunityContactField";
 
 interface Props {
   onClose: () => void;
@@ -37,6 +38,7 @@ function NewOpportunityDrawer({ onClose, fromLead, initial = {}, onCreated, oppo
   const [zone, setZone] = useState(opportunity?.zone ?? fromLead?.zone ?? initial.zone ?? "");
   const [askingPrice, setAskingPrice] = useState(start.askingPrice ?? 0);
   const [vvr, setVvr] = useState(start.vvr ?? 0);
+  const [contactId, setContactId] = useState(start.contactId !== undefined ? String(start.contactId) : "");
   const [leadId, setLeadId] = useState(fromLead ? String(fromLead.id) : initial.leadId ? String(initial.leadId) : "");
   const [showErrors, setShowErrors] = useState(false);
 
@@ -51,12 +53,13 @@ function NewOpportunityDrawer({ onClose, fromLead, initial = {}, onCreated, oppo
     e.preventDefault();
     setShowErrors(true);
     if (Object.values(errors).some(Boolean)) return;
+    const contact = contactId ? Number(contactId) : undefined;
     if (opportunity) {
-      update.mutate({ title: title.trim(), typology, zone, askingPrice, vvr }, { onSuccess: onClose });
+      update.mutate({ title: title.trim(), typology, zone, askingPrice, vvr, contactId: contact }, { onSuccess: onClose });
       return;
     }
     create.mutate(
-      { title: title.trim(), typology, zone, askingPrice, vvr, leadId: leadId ? Number(leadId) : undefined, propertyId: initial.propertyId },
+      { title: title.trim(), typology, zone, askingPrice, vvr, contactId: contact, leadId: leadId ? Number(leadId) : undefined, propertyId: initial.propertyId },
       { onSuccess: (detail) => (onCreated ? onCreated(detail) : onClose()) },
     );
   };
@@ -114,6 +117,7 @@ function NewOpportunityDrawer({ onClose, fromLead, initial = {}, onCreated, oppo
         <FormField label="VVR" error={showErrors ? errors.vvr : undefined}>
           <NumberInput min={MONEY.min} max={MONEY.max} decimals={MONEY.decimals} suffix="€" value={vvr} onChange={setVvr} invalid={showErrors && !!errors.vvr} />
         </FormField>
+        <OpportunityContactField value={contactId} onChange={setContactId} />
         {opportunity ? null : fromLead ? (
           <FormField label="Lead de origem">
             <input className={inputClasses} value={fromLead.name} readOnly disabled />

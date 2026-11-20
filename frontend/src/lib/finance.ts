@@ -1,4 +1,5 @@
 import type { ExtraCost, FinanceValues } from "../api/opportunitiesApi";
+import { IRC_RATE } from "./taxRules";
 
 export interface FinanceResult {
   /** Soma dos outros custos. */
@@ -14,6 +15,13 @@ export interface FinanceResult {
   roi: number;
   /** Em percentagem. */
   annualRoi: number;
+  /** IRC da empresa sobre a margem (taxa de `taxRules.ts`). Sem margem, não há IRC. */
+  irc: number;
+  marginAfterTax: number;
+  /** Parte da margem do investidor ativo (`investorSharePercent`), antes de impostos. */
+  investorProfit: number;
+  /** O que fica para a empresa, antes de impostos. */
+  companyProfit: number;
 }
 
 /** Cálculo da análise de rentabilidade. As divisões por zero devolvem 0. */
@@ -27,5 +35,7 @@ export function calcFinance(values: FinanceValues, extras: ExtraCost[]): Finance
   const growth = 1 + roi / 100;
   const annualRoi = values.termMonths > 0 && growth >= 0 ? (Math.pow(growth, 12 / values.termMonths) - 1) * 100 : 0;
   const marginOnSale = values.expectedSalePrice > 0 ? (margin / values.expectedSalePrice) * 100 : 0;
-  return { other, commission, cost, margin, marginOnSale, roi, annualRoi };
+  const irc = margin > 0 ? (margin * IRC_RATE) / 100 : 0;
+  const investorProfit = margin > 0 ? (margin * (values.investorSharePercent || 0)) / 100 : 0;
+  return { other, commission, cost, margin, marginOnSale, roi, annualRoi, irc, marginAfterTax: margin - irc, investorProfit, companyProfit: margin - investorProfit };
 }

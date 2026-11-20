@@ -1,8 +1,9 @@
 import { calcFinance } from "../../lib/finance";
-import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, titleError } from "../../lib/opportunityRules";
+import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, phaseNoteError, titleError } from "../../lib/opportunityRules";
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { createOperationFromOpportunity } from "./operationsStore";
 import { ApiError } from "../client";
+import { getContact } from "../contactsApi";
 import type { ExtraCost, FinanceValues, NewOpportunity, OpportunityCard, OpportunityChanges, OpportunityDetail } from "../opportunitiesApi";
 import { currentUserFixture, defaultFinance, leads, opportunitiesFixture, opportunityOptionsFixture, propertiesFixture } from "../../temp";
 import { respond } from "./respond";
@@ -44,6 +45,15 @@ export function listOptions() {
   return respond(opportunityOptionsFixture);
 }
 
+/** Nome do contacto associado (contacto real em /api/contacts). Um id que não existe é recusado. */
+async function contactName(contactId: number): Promise<string> {
+  try {
+    return (await getContact(contactId)).name;
+  } catch {
+    throw new ApiError(422, "Contacto inválido");
+  }
+}
+
 /** O servidor valida sempre, mesmo que o formulário já o tenha feito. */
 function validateOpportunity(input: OpportunityChanges): void {
   const invalid = titleError(input.title) ?? (!opportunityOptionsFixture.zones.includes(input.zone) ? "Zona inválida" : undefined);
@@ -60,6 +70,7 @@ export async function addOpportunity(input: NewOpportunity) {
   const sourceLead = leads.find((item) => item.id === input.leadId);
   if (input.leadId !== undefined && !sourceLead) throw new ApiError(422, "Lead de origem inválida");
   const lead = sourceLead && { id: sourceLead.id, name: sourceLead.contactName };
+  const contact = input.contactId === undefined ? undefined : { id: input.contactId, name: await contactName(input.contactId) };
   const finance = defaultFinance(input.askingPrice, input.vvr);
   const now = new Date().toISOString();
   const opportunity: OpportunityDetail = {
@@ -73,7 +84,8 @@ export async function addOpportunity(input: NewOpportunity) {
     phaseIndex: 0,
     daysInPhase: 0,
     owner: { name: currentUserFixture.name },
-    contactName: lead?.name,
+    contactName: contact?.name ?? lead?.name,
+    contactId: contact?.id,
     updatedAt: now,
     property: property
       ? { id: property.id, code: property.code, areaM2: property.areaM2, visitDate: property.visitDate, notes: property.notes, constructionYear: property.constructionYear, condition: property.condition, energyCertificate: property.energyCertificate }
@@ -92,24 +104,41 @@ export async function updateOpportunity(id: number, changes: OpportunityChanges)
   const opportunity = find(id);
   if (opportunity.rejection || opportunity.operationId) throw new ApiError(409, "Oportunidade fechada");
   validateOpportunity(changes);
+  const name = changes.contactId === undefined ? undefined : await contactName(changes.contactId);
+  const hadContact = opportunity.contactId !== undefined;
   Object.assign(opportunity, { ...changes, title: changes.title.trim() });
+  if (name !== undefined) opportunity.contactName = name;
+  else if (hadContact) opportunity.contactName = undefined;
   record(opportunity, "Dados da oportunidade atualizados");
   return structuredClone(opportunity);
 }
 
-export async function movePhase(id: number, phaseIndex: number) {
+export async function movePhase(id: number, phaseIndex: number, note: string) {
   await respond(null);
   const opportunity = find(id);
   const target = OPPORTUNITY_PHASES[phaseIndex];
   if (!target) throw new ApiError(422, "Fase inválida");
+  if (phaseNoteError(note)) throw new ApiError(422, "Nota demasiado longa");
   opportunity.phaseHistory.unshift({
     from: OPPORTUNITY_PHASES[opportunity.phaseIndex].name,
     to: target.name,
     date: new Date().toISOString(),
+    note: note.trim() || undefined,
   });
   opportunity.phaseIndex = phaseIndex;
   opportunity.daysInPhase = 0;
   record(opportunity, `Fase alterada para ${target.name}`);
+  return structuredClone(opportunity);
+}
+
+export async function setPhaseNote(id: number, index: number, note: string) {
+  await respond(null);
+  const opportunity = find(id);
+  const entry = opportunity.phaseHistory[index];
+  if (!entry) throw new ApiError(404, "Linha do histórico não encontrada");
+  if (phaseNoteError(note)) throw new ApiError(422, "Nota demasiado longa");
+  entry.note = note.trim() || undefined;
+  record(opportunity, `Nota do histórico de fases ${note.trim() ? "atualizada" : "removida"}`);
   return structuredClone(opportunity);
 }
 

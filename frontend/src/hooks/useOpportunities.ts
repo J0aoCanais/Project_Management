@@ -11,6 +11,7 @@ import {
   rejectOpportunity,
   saveOpportunityFinance,
   updateOpportunity,
+  updatePhaseNote,
   type ExtraCost,
   type FinanceValues,
   type NewOpportunity,
@@ -77,7 +78,7 @@ export function useMoveOpportunityPhase() {
   };
 
   return useMutation({
-    mutationFn: ({ id, phaseIndex }: { id: number; phaseIndex: number }) => moveOpportunityPhase(id, phaseIndex),
+    mutationFn: ({ id, phaseIndex, note }: { id: number; phaseIndex: number; note?: string }) => moveOpportunityPhase(id, phaseIndex, note),
     onMutate: async ({ id, phaseIndex }) => {
       await Promise.all([client.cancelQueries({ queryKey: listKey }), client.cancelQueries({ queryKey: detailKey(id) })]);
       const previous =
@@ -91,6 +92,15 @@ export function useMoveOpportunityPhase() {
     },
     onSettled: (_data, _error, { id }) =>
       Promise.all([client.invalidateQueries({ queryKey: listKey }), client.invalidateQueries({ queryKey: detailKey(id) })]),
+  });
+}
+
+/** Acrescenta ou edita a nota de uma linha do histórico de fases. */
+export function useUpdatePhaseNote(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: ({ index, note }: { index: number; note: string }) => updatePhaseNote(id, index, note),
+    onSuccess: (detail) => storeDetail(client, detail),
   });
 }
 

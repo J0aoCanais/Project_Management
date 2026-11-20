@@ -27,6 +27,8 @@ export interface FinanceValues {
   commissionPercent: number;
   commissionVatPercent: number;
   termMonths: number;
+  /** Parte do lucro que vai para o investidor ativo, em percentagem (0–100, 2 casas). O resto fica para a empresa. */
+  investorSharePercent: number;
 }
 
 export interface ExtraCost {
@@ -49,6 +51,8 @@ export interface OpportunityDetail extends OpportunityCard {
     photos?: { url: string; caption: string }[];
   };
   contactName?: string;
+  /** Contacto em /contactos (`Opportunity.contact_id`). */
+  contactId?: number;
   updatedAt: string;
   finance: FinanceValues;
   extraCosts: ExtraCost[];
@@ -66,6 +70,8 @@ export interface NewOpportunity {
   zone: string;
   askingPrice: number;
   vvr: number;
+  /** Contacto associado (`Opportunity.contact_id`). */
+  contactId?: number;
   leadId?: number;
   /** Imóvel já registado de onde foi criada. */
   propertyId?: number;
@@ -106,9 +112,15 @@ export async function updateOpportunity(id: number, changes: OpportunityChanges)
   return store.updateOpportunity(id, changes);
 }
 
-export async function moveOpportunityPhase(id: number, phaseIndex: number): Promise<OpportunityDetail> {
-  // PATCH /v1/opportunities/${id}/phase
-  return store.movePhase(id, phaseIndex);
+export async function moveOpportunityPhase(id: number, phaseIndex: number, note = ""): Promise<OpportunityDetail> {
+  // PATCH /v1/opportunities/${id}/phase  { phase, note }  (PhaseHistory.note)
+  return store.movePhase(id, phaseIndex, note);
+}
+
+/** Acrescenta ou edita a nota de uma linha do histórico de fases (`index` 0 = a mudança mais recente). */
+export async function updatePhaseNote(id: number, index: number, note: string): Promise<OpportunityDetail> {
+  // PATCH /v1/opportunities/${id}/phase-history/${historyId}  { note }
+  return store.setPhaseNote(id, index, note);
 }
 
 export async function saveOpportunityFinance(id: number, finance: FinanceValues, extraCosts: ExtraCost[]): Promise<OpportunityDetail> {

@@ -198,6 +198,7 @@ export function defaultFinance(askingPrice: number, vvr: number, estimatedProfit
     commissionPercent: 5,
     commissionVatPercent: 23,
     termMonths: 12,
+    investorSharePercent: 0,
   };
   if (estimatedProfit === undefined) return base;
   const { margin } = calcFinance(base, []);
@@ -273,6 +274,7 @@ const baixaDeCoimbra: OpportunityDetail = {
     commissionPercent: 5,
     commissionVatPercent: 23,
     termMonths: 10,
+    investorSharePercent: 60,
   },
   extraCosts: [
     { id: "extra-1", label: "Licenças e projeto", value: 3500 },

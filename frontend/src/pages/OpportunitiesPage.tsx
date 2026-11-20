@@ -1,6 +1,7 @@
 import { useState } from "react";
 
 import NewOpportunityDrawer from "../components/opportunities/NewOpportunityDrawer";
+import PhaseNoteDialog from "../components/opportunities/PhaseNoteDialog";
 import OpportunitiesTable from "../components/opportunities/OpportunitiesTable";
 import OpportunityBoard from "../components/opportunities/OpportunityBoard";
 import OpportunityToolbar from "../components/opportunities/OpportunityToolbar";
@@ -22,6 +23,8 @@ function OpportunitiesPage() {
   const filters = useOpportunityFilters(cards);
   const move = useMoveOpportunityPhase();
   const [creating, setCreating] = useState(false);
+  /** Mudança de fase à espera da nota (opcional) no Dialog. */
+  const [pendingMove, setPendingMove] = useState<{ id: number; from: number; to: number } | null>(null);
   const phases = OPPORTUNITY_PHASES.map((phase, index) => ({
     ...phase,
     maxDaysStalled: phasesQuery.data?.find((setting) => setting.position === index + 1)?.maxDaysStalled ?? phase.maxDaysStalled,
@@ -30,7 +33,7 @@ function OpportunitiesPage() {
   const handleMove = (id: number, phaseIndex: number) => {
     // Largar na mesma coluna, ou largar algo que não é um cartão, não muda nada.
     const card = cards.find((item) => item.id === id);
-    if (card && card.phaseIndex !== phaseIndex) move.mutate({ id, phaseIndex });
+    if (card && card.phaseIndex !== phaseIndex) setPendingMove({ id, from: card.phaseIndex, to: phaseIndex });
   };
 
   const newButton = (
@@ -67,6 +70,18 @@ function OpportunitiesPage() {
       )}
       {renderContent()}
       {creating && <NewOpportunityDrawer onClose={() => setCreating(false)} />}
+      {pendingMove && (
+        <PhaseNoteDialog
+          title="Mudar de fase"
+          description={`${phases[pendingMove.from].name} → ${phases[pendingMove.to].name}`}
+          confirmLabel="Mudar de fase"
+          onClose={() => setPendingMove(null)}
+          onConfirm={(note) => {
+            move.mutate({ id: pendingMove.id, phaseIndex: pendingMove.to, note });
+            setPendingMove(null);
+          }}
+        />
+      )}
     </>
   );
 }

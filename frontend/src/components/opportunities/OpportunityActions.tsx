@@ -1,4 +1,5 @@
 import type { OpportunityDetail } from "../../api/opportunitiesApi";
+import { entityPath } from "../../lib/links";
 import { LAST_OPPORTUNITY_PHASE } from "../../lib/phases";
 import Button from "../ui/Button";
 import ButtonLink from "../ui/ButtonLink";
@@ -21,6 +22,7 @@ function OpportunityActions({ detail, busy, onReport, onEdit, onReject, onAdvanc
       <Button icon="file" className="max-[720px]:hidden" onClick={onReport}>
         Gerar relatório
       </Button>
+      {detail.property.id !== undefined && <ButtonLink to={entityPath({ kind: "property", id: detail.property.id })}>Ver imóvel</ButtonLink>}
       {detail.operationId && (
         <ButtonLink variant="primary" to={`/operacoes/${detail.operationId}`}>
           Ver operação

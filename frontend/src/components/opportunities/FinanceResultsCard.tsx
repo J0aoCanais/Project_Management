@@ -1,6 +1,7 @@
 import type { FinanceValues } from "../../api/opportunitiesApi";
 import type { FinanceResult } from "../../lib/finance";
 import { formatMoney, formatPercent } from "../../lib/format";
+import { IRC_RATE } from "../../lib/taxRules";
 import Pill from "../ui/Pill";
 
 interface Props {
@@ -37,12 +38,35 @@ function FinanceResultsCard({ values, result }: Props) {
       </ul>
 
       <div className="mt-5 rounded-panel border border-results-line bg-results-raised p-[15px]">
-        <span className="mb-1 block text-[11px] text-results-muted">Margem estimada</span>
+        <span className="mb-1 block text-[11px] text-results-muted">Margem estimada (antes de IRC)</span>
         <strong className="block text-[26px] leading-tight text-results-accent">{formatMoney(result.margin)}</strong>
         <small className="text-[11px] text-results-muted">
           {values.expectedSalePrice > 0 ? formatPercent(result.marginOnSale) : "—"} sobre a venda
         </small>
+        <ul className="m-0 mt-3 grid list-none gap-1.5 border-t border-results-line p-0 pt-2.5">
+          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
+            <span>IRC ({IRC_RATE}%)</span>
+            <b className="shrink-0 font-semibold text-white">{formatMoney(-result.irc)}</b>
+          </li>
+          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
+            <span>Margem após IRC</span>
+            <b className="shrink-0 font-semibold text-white">{formatMoney(result.marginAfterTax)}</b>
+          </li>
+        </ul>
       </div>
+
+      {values.investorSharePercent > 0 && (
+        <ul className="m-0 mt-3 grid list-none gap-1.5 p-0">
+          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
+            <span>Para o investidor ({formatPercent(values.investorSharePercent, Number.isInteger(values.investorSharePercent) ? 0 : 2)})</span>
+            <b className="shrink-0 font-semibold text-white">{formatMoney(result.investorProfit)}</b>
+          </li>
+          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
+            <span>Fica para a empresa</span>
+            <b className="shrink-0 font-semibold text-white">{formatMoney(result.companyProfit)}</b>
+          </li>
+        </ul>
+      )}
 
       <div className="mt-5 grid grid-cols-2 gap-[15px]">
         <div>

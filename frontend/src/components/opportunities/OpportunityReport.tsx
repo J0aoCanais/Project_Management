@@ -5,20 +5,24 @@ import { calcFinance } from "../../lib/finance";
 import { formatDate } from "../../lib/format";
 import Button from "../ui/Button";
 import { useEscape } from "../ui/useEscape";
+import type { ReportAudience } from "./ReportAudienceDialog";
 import ReportCostTable from "./ReportCostTable";
 import ReportKpis from "./ReportKpis";
+import ReportNetReturn from "./ReportNetReturn";
 
 interface Props {
   detail: OpportunityDetail;
   values: FinanceValues;
   extras: ExtraCost[];
+  /** Investidor (ou estrutura) a quem se dirige: decide o imposto do retorno líquido. */
+  audience: ReportAudience;
   onClose: () => void;
 }
 
 const heading = "mb-2 text-[13px] font-bold text-brand-dark";
 
 /** Pré-visualização em ecrã inteiro do relatório para investidores. Ao imprimir, só este documento aparece. */
-function OpportunityReport({ detail, values, extras, onClose }: Props) {
+function OpportunityReport({ detail, values, extras, audience, onClose }: Props) {
   useEscape(onClose);
   const result = calcFinance(values, extras);
   const { property } = detail;
@@ -64,6 +68,12 @@ function OpportunityReport({ detail, values, extras, onClose }: Props) {
           <div className="shrink-0 min-[721px]:text-right print:text-right">
             <small className="block text-[10px] text-muted">Data do relatório</small>
             <strong className="text-[13px]">{formatDate(new Date())}</strong>
+            {audience.investorName && (
+              <>
+                <small className="mt-1.5 block text-[10px] text-muted">Preparado para</small>
+                <strong className="text-[13px]">{audience.investorName}</strong>
+              </>
+            )}
           </div>
         </header>
 
@@ -98,6 +108,8 @@ function OpportunityReport({ detail, values, extras, onClose }: Props) {
             <ReportCostTable values={values} extras={extras} result={result} />
           </section>
         </div>
+
+        <ReportNetReturn values={values} result={result} audience={audience} className={heading} />
 
         <footer className="mt-[18px] border-t border-line pt-3 text-[10px] text-muted">
           Valores estimados com base nos pressupostos da análise financeira à data do relatório. Documento confidencial, destinado apenas a investidores convidados.

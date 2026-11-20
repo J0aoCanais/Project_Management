@@ -15,9 +15,10 @@ import FinanceAnalysis from "./FinanceAnalysis";
 import NewOpportunityDrawer from "./NewOpportunityDrawer";
 import OpportunityActivity from "./OpportunityActivity";
 import OpportunityHeader from "./OpportunityHeader";
-import OpportunityReport from "./OpportunityReport";
+import OpportunityPhaseHistory from "./OpportunityPhaseHistory";
+import OpportunityReportFlow from "./OpportunityReportFlow";
 import OpportunitySummary from "./OpportunitySummary";
-import PhaseHistoryTable from "./PhaseHistoryTable";
+import PhaseNoteDialog from "./PhaseNoteDialog";
 import RejectOpportunityDialog from "./RejectOpportunityDialog";
 import UnsavedChangesDialog from "./UnsavedChangesDialog";
 
@@ -45,11 +46,14 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
   const [rejecting, setRejecting] = useState(false);
   const [editing, setEditing] = useState(false);
   const [reportOpen, setReportOpen] = useState(false);
+  /** "Avançar fase" abre primeiro o Dialog da nota. */
+  const [advancing, setAdvancing] = useState(false);
 
   const draft = useFinanceDraft(detail);
   const move = useMoveOpportunityPhase();
   const convert = useConvertOpportunity();
   const saveFinance = useSaveFinance();
+  const closed = Boolean(detail.rejection || detail.operationId);
 
   const goToTab = (value: TabValue) => setParams({ tab: value }, { replace: true });
   const requestTab = (value: TabValue) => {
@@ -74,7 +78,7 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
         onReport={() => setReportOpen(true)}
         onEdit={() => setEditing(true)}
         onReject={() => setRejecting(true)}
-        onAdvance={() => move.mutate({ id: detail.id, phaseIndex: detail.phaseIndex + 1 })}
+        onAdvance={() => setAdvancing(true)}
         onConvert={handleConvert}
       />
       <Button icon="file" className="mb-2.5 w-full min-[721px]:hidden" onClick={() => setReportOpen(true)}>
@@ -117,7 +121,7 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
             onSave={handleSave}
           />
         )}
-        {tab === "historico-de-fases" && <PhaseHistoryTable history={detail.phaseHistory} />}
+        {tab === "historico-de-fases" && <OpportunityPhaseHistory detail={detail} editable={!closed} />}
         {tab === "documentos" && (
           <DocumentsPanel
             owner={{ kind: "opportunity", id: detail.id }}
@@ -139,7 +143,19 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
           }}
         />
       )}
-      {reportOpen && <OpportunityReport detail={detail} values={draft.current.values} extras={draft.current.extras} onClose={() => setReportOpen(false)} />}
+      {advancing && detail.phaseIndex < phaseNames.length - 1 && (
+        <PhaseNoteDialog
+          title="Avançar fase"
+          description={`${phaseNames[detail.phaseIndex]} → ${phaseNames[detail.phaseIndex + 1]}`}
+          confirmLabel="Avançar fase"
+          onClose={() => setAdvancing(false)}
+          onConfirm={(note) => {
+            move.mutate({ id: detail.id, phaseIndex: detail.phaseIndex + 1, note });
+            setAdvancing(false);
+          }}
+        />
+      )}
+      {reportOpen && <OpportunityReportFlow detail={detail} values={draft.current.values} extras={draft.current.extras} onClose={() => setReportOpen(false)} />}
     </>
   );
 }
