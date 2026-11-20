@@ -175,13 +175,13 @@ def search_contacts():
             )
             stmt = stmt.where(conditions)
         
-        consent_param = params.get("consent")
-        if consent_param is not None:
-            stmt = stmt.where(Contact.consent_given == consent_param)
-        
         role_id_param = params.get("role_id")
         if role_id_param is not None:
             stmt = stmt.join(Contact.roles).where(Role.id == role_id_param)
+
+        zone_id_param = params.get("zone_id")
+        if zone_id_param is not None:
+            stmt = stmt.where(Contact.zone_id == zone_id_param)
         
         stmt = stmt.order_by(Contact.name.asc())
 

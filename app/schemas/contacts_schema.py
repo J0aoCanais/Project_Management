@@ -83,4 +83,4 @@ class ContactSearchSchema(ContactListSchema):
     """Search schema: List Schema with a query field"""
     q = fields.String(required=False, allow_none=True, validate=validate.Length(min=2, max=512))
     role_id = fields.Integer(allow_none=True)
-    consent = fields.Boolean(allow_none=True)
+    zone_id = fields.Integer(allow_none=True)

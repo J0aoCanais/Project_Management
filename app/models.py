@@ -221,6 +221,7 @@ class Contact(Base):
     )
 
     # relationships
+    opportunities: Mapped[List["Opportunity"]] = relationship(back_populates="contact")
     operations: Mapped[List["Operation"]] = relationship(back_populates="contact")
     investments: Mapped[List["Investment"]] = relationship(back_populates="contact")
     investor_profile: Mapped[Optional["InvestorProfile"]] = relationship(
@@ -266,6 +267,7 @@ class Zone(Base):
     name: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 
     contacts: Mapped[List["Contact"]] = relationship(back_populates="zone", passive_deletes=True)
+    properties: Mapped[List["Property"]] = relationship(back_populates="zone", passive_deletes=True)
 
 
 class User(UserMixin, Base):
@@ -442,7 +444,9 @@ class Property(Base):
     sale_motive: Mapped[str] = mapped_column(String(512), nullable=False)
     contact_owns: Mapped[bool] = mapped_column(Boolean, nullable=False)
     property_type: Mapped[Optional[str]] = mapped_column(String(512), nullable=False)
-    zone: Mapped[str] = mapped_column(String(512), nullable=False)
+    zone_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("zone.id", ondelete="SET NULL"), nullable=False
+    )
 
     source_url: Mapped[str] = mapped_column(Text)
     address: Mapped[str] = mapped_column(String(512))
@@ -465,6 +469,8 @@ class Property(Base):
 
     deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
 
+    zone: Mapped["Zone"] = relationship(back_populates="properties")
+
     lead_id: Mapped[int] = mapped_column(
         ForeignKey("lead.id"), nullable=False, index=True
     )
@@ -480,26 +486,47 @@ class Property(Base):
     def contact_id(self):
         return self.lead.contact.id
 
+class AquisitionCost(Base):
+    __tablename__ = "aquisition_cost"
+
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    name: Mapped[str] = mapped_column(String(512), nullable=False) 
+    cost: Mapped[float] = mapped_column(Numeric(14, 2), nullable=False)
+
+    opportunity_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("opportunity.id"), nullable=False
+    )
+    opportunity: Mapped["Opportunity"] = relationship(back_populates="other_costs")
+
 class Opportunity(Base):
     __tablename__ = "opportunity"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    current_status: Mapped[str] = mapped_column(String(512), nullable=False)
     purchase_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
-    acquisition_costs: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     work_cost: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
-    other_costs: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
-    expected_sale_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     expected_sale_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
-    term_months: Mapped[Optional[int]] = mapped_column(Integer)
     last_activity_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    term_months: Mapped[Optional[int]] = mapped_column(Integer)
+    imt: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    stamp_tax: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    registry_costs: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    irc: Mapped[Optional[int]] = mapped_column(Integer)
+    active_investor_percentage: Mapped[Optional[int]] = mapped_column(Integer)
+    passive_investor_profile: Mapped[Optional[str]] = mapped_column(Text)
+
+
     phase_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("phase.id"), nullable=False
     )
     property_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("property.id"), nullable=False
     )
+    contact_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("contact.id"), nullable=False
+    )
 
+    other_costs: Mapped[List["AquisitionCost"]] = relationship(back_populates="opportunity")
+    contact: Mapped["Contact"] = relationship(back_populates="opportunities")
     phase: Mapped["Phase"] = relationship(back_populates="opportunities")
     property: Mapped["Property"] = relationship(back_populates="opportunity")
     operation: Mapped[Optional["Operation"]] = relationship(

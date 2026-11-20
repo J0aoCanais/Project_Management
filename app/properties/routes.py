@@ -148,9 +148,9 @@ def search_properties():
             )
             stmt = stmt.where(conditions)
         
-        zone_param = params.get("zone")
+        zone_param = params.get("zone_id")
         if zone_param is not None:
-            stmt = stmt.where(func.lower(Property.zone) == func.lower(zone_param))
+            stmt = stmt.where(Property.zone_id == zone_param)
         
         typology = params.get("typology")
         if typology is not None:

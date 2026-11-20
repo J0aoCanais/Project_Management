@@ -16,8 +16,8 @@
 -- );
 
 INSERT INTO contact (id, name, email, phone_number, address, company_name,
-                     zone, notes, nif,  consent_given)
+                     zone_id, notes, nif,  consent_given)
 VALUES
-(700, 'Osvaldo Dias', 'os.dias@gmail.com', '922211220', 'Rua 1º de Maio, Nº13', 'OS Dias Lda', 'Coimbra', '', '937733111', FALSE),
-(701, 'Manel Ares', 'm.ares@gmail.com', '954871526', 'Rua 1º de Maio, Nº14', '', 'Coimbra', '', '445517221', FALSE)
+(700, 'Osvaldo Dias', 'os.dias@gmail.com', '922211220', 'Rua 1º de Maio, Nº13', 'OS Dias Lda', 1, '', '937733111', FALSE),
+(701, 'Manel Ares', 'm.ares@gmail.com', '954871526', 'Rua 1º de Maio, Nº14', '', 2, '', '445517221', FALSE)
 ;
