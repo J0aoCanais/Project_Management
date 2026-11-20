@@ -222,7 +222,6 @@ class Contact(Base):
 
     # relationships
     operations: Mapped[List["Operation"]] = relationship(back_populates="contact")
-    opportunities: Mapped[List["Opportunity"]] = relationship(back_populates="contact")
     investments: Mapped[List["Investment"]] = relationship(back_populates="contact")
     investor_profile: Mapped[Optional["InvestorProfile"]] = relationship(
         back_populates="contact", uselist=False
@@ -294,13 +293,10 @@ class InvestorProfile(Base):
     available_capital: Mapped[Optional[float]] = mapped_column(Float(8))
     risk_profile: Mapped[Optional[str]] = mapped_column(String(512))
     preferred_zones: Mapped[Optional[str]] = mapped_column(Text)
+    min_amount: Mapped[Optional[float]] = mapped_column(Float(8))
+    max_amount: Mapped[Optional[float]] = mapped_column(Float(8))
     preferred_terms: Mapped[Optional[str]] = mapped_column(Text)
     relation_status: Mapped[str] = mapped_column(String(512), nullable=False)
-    # "Particular" or "Empresa": decides the tax on the profit (IRS or IRC).
-    investor_kind: Mapped[str] = mapped_column(String(512), nullable=False, server_default="Particular")
-    # "Mais de 1 ano" or "Menos de 1 ano"; only used for companies.
-    caep_term: Mapped[Optional[str]] = mapped_column(String(512))
-    notes: Mapped[Optional[str]] = mapped_column(String(1000))
     contact_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("contact.id"), nullable=False, unique=True
     )
@@ -503,13 +499,9 @@ class Opportunity(Base):
     property_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("property.id"), nullable=False
     )
-    contact_id: Mapped[Optional[int]] = mapped_column(
-        BigInteger, ForeignKey("contact.id"), nullable=True, index=True
-    )
 
     phase: Mapped["Phase"] = relationship(back_populates="opportunities")
     property: Mapped["Property"] = relationship(back_populates="opportunity")
-    contact: Mapped[Optional["Contact"]] = relationship(back_populates="opportunities")
     operation: Mapped[Optional["Operation"]] = relationship(
         back_populates="opportunity", uselist=False
     )

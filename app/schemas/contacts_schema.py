@@ -34,11 +34,7 @@ class RoleResponseSchema(BaseSchema):
 class ContactCreateSchema(BaseSchema):
     """Contact creation schema. Name and roles fields are required"""
     name = fields.String(required=True, validate=validate.Length(min=1, max=512))
-    # The contact type is required on creation: at least one role.
-    role_ids = fields.List(
-        fields.Integer(), required=True,
-        validate=validate.Length(min=1, error="Choose at least one role."),
-    )
+    role_ids = fields.List(fields.Integer(), required=True, allow_none=True)
     email = fields.Email(allow_none=True, validate=validate.Length(max=512))
     phone_number = fields.String(allow_none=True, validate=validate.Length(max=512))
     address = fields.String(allow_none=True, validate=validate.Length(max=512))

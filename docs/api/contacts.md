@@ -71,7 +71,7 @@ Paginated responses look like this:
   "phone_number": "999000111",
   "address": null,
   "company_name": null,
-  "zone": { "id": 3, "name": "Celas" },
+  "zone": null,
   "notes": null,
   "nif": "999000111",
   "consent_given": null,
@@ -111,12 +111,12 @@ Header `Content-Type: application/json`, plus `X-CSRFToken`.
 | Field | Type | Required | Notes |
 |---|---|---|---|
 | `name` | string | **yes** | 1 to 512 characters |
-| `role_ids` | integer or array of integers | **yes** | at least one id of an existing role (see Roles); the contact type is required. A single integer is treated as a one-item list |
+| `role_ids` | integer or array of integers | **yes** | ids of existing roles (see Roles). A single integer is treated as a one-item list |
 | `email` | string | no | must be a valid email |
 | `phone_number` | string | no | |
 | `address` | string | no | |
 | `company_name` | string | no | |
-| `zone_id` | integer or null | no | id of an existing zone (see `docs/api/zones.md`). The response returns it as `zone: { id, name }`, or `null` |
+| `zone` | string | no | |
 | `notes` | string | no | |
 | `nif` | string | no | |
 | `consent_given` | boolean | no | |
@@ -126,7 +126,7 @@ Header `Content-Type: application/json`, plus `X-CSRFToken`.
 Unknown fields are rejected.
 
 **201**: the created contact object.
-**400**: validation errors (`{ "errors": {...} }`), a role or zone id that doesn't exist (`{ "errors": { "role_ids": [...] } }` / `{ "errors": { "zone_id": [...] } }`), or body is not JSON (`{ "errors": { "body": ["Request body must be valid JSON"] } }`).
+**400**: validation errors (`{ "errors": {...} }`), or body is not JSON (`{ "errors": { "body": ["Request body must be valid JSON"] } }`).
 **500**: `{ "errors": { "server": ["Internal server error"] } }` (the change is rolled back).
 
 ### Search contacts

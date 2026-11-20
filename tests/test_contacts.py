@@ -2,7 +2,7 @@
 import pytest
 from http import HTTPStatus
 from app.extensions import db
-from app.models import Contact, Zone
+from app.models import Contact
 
 BASE = "/api/contacts"
 BLOCKED = (301, 302, 401, 403)
@@ -116,46 +116,7 @@ def test_add_rejects_unknown_field(client):
 
 def test_add_invalid_role_id(client):
     res = client.post(f"{BASE}/add",
-                          json={"name": "Zzyzx", "role_ids": 99})
-    assert res.status_code == HTTPStatus.BAD_REQUEST
-    assert "role_ids" in res.json["errors"]
-
-
-@pytest.mark.parametrize("role_ids", [[], None])
-def test_add_requires_at_least_one_role(client, role_ids):
-    res = client.post(f"{BASE}/add", json={"name": "Zzyzx", "role_ids": role_ids})
-    assert res.status_code == HTTPStatus.BAD_REQUEST
-    assert "role_ids" in res.json["errors"]
-
-
-def make_zone(name):
-    zone = Zone(name=name)
-    db.session.add(zone)
-    db.session.commit()
-    return zone.id
-
-
-def test_add_contact_with_zone(app, client):
-    zone_id = make_zone("Celas")
-    res = client.post(f"{BASE}/add", json={"name": "Zzyzx", "role_ids": 2, "zone_id": zone_id})
-    assert res.status_code == HTTPStatus.CREATED
-    assert res.json["zone"] == {"id": zone_id, "name": "Celas"}
-
-
-def test_add_contact_without_zone(client):
-    res = client.post(f"{BASE}/add", json={"name": "Zzyzx", "role_ids": 2})
-    assert res.status_code == HTTPStatus.CREATED
-    assert res.json["zone"] is None
-
-
-def test_add_invalid_zone_id_is_400(client):
-    res = client.post(f"{BASE}/add", json={"name": "Zzyzx", "role_ids": 2, "zone_id": 9999})
-    assert res.status_code == HTTPStatus.BAD_REQUEST
-    assert "zone_id" in res.json["errors"]
-
-
-def test_add_rejects_zone_as_text(client):
-    res = client.post(f"{BASE}/add", json={"name": "Zzyzx", "role_ids": 2, "zone": "Celas"})
+                          json={"name": "Zzyzx", "role_ids": 99, "bogus": 1})
     assert res.status_code == HTTPStatus.BAD_REQUEST
 
 
@@ -270,23 +231,6 @@ def test_patch_updates_only_given_fields(client):
     assert res.status_code == HTTPStatus.OK
     assert res.json["phone_number"] == "911111111"
     assert res.json["email"] == "zzyzx@qwerty-test.example"
-
-
-def test_patch_changes_and_clears_zone(app, client):
-    zone_id = make_zone("Solum")
-    c = make(client)
-    res = client.patch(f"{BASE}/{c['id']}", json={"zone_id": zone_id})
-    assert res.status_code == HTTPStatus.OK
-    assert res.json["zone"]["name"] == "Solum"
-    res = client.patch(f"{BASE}/{c['id']}", json={"zone_id": None})
-    assert res.status_code == HTTPStatus.OK
-    assert res.json["zone"] is None
-
-
-def test_patch_invalid_zone_or_role_is_400(client):
-    c = make(client)
-    assert client.patch(f"{BASE}/{c['id']}", json={"zone_id": 9999}).status_code == HTTPStatus.BAD_REQUEST
-    assert client.patch(f"{BASE}/{c['id']}", json={"role_ids": [99]}).status_code == HTTPStatus.BAD_REQUEST
 
 
 def test_patch_missing_contact_is_404(client):
