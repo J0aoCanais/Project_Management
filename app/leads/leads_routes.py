@@ -5,12 +5,12 @@ from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
 from app.extensions import csrf
-from sqlalchemy.orm import joinedload
+from sqlalchemy.orm import joinedload, selectinload
 from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy import or_
 
 from ..extensions import db
-from ..models import Lead, Contact, LeadSource, Role
+from ..models import Lead, Contact, LeadSource, Role, ContactLog
 from ..security import owner_required
 from ..contacts.routes import validate_contact_payload
 from ..schemas.leads_schema import (
@@ -19,7 +19,9 @@ from ..schemas.leads_schema import (
     LeadCreateSchema,
     LeadResponseSchema,
     LeadUpdateSchema,
-    LeadFilterSchema
+    LeadFilterSchema,
+    ContactLogCreateSchema,
+    ContactLogResponseSchema
 )
 
 lead_source_response_schema = LeadSourceResponseSchema()
@@ -27,6 +29,8 @@ lead_create_schema = LeadCreateSchema()
 lead_response_schema = LeadResponseSchema()
 lead_update_schema = LeadUpdateSchema()
 lead_filter_schema = LeadFilterSchema()
+contact_log_create_schema = ContactLogCreateSchema()
+contact_log_response_schema = ContactLogResponseSchema()
 
 leads_bp = Blueprint("leads", __name__, url_prefix="/leads")
 
@@ -72,7 +76,7 @@ def create_lead():
 
         if data.get("contact_id"):
             contact = db.session.get(Contact, data["contact_id"])
-            if not contact:
+            if not contact or contact.deleted_at is not None:
                 return (
                     jsonify({"errors": {"contact_id": ["Contact not found."]}}),
                     HTTPStatus.NOT_FOUND,
@@ -138,12 +142,14 @@ def create_lead():
 
     except Exception as e:
         db.session.rollback()
+        print(e)
         return (
             jsonify({"errors": {"server": ["Internal server error"]}}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
         )
 
 
+@leads_bp.get("")
 @leads_bp.route("/", methods=["GET"])
 @owner_required
 def list_leads():
@@ -154,13 +160,18 @@ def list_leads():
 
     filters = raw_filters if isinstance(raw_filters, dict) else {}
 
-    stmt = db.select(Lead).options(joinedload(Lead.lead_source))
+    stmt = db.select(Lead).join(Lead.contact).options(joinedload(Lead.lead_source), contains_eager(Lead.contact))
 
     if search_query := filters.get("search"):
+        search_query = (
+                search_query.strip()
+                .replace("\\", "\\\\")
+                .replace("%", "\\%")
+                .replace("_", "\\_")
+            )
         pattern = f"%{search_query}%"
         stmt = (
-            stmt.join(Lead.contact)
-            .options(contains_eager(Lead.contact))
+            stmt
             .where(
                 or_(
                     Contact.name.ilike(pattern),
@@ -169,8 +180,6 @@ def list_leads():
                 )
             )
         )
-    else:
-        stmt = stmt.options(joinedload(Lead.contact))
 
     if status := filters.get("status"):
         stmt = stmt.where(Lead.status == status)
@@ -179,8 +188,13 @@ def list_leads():
         stmt = stmt.where(Lead.lead_source_id == source_id)
 
     if zone_id := filters.get("zone_id"):
-        stmt = stmt.join(Lead.contact).where(Contact.zone_id == zone_id)
+        stmt = stmt.where(Contact.zone_id == zone_id)
 
+    show_discarted = filters.get("show_discarted")
+    if not show_discarted:
+        stmt = stmt.where(Lead.status != "Descartada")
+
+    stmt = stmt.order_by(Lead.created_at.desc())
     leads = db.paginate(
                 stmt,
                 page=filters["page"],
@@ -211,6 +225,7 @@ def get_lead(lead_id: int):
             joinedload(Lead.contact),
             joinedload(Lead.lead_source),
             joinedload(Lead.contact1),
+            selectinload(Lead.contact_logs)
         )
         .where(Lead.id == lead_id)
     )
@@ -223,7 +238,6 @@ def get_lead(lead_id: int):
 
 @leads_bp.route("/<int:lead_id>", methods=["PATCH"])
 @owner_required
-@csrf.exempt
 def update_lead(lead_id: int):
     lead = db.session.get(Lead, lead_id)
     if not lead:
@@ -249,3 +263,41 @@ def update_lead(lead_id: int):
 
     db.session.commit()
     return jsonify(lead_response_schema.dump(lead)), HTTPStatus.OK
+
+@leads_bp.post("/<int:lead_id>/contact-logs")
+@owner_required
+def create_contact_log(lead_id: int):
+    """Record that a lead was contacted.
+ 
+    Body: channel, responsible, result (required); notes, contacted_at (optional).
+    """
+    lead = db.session.get(Lead, lead_id)
+    if lead is None:  # TODO: also reject soft-deleted leads if Lead gets deleted_at
+        return jsonify({"errors": {"id": ["Lead not found"]}}), HTTPStatus.NOT_FOUND
+ 
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"errors": {"body": ["Request body must be a JSON object"]}}), HTTPStatus.BAD_REQUEST
+ 
+    try:
+        data = contact_log_create_schema.load(payload)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
+ 
+    contacted_at = data.pop("contacted_at", None) or datetime.now(timezone.utc)
+    log = ContactLog(
+        lead_id=lead.id,
+        contacted_at=contacted_at,
+        **data,
+    )
+ 
+    try:
+        db.session.add(log)
+        db.session.commit()
+    except Exception:
+        db.session.rollback()
+        return jsonify(
+            {"errors": {"server": ["Internal server error"]}}
+        ), HTTPStatus.INTERNAL_SERVER_ERROR
+ 
+    return jsonify(contact_log_response_schema.dump(log)), HTTPStatus.CREATED

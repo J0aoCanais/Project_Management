@@ -4,12 +4,12 @@ from marshmallow import (
     validates_schema,
     ValidationError,
     pre_load,
-    post_load,
+    validates,
     EXCLUDE
 )
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
 from .phases_schema import PhaseResponseSchema
-from datetime import time, timezone, datetime
+from datetime import time, timezone, datetime, timedelta
 from app.models import Lead
 
 ALLOWED_LEAD_STATUSES = [
@@ -19,6 +19,37 @@ ALLOWED_LEAD_STATUSES = [
     "Convertida",
     "Descartada",
 ]
+
+CONTACT_FIELDS = ("name", "id", "phone_number", "zone")
+
+#############################
+#  Schemas for contact logs
+############################
+class ContactLogCreateSchema(BaseSchema):
+    SHORT_TEXT = validate.Length(min=1, max=512)
+
+    
+    channel = fields.String(required=True, validate=SHORT_TEXT)
+    responsible = fields.String(required=True, validate=SHORT_TEXT)
+    result = fields.String(required=True, validate=SHORT_TEXT)
+    notes = fields.String(allow_none=True, validate=validate.Length(max=10_000))
+
+    contacted_at = fields.AwareDateTime(default_timezone=timezone.utc)
+ 
+    @validates("contacted_at")
+    def _not_in_the_future(self, value, **kwargs):
+        if value > datetime.now(timezone.utc) + timedelta(minutes=5):
+            raise ValidationError("Contact date cannot be in the future.")
+ 
+ 
+class ContactLogResponseSchema(BaseSchema):
+    id = fields.Integer()
+    lead_id = fields.Integer()
+    channel = fields.String()
+    responsible = fields.String()
+    result = fields.String()
+    notes = fields.String(allow_none=True)
+    contacted_at = fields.DateTime()
 
 
 class LeadSourceResponseSchema(BaseSchema):
@@ -70,11 +101,9 @@ class LeadResponseSchema(BaseSchema):
     message = fields.String(allow_none=True)
     created_at = fields.DateTime()
     lead_source_id = fields.Integer()
-    contact = fields.Nested(ContactResponseSchema)
-    referrer = fields.Nested(ContactResponseSchema, allow_none=True)
-
-    ## Consider zone: from property or contacts? (ususally the same ig)
-
+    contact = fields.Nested(ContactResponseSchema(only=CONTACT_FIELDS))
+    referrer = fields.Nested(ContactResponseSchema(only=CONTACT_FIELDS), allow_none=True)
+    contact_logs = fields.List(fields.Nested(ContactLogResponseSchema))
 
 
 class LeadUpdateSchema(BaseSchema):
@@ -109,6 +138,7 @@ class LeadFilterSchema(BaseSchema):
     search = fields.String(validate=validate.Length(max=512))
     lead_source_id = fields.Integer(validate=validate.Range(min=1))
     zone_id = fields.Integer()
+    show_discarted = fields.Boolean()
 
     @pre_load
     def clean_query_params(self, data, **kwargs):
@@ -130,3 +160,4 @@ class OportunityLinkResponse(BaseSchema):
     id = fields.Integer()
     code = fields.String()
     phase = fields.Pluck(PhaseResponseSchema, "name", dump_only=True)
+

@@ -17,7 +17,8 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    Numeric
+    Numeric,
+    Index
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -381,6 +382,33 @@ class LeadSource(Base):
     leads: Mapped[List["Lead"]] = relationship(back_populates="lead_source")
 
 
+class ContactLog(Base):
+    __tablename__ = "contact_log"
+ 
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+ 
+    # Logs have no meaning without their lead, so they go with it.
+    lead_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("lead.id", ondelete="CASCADE"), nullable=False
+    )
+ 
+    channel: Mapped[str] = mapped_column(String(512), nullable=False)     
+    responsible: Mapped[str] = mapped_column(String(512), nullable=False)  
+    result: Mapped[str] = mapped_column(String(512), nullable=False)       
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+ 
+    # --- when / who recorded it --------------------------------------------------
+    # When the contact happened (can be backdated); created_at is when the row was written.
+    contacted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+ 
+    lead: Mapped["Lead"] = relationship(back_populates="contact_logs")
+ 
+    __table_args__ = (
+        # timeline of one lead, newest first
+        Index("ix_contact_log_lead_id_contacted_at", "lead_id", "contacted_at"),
+    )
+
+
 class Lead(Base):
     __tablename__ = "lead"
 
@@ -411,6 +439,13 @@ class Lead(Base):
     )
     opportunity: Mapped[Optional["Opportunity"]] = relationship(
         secondary=opportunity_lead, back_populates="lead", uselist=False
+    )
+
+    contact_logs: Mapped[List["ContactLog"]] = relationship(
+        back_populates="lead",
+        cascade="all, delete-orphan",
+        passive_deletes=True,                      # the database does the cascade
+        order_by="ContactLog.contacted_at.desc()",
     )
 
     property: Mapped[Optional["Property"]] = relationship(back_populates="lead", uselist=False)
