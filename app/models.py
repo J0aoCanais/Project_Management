@@ -267,6 +267,7 @@ class Zone(Base):
     name: Mapped[str] = mapped_column(String(512), nullable=False, unique=True)
 
     contacts: Mapped[List["Contact"]] = relationship(back_populates="zone", passive_deletes=True)
+    properties: Mapped[List["Property"]] = relationship(back_populates="zone", passive_deletes=True)
 
 
 class User(UserMixin, Base):
@@ -443,7 +444,9 @@ class Property(Base):
     sale_motive: Mapped[str] = mapped_column(String(512), nullable=False)
     contact_owns: Mapped[bool] = mapped_column(Boolean, nullable=False)
     property_type: Mapped[Optional[str]] = mapped_column(String(512), nullable=False)
-    zone: Mapped[str] = mapped_column(String(512), nullable=False)
+    zone_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("zone.id", ondelete="SET NULL"), nullable=False
+    )
 
     source_url: Mapped[str] = mapped_column(Text)
     address: Mapped[str] = mapped_column(String(512))
@@ -465,6 +468,8 @@ class Property(Base):
     energy_certificate: Mapped[Optional[str]] = mapped_column(String(512)) 
 
     deleted_at: Mapped[Optional[DateTime]] = mapped_column(DateTime)
+
+    zone: Mapped["Zone"] = relationship(back_populates="properties")
 
     lead_id: Mapped[int] = mapped_column(
         ForeignKey("lead.id"), nullable=False, index=True

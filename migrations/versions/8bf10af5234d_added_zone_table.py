@@ -91,37 +91,6 @@ def upgrade():
                type_=sa.Float(precision=8),
                existing_nullable=True)
 
-    with op.batch_alter_table('property', schema=None) as batch_op:
-        batch_op.alter_column('source_url',
-               existing_type=sa.TEXT(),
-               nullable=False)
-        batch_op.alter_column('address',
-               existing_type=sa.VARCHAR(length=512),
-               nullable=False)
-        batch_op.alter_column('typology',
-               existing_type=sa.VARCHAR(length=512),
-               nullable=False)
-        batch_op.alter_column('area_m2',
-               existing_type=sa.NUMERIC(precision=10, scale=2),
-               nullable=False)
-        batch_op.alter_column('asking_price',
-               existing_type=sa.NUMERIC(precision=14, scale=2),
-               nullable=False)
-        batch_op.alter_column('vvr',
-               existing_type=sa.NUMERIC(precision=14, scale=2),
-               nullable=False)
-        batch_op.alter_column('profit',
-               existing_type=sa.NUMERIC(precision=14, scale=2),
-               nullable=False)
-        batch_op.alter_column('max_proposal',
-               existing_type=sa.NUMERIC(precision=14, scale=2),
-               nullable=False)
-        batch_op.alter_column('first_proposal',
-               existing_type=sa.NUMERIC(precision=14, scale=2),
-               nullable=False)
-        batch_op.alter_column('visit_date',
-               existing_type=postgresql.TIMESTAMP(),
-               nullable=False)
 
     # ### end Alembic commands ###
 

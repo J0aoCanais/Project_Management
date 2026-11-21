@@ -34,12 +34,14 @@ def create_app(config_class=Config):
     from .contacts.routes import contacts_bp
     from .properties.routes import properties_bp
     from .opportunities.routes import opportunities_bp
+    from .zones.routes import zones_bp
  
     app.register_blueprint(demos_bp, url_prefix="/api/demos")           # /, /health, /account
     app.register_blueprint(auth_bp)                                     # /login, /logout
     app.register_blueprint(contacts_bp, url_prefix="/api/contacts")     # /contacts
     app.register_blueprint(properties_bp, url_prefix="/api/properties")
     app.register_blueprint(opportunities_bp, url_prefix="/api/opportunities")
+    app.register_blueprint(zones_bp, url_prefix="/api/zones")
  
     register_security_hooks(app)
  

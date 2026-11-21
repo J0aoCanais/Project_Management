@@ -14,6 +14,25 @@ from app.models import Property, Opportunity
 BASE = "/api/properties"
 BLOCKED = (301, 302, 401, 403)
 
+from sqlalchemy import text
+
+@pytest.fixture
+def load_data(app):
+    with app.app_context:
+        with open("database/seeds/contacts.sql") as file:
+            query = text(file.read())
+            db.session.execute(query)
+        db.session.commit()
+
+        with open("database/seeds/lead_sources.sql") as file:
+            query = text(file.read())
+            db.session.execute(query)
+        db.session.commit()
+
+        with open("database/seeds/leads.sql") as file:
+            query = text(file.read())
+            db.session.execute(query)
+        db.session.commit()
 
 # --------------------------------------------------------------------------- #
 # Helpers
