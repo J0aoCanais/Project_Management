@@ -7,6 +7,7 @@ from marshmallow import (
     post_load,
 )
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
+from .phases_schema import PhaseResponseSchema
 from datetime import time, timezone, datetime
 from app.models import Lead
 
@@ -123,3 +124,10 @@ class LeadFilterSchema(BaseSchema):
             raise ValidationError(
                 {"date_to": ["date_to must be on or after date_from."]}
             )
+
+class OportunityLinkResponse(BaseSchema):
+    """Work resumed information for property links"""
+    type = fields.Constant("opportunity")
+    id = fields.Integer()
+    code = fields.String()
+    phase = fields.Pluck(PhaseResponseSchema, "name", dump_only=True)

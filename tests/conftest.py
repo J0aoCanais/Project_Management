@@ -24,7 +24,7 @@ load_dotenv()  # no-op in CI, where env vars are set directly
 from app import create_app  # noqa: E402  (after load_dotenv: Config reads env)
 from app.config import Config  # noqa: E402
 from app.extensions import db  # noqa: E402
-from app.models import User, Role  # noqa: E402
+from app.models import User, Role, Phase, Zone  # noqa: E402
 from app.security import hash_password  # noqa: E402
 from app.leads.leads_routes import leads_bp
 
@@ -34,9 +34,28 @@ TEST_PASSWORD = "fake-test-password-123"  # fake, not a real secret
 
 ROLES = ["investidor", "client", "Filler"]
 
+PHASES = [
+    (1, "novo", 1),
+    (2, "contactado", 2),
+    (3, "analise financeira", 3),
+    (4, "informacao pendente", 4),
+    (5, "due diligence", 5),
+    (6, "negociacao", 6),
+    (7, "cpcv", 7),
+    (8, "aprovado", 8),
+    (9, "em aquisicao", 9),
+    (10, "adquirido", 10),
+    (11, "em obra", 11),
+    (12, "em preparcao para venda", 12),
+    (13, "a venda", 13),
+    (14, "vendido", 14),
+    (15, "fechado", 15),
+] # from database/seeds/phases.sql
+
+ZONES = ["Alta", "Baixa"]
+
 TEST_DB_NAME = os.environ.get("TEST_DB_NAME", "propdb_test")
 assert TEST_DB_NAME.endswith("_test"), "refusing to run: test DB name must end in _test"
-
 
 def _url(database: str) -> URL:
     return URL.create(
@@ -95,6 +114,19 @@ def app(test_database):
                 Role(name=role)
             )
         db.session.commit()
+
+        for phase_id, name, position in PHASES:
+            db.session.add(Phase(id=phase_id, name=name, position=position))
+        db.session.commit()
+
+        for zone in ZONES:
+            db.session.add(Zone(name=zone))
+        db.session.commit()
+
+        # keep the sequence ahead of the explicit ids so later inserts don't collide
+        db.session.execute(text("SELECT setval('phase_id_seq', (SELECT MAX(id) FROM phase))"))
+        db.session.commit()
+
         yield app
         db.session.remove()
         db.drop_all()
