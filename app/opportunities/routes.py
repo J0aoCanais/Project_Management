@@ -68,36 +68,17 @@ def create_opportunity():
     except ValidationError as err:
         return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
 
-    # Lock the property row for the rest of the transaction. Since property_id is
+    lead_id = data.pop("lead_id")
+
+    # Lock the lead row for the rest of the transaction. Since lead_id is
     # no longer unique in the database, this serialises concurrent creates for
     # the same property so the duplicate check below cannot be raced.
-    prop = db.session.get(Property, data["property_id"], with_for_update=True)
-    if prop is None or Property.deleted_at is not None:  
-        return _fail({"property_id": ["Property not found"]}, HTTPStatus.BAD_REQUEST)
-
-    #Do the same for lead row
-    lead = db.session.get(Lead, data['lead_id'], with_for_update=True)
+    lead = db.session.get(Lead, lead_id, with_for_update=True)
     if lead is None:
         return _fail({"lead_id": ["Lead not found"]}, HTTPStatus.BAD_REQUEST)
 
-    contact = db.session.scalar(
-        db.select(Contact).where(Contact.id == data["contact_id"], Contact.deleted_at.is_(None))
-    )
-    if contact is None or Contact.deleted_at is not None:
-        return _fail({"contact_id": ["Contact not found"]}, HTTPStatus.BAD_REQUEST)
-
-    already_open = db.session.scalar(
-        db.select(Opportunity.id).where(Opportunity.property_id == prop.id).limit(1)
-    )
-    if already_open is not None:
-        return _fail(
-            {"property_id": ["This property already has an opportunity"]}, HTTPStatus.CONFLICT
-        )
-
-    already_open = db.session.scalar(
-            db.select(Opportunity.id).where(Opportunity.lead_id == lead.id).limit(1)
-        )
-    if already_open is not None:
+    
+    if lead.opportunity is not None:
         return _fail(
             {"lead_id": ["This lead already has an opportunity"]}, HTTPStatus.CONFLICT
         )
@@ -108,13 +89,18 @@ def create_opportunity():
         logger.error("Initial phase (id=%s) does not exist; seed the phase table", INITIAL_PHASE_ID)
         return _fail({"server": ["Internal server error"]}, HTTPStatus.INTERNAL_SERVER_ERROR)
 
+    prop = lead.property
+
     # Server-controlled values go last so they always win.
     data = {
         **data,
         "purchase_price": _to_money(prop.asking_price),
         "expected_sale_price": _to_money(prop.vvr),
+        "contact_id": lead.contact_id,
+        "property_id": prop.id
     }
     opportunity = Opportunity(**data)
+    opportunity.lead = lead
 
     enter_phase(opportunity, phase)
 
@@ -139,3 +125,20 @@ def create_opportunity():
         opportunity.id, prop.id, current_user.id,
     )
     return jsonify(opportunity_response_schema.dump(opportunity)), HTTPStatus.CREATED
+
+@opportunities_bp.delete("/<int:opportunity_id>")
+@owner_required
+def delete_opportunity(opportunity_id):
+    #TODO: make this a clean soft/hard delete (To be Decided)
+    """Naive delete of opportunity from db"""
+    try:
+        opportunity = db.session.get(Opportunity, opportunity_id)
+        db.session.delete(opportunity)
+        db.session.commit()
+        return "", HTTPStatus.NO_CONTENT
+    except Exception:
+        db.session.rollback()
+        return jsonify(
+                    {"errors": {"server": ["Internal server error"]}}
+                ), HTTPStatus.INTERNAL_SERVER_ERROR
+        

@@ -151,9 +151,6 @@ class BaseSchema(Schema):
 class OpportunityCreateSchema(_OpportunityFields, BaseSchema):
     # Existence of these rows is checked in the route (404/400); the DB enforces
     # the one-opportunity-per-property rule (route turns IntegrityError into 409).
-    # phase_id = _id(required=True)
-    property_id = _id(required=True)
-    contact_id = _id(required=True)
     lead_id = _id(required=True)
 
     #Load defaults for money and percentages
