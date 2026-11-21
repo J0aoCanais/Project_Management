@@ -225,6 +225,7 @@ def get_lead(lead_id: int):
             joinedload(Lead.contact),
             joinedload(Lead.lead_source),
             joinedload(Lead.contact1),
+            joinedload(Lead.property),
             selectinload(Lead.contact_logs)
         )
         .where(Lead.id == lead_id)

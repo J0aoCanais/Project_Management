@@ -9,6 +9,7 @@ from marshmallow import (
 )
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
 from .phases_schema import PhaseResponseSchema
+from .properties_schema import PropertyResponseSchema
 from datetime import time, timezone, datetime, timedelta
 from app.models import Lead
 
@@ -21,6 +22,7 @@ ALLOWED_LEAD_STATUSES = [
 ]
 
 CONTACT_FIELDS = ("name", "id", "phone_number", "zone")
+PROPERTY_FIELDS = ("id", "code", "property_type", "zone")
 
 #############################
 #  Schemas for contact logs
@@ -104,6 +106,7 @@ class LeadResponseSchema(BaseSchema):
     contact = fields.Nested(ContactResponseSchema(only=CONTACT_FIELDS))
     referrer = fields.Nested(ContactResponseSchema(only=CONTACT_FIELDS), allow_none=True)
     contact_logs = fields.List(fields.Nested(ContactLogResponseSchema))
+    property = fields.Nested(PropertyResponseSchema(only=PROPERTY_FIELDS))
 
 
 class LeadUpdateSchema(BaseSchema):
