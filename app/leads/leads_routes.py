@@ -13,16 +13,19 @@ from ..extensions import db
 from ..models import Lead, Contact, LeadSource, Role
 from ..security import owner_required
 from ..schemas.leads_schema import (
+    LeadFilterSchema,
     LeadSourceResponseSchema,
     LeadCreateSchema,
     LeadResponseSchema,
     LeadUpdateSchema,
+    LeadFilterSchema
 )
 
 lead_source_response_schema = LeadSourceResponseSchema()
 lead_create_schema = LeadCreateSchema()
 lead_response_schema = LeadResponseSchema()
 lead_update_schema = LeadUpdateSchema()
+lead_filter_schema = LeadFilterSchema()
 
 leads_bp = Blueprint("leads", __name__, url_prefix="/leads")
 
@@ -80,23 +83,7 @@ def create_lead():
             contact_data = data["new_contact"]
             role_ids = contact_data.pop("role_ids", []) or []
 
-            new_contact = Contact(
-                name=contact_data["name"],
-                email=contact_data.get("email"),
-                phone_number=contact_data.get("phone_number"),
-                address=contact_data.get("address"),
-                company_name=contact_data.get("company_name"),
-                zone=contact_data.get("zone"),
-                notes=contact_data.get("notes"),
-                nif=contact_data.get("nif"),
-                consent_given=contact_data.get("consent_given", False),
-                consent_date=(
-                    datetime.now(timezone.utc)
-                    if contact_data.get("consent_given")
-                    else None
-                ),
-                consent_channel=contact_data.get("consent_channel"),
-            )
+            new_contact = Contact(**contact_data)
 
             if role_ids:
                 roles_stmt = db.select(Role).where(Role.id.in_(role_ids))
@@ -136,17 +123,15 @@ def create_lead():
                     HTTPStatus.BAD_REQUEST,
                 )
 
-        new_lead = Lead(
-            status="Nova",
-            message=data.get("message"),
-            created_at=datetime.now(timezone.utc),
-            campaign_name=data.get("campaign_name"),
-            ad_name=data.get("ad_name"),
-            form_name=data.get("form_name"),
-            lead_source_id=source.id,
-            contact_id=final_contact_id,
-            contact_id1=referrer_id,
-        )
+        data.pop("new_contact", None)
+        data.pop("referrer_contact_id", None)
+
+        data["status"] = "Nova"
+        data["created_at"] = datetime.now(timezone.utc)
+        data["contact_id"] = final_contact_id
+        data["contact_id1"] = referrer_id
+
+        new_lead = Lead(**data)
 
         db.session.add(new_lead)
         db.session.commit()
@@ -167,15 +152,16 @@ def create_lead():
 @leads_bp.route("", methods=["GET"])
 @owner_required
 def list_leads():
-    status_filter = request.args.get("status", "").strip()
-    search_query = request.args.get("search", "").strip()
-    source_id = request.args.get("lead_source_id", type=int)
-    date_from = request.args.get("date_from", "").strip()
-    date_to = request.args.get("date_to", "").strip()
+    try:
+        raw_filters = lead_filter_schema.load(request.args)
+    except ValidationError as err:
+        return jsonify({"error": err.messages}), HTTPStatus.BAD_REQUEST
+
+    filters = raw_filters if isinstance(raw_filters, dict) else {}
 
     stmt = db.select(Lead).options(joinedload(Lead.lead_source))
 
-    if search_query:
+    if search_query := filters.get("search"):
         pattern = f"%{search_query}%"
         stmt = (
             stmt.join(Lead.contact)
@@ -191,33 +177,17 @@ def list_leads():
     else:
         stmt = stmt.options(joinedload(Lead.contact))
 
-    if status_filter:
-        stmt = stmt.where(Lead.status == status_filter)
+    if status := filters.get("status"):
+        stmt = stmt.where(Lead.status == status)
 
-    if source_id:
+    if source_id := filters.get("lead_source_id"):
         stmt = stmt.where(Lead.lead_source_id == source_id)
 
-    if date_from:
-        try:
-            start_dt = datetime.combine(
-                datetime.fromisoformat(date_from).date(), time.min
-            )
-            stmt = stmt.where(Lead.created_at >= start_dt)
-        except ValueError:
-            return (
-                jsonify({"error": "Invalid date_from format (use YYYY-MM-DD)"}),
-                HTTPStatus.BAD_REQUEST,
-            )
+    if date_from := filters.get("date_from"):
+        stmt = stmt.where(Lead.created_at >= datetime.combine(date_from.date(), time.min))
 
-    if date_to:
-        try:
-            end_dt = datetime.combine(datetime.fromisoformat(date_to).date(), time.max)
-            stmt = stmt.where(Lead.created_at <= end_dt)
-        except ValueError:
-            return (
-                jsonify({"error": "Invalid date_to format (use YYYY-MM-DD)"}),
-                HTTPStatus.BAD_REQUEST,
-            )
+    if date_to := filters.get("date_to"):
+        stmt = stmt.where(Lead.created_at <= datetime.combine(date_to.date(), time.max))
 
     leads = db.session.execute(stmt).scalars().all()
 

@@ -1,5 +1,14 @@
-from marshmallow import fields, validate, validates_schema, ValidationError
+from marshmallow import (
+    fields,
+    validate,
+    validates_schema,
+    ValidationError,
+    pre_load,
+    post_load,
+)
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
+from datetime import time, timezone, datetime
+from app.models import Lead
 
 ALLOWED_LEAD_STATUSES = [
     "Nova",
@@ -8,6 +17,7 @@ ALLOWED_LEAD_STATUSES = [
     "Convertida",
     "Descartada",
 ]
+
 
 class LeadSourceResponseSchema(BaseSchema):
     id = fields.Integer()
@@ -79,4 +89,34 @@ class LeadUpdateSchema(BaseSchema):
             raise ValidationError(
                 "discard_reason is required when status is 'Descartada'.",
                 field_name="discard_reason",
+            )
+
+
+class LeadFilterSchema(BaseSchema):
+    status = fields.String(validate=validate.OneOf(ALLOWED_LEAD_STATUSES))
+    search = fields.String(validate=validate.Length(max=512))
+    lead_source_id = fields.Integer(validate=validate.Range(min=1))
+    date_from = fields.DateTime()
+    date_to = fields.DateTime()
+
+    @pre_load
+    def clean_query_params(self, data, **kwargs):
+        cleaned = {}
+        for key, value in data.items():
+            if isinstance(value, str):
+                value = value.strip()
+                if value == "":
+                    continue
+                if key == ("date_to", "date_from") and "T" in value:
+                    value = value.split("T", 1)[0]
+            cleaned[key] = value
+        return cleaned
+
+    @validates_schema
+    def validate_date_range(self, data, **kwargs):
+        date_from = data.get("date_from")
+        date_to = data.get("date_to")
+        if date_from and date_to and date_from > date_to:
+            raise ValidationError(
+                {"date_to": ["date_to must be on or after date_from."]}
             )
