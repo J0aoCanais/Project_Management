@@ -71,6 +71,9 @@ class LeadResponseSchema(BaseSchema):
     contact = fields.Nested(ContactResponseSchema)
     referrer = fields.Nested(ContactResponseSchema, allow_none=True)
 
+    ## Consider zone: from property or contacts? (ususally the same ig)
+
+
 
 class LeadUpdateSchema(BaseSchema):
     status = fields.Str(validate=validate.OneOf(ALLOWED_LEAD_STATUSES))

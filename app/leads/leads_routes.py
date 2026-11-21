@@ -12,6 +12,7 @@ from sqlalchemy import or_
 from ..extensions import db
 from ..models import Lead, Contact, LeadSource, Role
 from ..security import owner_required
+from ..contacts.routes import validate_contact_payload
 from ..schemas.leads_schema import (
     LeadFilterSchema,
     LeadSourceResponseSchema,
@@ -44,7 +45,6 @@ def get_lead_sources():
 
 @leads_bp.post("")
 @leads_bp.route("/", methods=["POST"])
-@csrf.exempt
 @owner_required
 def create_lead():
     payload = request.get_json(silent=True)
@@ -81,13 +81,8 @@ def create_lead():
 
         else:
             contact_data = data["new_contact"]
-            role_ids = contact_data.pop("role_ids", []) or []
 
-            new_contact = Contact(**contact_data)
-
-            if role_ids:
-                roles_stmt = db.select(Role).where(Role.id.in_(role_ids))
-                new_contact.roles = list(db.session.execute(roles_stmt).scalars().all())
+            new_contact = validate_contact_payload(contact_data)
 
             db.session.add(new_contact)
             db.session.flush()
@@ -141,7 +136,7 @@ def create_lead():
     except ValidationError as err:
         return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
 
-    except Exception:
+    except Exception as e:
         db.session.rollback()
         return (
             jsonify({"errors": {"server": ["Internal server error"]}}),
