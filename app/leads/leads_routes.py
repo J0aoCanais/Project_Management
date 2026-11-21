@@ -144,7 +144,7 @@ def create_lead():
         )
 
 
-@leads_bp.route("", methods=["GET"])
+@leads_bp.route("/", methods=["GET"])
 @owner_required
 def list_leads():
     try:
@@ -178,15 +178,28 @@ def list_leads():
     if source_id := filters.get("lead_source_id"):
         stmt = stmt.where(Lead.lead_source_id == source_id)
 
-    if date_from := filters.get("date_from"):
-        stmt = stmt.where(Lead.created_at >= datetime.combine(date_from.date(), time.min))
+    if zone_id := filters.get("zone_id"):
+        stmt = stmt.join(Lead.contact).where(Contact.zone_id == zone_id)
 
-    if date_to := filters.get("date_to"):
-        stmt = stmt.where(Lead.created_at <= datetime.combine(date_to.date(), time.max))
+    leads = db.paginate(
+                stmt,
+                page=filters["page"],
+                per_page=filters["per_page"],
+                error_out=False
+            ) 
 
-    leads = db.session.execute(stmt).scalars().all()
-
-    return jsonify(lead_response_schema.dump(leads, many=True)), HTTPStatus.OK
+    return jsonify({
+                "success": True,
+                "data": [lead_response_schema.dump(c) for c in leads.items],
+                "pagination": {
+                    "page": leads.page,
+                    "per_page": leads.per_page,
+                    "total": leads.total,
+                    "pages": leads.pages,
+                    "has_next": leads.has_next,
+                    "has_prev": leads.has_prev
+                }
+            }), HTTPStatus.OK
 
 
 @leads_bp.route("/<int:lead_id>", methods=["GET"])

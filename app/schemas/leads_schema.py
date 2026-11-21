@@ -5,6 +5,7 @@ from marshmallow import (
     ValidationError,
     pre_load,
     post_load,
+    EXCLUDE
 )
 from .contacts_schema import BaseSchema, ContactCreateSchema, ContactResponseSchema
 from .phases_schema import PhaseResponseSchema
@@ -97,11 +98,17 @@ class LeadUpdateSchema(BaseSchema):
 
 
 class LeadFilterSchema(BaseSchema):
+
+    class Meta:
+        unknown = EXCLUDE  # ignore harmless extras such as cache-busters
+
+    page = fields.Integer(load_default=1, validate=validate.Range(min=1))
+    per_page = fields.Integer(load_default=20, validate=validate.Range(min=1, max=100))
+
     status = fields.String(validate=validate.OneOf(ALLOWED_LEAD_STATUSES))
     search = fields.String(validate=validate.Length(max=512))
     lead_source_id = fields.Integer(validate=validate.Range(min=1))
-    date_from = fields.DateTime()
-    date_to = fields.DateTime()
+    zone_id = fields.Integer()
 
     @pre_load
     def clean_query_params(self, data, **kwargs):
@@ -116,14 +123,6 @@ class LeadFilterSchema(BaseSchema):
             cleaned[key] = value
         return cleaned
 
-    @validates_schema
-    def validate_date_range(self, data, **kwargs):
-        date_from = data.get("date_from")
-        date_to = data.get("date_to")
-        if date_from and date_to and date_from > date_to:
-            raise ValidationError(
-                {"date_to": ["date_to must be on or after date_from."]}
-            )
 
 class OportunityLinkResponse(BaseSchema):
     """Work resumed information for property links"""
