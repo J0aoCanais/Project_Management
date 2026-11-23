@@ -36,9 +36,19 @@ def test_anonymous_is_blocked(anon_client, method, path):
     res = getattr(anon_client, method)(path)
     assert res.status_code in BLOCKED
 
-
-def test_non_owner_is_blocked(investor_client):
-    assert investor_client.get(f"{BASE}/").status_code in BLOCKED
+@pytest.mark.parametrize("method,path", [
+    ("get", f"{BASE}/"),
+    ("get", f"{BASE}/1"),
+    ("get", f"{BASE}/search?q=test"),
+    ("get", f"{BASE}/roles"),
+    ("post", f"{BASE}/add"),
+    ("patch", f"{BASE}/1"),
+    ("delete", f"{BASE}/1"),
+    ("delete", f"{BASE}/roles/1"),
+])
+def test_non_owner_is_blocked(investor_client, method, path):
+    res = getattr(investor_client, method)(path)
+    assert res.status_code in BLOCKED
 
 # ---------------------------------------------------------------- Roles
 def test_get_roles(client):
@@ -177,6 +187,28 @@ def test_search_finds_contact_by_any_field(client, q):
     assert res.json["pagination"]["total"] == 1
     assert res.json["data"][0]["name"] == "Zzyzx Qwertyuiop"
 
+@pytest.mark.parametrize(
+    ("zone_id", "role_id", "expected_count"),
+    [
+        (1, 1, 0),  # Investor doesn show
+        (2, 2, 1),  # Matches second record
+        (1, 3, 1),  # Matches second record
+        (2, None, 1),  # only zone 2
+        (1, None, 1),  # only zone 1
+        (2, 3, 0),  # No match
+        (None, 3, 1) # only role
+    ],
+)
+def test_search_filters(client, zone_id, role_id, expected_count):
+    make(client, zone_id=1, role_ids=[1])
+    make(client, zone_id=2, role_ids=[2])
+    make(client, zone_id=1, role_ids=[3])
+
+    res = search(client, zone_id=zone_id, role_id=role_id)
+
+    assert res.status_code == 200
+    assert res.json["success"] is True
+    assert res.json["pagination"]["total"] == expected_count
 
 def test_search_no_match_returns_empty_200(client):
     make(client)

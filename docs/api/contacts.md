@@ -71,7 +71,7 @@ Paginated responses look like this:
   "phone_number": "999000111",
   "address": null,
   "company_name": null,
-  "zone": null,
+  "zone": {"id": 1, "name": "Coimbra"},
   "notes": null,
   "nif": "999000111",
   "consent_given": null,
@@ -116,7 +116,7 @@ Header `Content-Type: application/json`, plus `X-CSRFToken`.
 | `phone_number` | string | no | |
 | `address` | string | no | |
 | `company_name` | string | no | |
-| `zone` | string | no | |
+| `zone` | integer | no | |
 | `notes` | string | no | |
 | `nif` | string | no | |
 | `consent_given` | boolean | no | |
@@ -137,7 +137,7 @@ Unknown fields are rejected.
 |---|---|---|
 | `q` | **yes** | at least 2 characters, max 512 |
 | `role_id` | no | only contacts that have this role |
-| `consent` | no | boolean, filters on `consent_given` |
+| `zone_id` | no | only contacts that reside in this zone |
 | `page`, `per_page` | no | see Pagination |
 
 Case-insensitive substring match on `name`, `email`, `phone_number` and `nif`. `%` and `_` in `q` are matched literally, not as wildcards. Results are sorted by name; investors and soft-deleted contacts are excluded.

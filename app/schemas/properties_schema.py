@@ -25,6 +25,7 @@ from marshmallow import (
 )
 
 from .phases_schema import PhaseResponseSchema
+from .zones_schema import ZoneResponseSchema
 
 class BaseSchema(Schema):
     """Shared behaviour: trim strings, turn blank strings into None."""
@@ -62,12 +63,6 @@ SIGNED_MONEY = validate.Range(min=-MAX_MONEY, max=MAX_MONEY)
 POSITIVE_AREA = validate.Range(min=Decimal(0), max=MAX_AREA_M2, min_inclusive=False)
 SHORT_TEXT = validate.Length(min=1, max=MAX_SHORT_TEXT)
 
-# Whitelist for ?sort=. The route maps these names to columns, so user input
-# never reaches order_by directly.
-#TODO: Discuss this with frontend, I dont think they have anything inplace so prob just delete
-SORTABLE_FIELDS = ("visit_date", "asking_price", "profit", "area_m2", "address", "zone", "id")
-
-
 def _money(**kwargs):
     return fields.Decimal(places=2, as_string=True, allow_nan=False, **kwargs)
 
@@ -88,34 +83,36 @@ def check_proposal_order(first_proposal, max_proposal):
 # Input
 # --------------------------------------------------------------------------- #
 class PropertyCreateSchema(BaseSchema):
-    #TODO: define required fields
+    """Schema to create a property, with valid required fields"""
+
+    zone_id = fields.Integer(required=True)
+    property_type = fields.String(required=True, validate=validate.Length(max=MAX_SHORT_TEXT))
+    sale_motive = fields.String(required=True, validate=validate.Length(max=MAX_SHORT_TEXT))
+    contact_owns = fields.Boolean(required=True)
+    lead_id = fields.Integer(required=True)
 
     # Listing the property came from. http/https only: a "javascript:" URL
     # rendered as a link in React would be an XSS vector.
     source_url = fields.URL(
-        allow_none=True,
         schemes={"http", "https"},
         validate=validate.Length(max=MAX_URL),
     )
 
-    address = fields.String(required=True, validate=SHORT_TEXT)
-    typology = fields.String(required=True, validate=SHORT_TEXT)  
-    zone = fields.String(required=True, validate=SHORT_TEXT)
+    address = fields.String(allow_none=True, validate=SHORT_TEXT)
+    typology = fields.String(allow_none=True, validate=SHORT_TEXT)  
 
-    area_m2 = _area(required=True, validate=POSITIVE_AREA)
+    area_m2 = _area(allow_none=True, validate=POSITIVE_AREA)
 
-    asking_price = _money(required=True, validate=POSITIVE_MONEY)
-    vvr = _money(required=True, validate=POSITIVE_MONEY)
-    profit = _money(required=True, validate=SIGNED_MONEY)  # may be negative
-    max_proposal = _money(required=True, validate=POSITIVE_MONEY)
-    first_proposal = _money(required=True, validate=POSITIVE_MONEY)
+    asking_price = _money(allow_none=True, validate=POSITIVE_MONEY)
+    vvr = _money(allow_none=True, validate=POSITIVE_MONEY)
+    profit = _money(allow_none=True, validate=SIGNED_MONEY)  # may be negative
+    max_proposal = _money(allow_none=True, validate=POSITIVE_MONEY)
+    first_proposal = _money(allow_none=True, validate=POSITIVE_MONEY)
 
-    # TODO: consider adding timezone to datetime types
-    visit_date = fields.DateTime(required=True)
+    visit_date = fields.Date(allow_none=True)
 
     notes = fields.String(allow_none=True, validate=validate.Length(max=MAX_LONG_TEXT))
     admin_location = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
-    property_type = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     property_condition = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     construction_year = fields.Integer(
         allow_none=True,
@@ -127,7 +124,6 @@ class PropertyCreateSchema(BaseSchema):
     usage_license = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     energy_certificate = fields.String(allow_none=True, validate=validate.Length(max=MAX_SHORT_TEXT))
 
-    #TODO: see if this is worth keeping
     @validates_schema
     def _proposals_are_ordered(self, data, **kwargs):
         check_proposal_order(data.get("first_proposal"), data.get("max_proposal"))
@@ -141,7 +137,6 @@ class PropertyUpdateSchema(PropertyCreateSchema):
         kwargs.setdefault("partial", True)
         super().__init__(*args, **kwargs)
 
-    #TODO: validate this idea or remove this check
     @validates_schema
     def _at_least_one_field(self, data, **kwargs):
         if not data:
@@ -158,12 +153,9 @@ class PropertySearchSchema(BaseSchema):
     q = fields.String(load_default=None, validate=validate.Length(min=2, max=MAX_SHORT_TEXT))
 
     # exact filters
-    zone = fields.String(load_default=None, validate=SHORT_TEXT)
-    property_condition = fields.String(load_default=None, validate=SHORT_TEXT)
-
-    #TODO: see related todo in sortable_fields
-    sort = fields.String(load_default="id", validate=validate.OneOf(SORTABLE_FIELDS))
-    order = fields.String(load_default="desc", validate=validate.OneOf(("asc", "desc")))
+    zone_id = fields.Integer(load_default=None)
+    typology = fields.String(load_default=None, validate=SHORT_TEXT)
+    property_type = fields.String(load_default=None, validate=SHORT_TEXT)
 
     page = fields.Integer(load_default=1, validate=validate.Range(min=1))
     per_page = fields.Integer(load_default=20, validate=validate.Range(min=1, max=100))
@@ -176,22 +168,27 @@ class PropertySearchSchema(BaseSchema):
 class PropertyResponseSchema(Schema):
     """Every column. Used for create/update responses and as the detail base."""
 
-    id = fields.Integer() #TODO: Decide between having a name variable or derive it from id
+    id = fields.Integer()
     code = fields.Method("get_code")
-    source_url = fields.String()
-    address = fields.String()
-    typology = fields.String()
-    zone = fields.String()
-    area_m2 = _area()
-    asking_price = _money()
-    vvr = _money()
-    profit = _money()
-    max_proposal = _money()
-    first_proposal = _money()
-    visit_date = fields.DateTime()
+    zone = fields.Nested(ZoneResponseSchema)
+    property_type = fields.String()
+    sale_motive = fields.String()
+    contact_owns = fields.Boolean()
+    lead_id = fields.Integer()
+    contact_id = fields.Integer()
+
+    source_url = fields.String(allow_none=True)
+    address = fields.String(allow_none=True)
+    typology = fields.String(allow_none=True)
+    area_m2 = _area(allow_none=True)
+    asking_price = _money(allow_none=True)
+    vvr = _money(allow_none=True)
+    profit = _money(allow_none=True)
+    max_proposal = _money(allow_none=True)
+    first_proposal = _money(allow_none=True)
+    visit_date = fields.DateTime(allow_none=True)
     notes = fields.String(allow_none=True)
     admin_location = fields.String(allow_none=True)
-    property_type = fields.String(allow_none=True)
     property_condition = fields.String(allow_none=True)
     construction_year = fields.Integer(allow_none=True)
     matricial_article = fields.String(allow_none=True)
