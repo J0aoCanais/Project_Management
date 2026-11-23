@@ -13,10 +13,12 @@ interface Props {
   /** Nome acessível do botão ⋯. */
   label: string;
   items: Item[];
+  /** Classes extra do botão ⋯, ex.: cores para fundo escuro. */
+  buttonClassName?: string;
 }
 
 /** Menu ⋯. Fecha com Esc, com clique fora e ao escolher uma opção. */
-function DropdownMenu({ label, items }: Props) {
+function DropdownMenu({ label, items, buttonClassName = "" }: Props) {
   const [open, setOpen] = useState(false);
   const [above, setAbove] = useState(false);
   const root = useRef<HTMLDivElement>(null);
@@ -53,7 +55,7 @@ function DropdownMenu({ label, items }: Props) {
 
   return (
     <div ref={root} className="relative" onClick={(e) => e.stopPropagation()}>
-      <Button variant="icon" icon="more" aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)} />
+      <Button variant="icon" icon="more" className={buttonClassName} aria-label={label} aria-haspopup="menu" aria-expanded={open} onClick={() => setOpen((v) => !v)} />
       {open && (
         <div ref={menu} role="menu" className={`absolute right-0 z-20 grid min-w-[180px] rounded-panel border border-line bg-white py-1 ${above ? "bottom-full mb-1" : "mt-1"}`}>
           {items.map((item) => (

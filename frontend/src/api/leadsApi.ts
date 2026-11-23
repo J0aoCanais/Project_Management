@@ -1,5 +1,5 @@
 import { LEAD_TEXT_LIMITS, leadNameError, optionalTextError, phoneError } from "../lib/leadRules";
-import { leads, leadContacts } from "../temp";
+import { leads, leadContacts, settingsLeadSourcesFixture } from "../temp";
 import { ApiError } from "./client";
 
 export type LeadStatus = "Nova" | "Contactada" | "Qualificada" | "Convertida" | "Descartada";
@@ -57,7 +57,7 @@ function leadInputError(input: NewLeadInput): string | undefined {
     leadNameError(input.contactName) ??
     phoneError(input.phone) ??
     (input.zone ? undefined : "Zona em falta") ??
-    (input.source ? undefined : "Origem em falta") ??
+    (settingsLeadSourcesFixture.some((source) => source.name === input.source && source.isActive) ? undefined : "Origem inválida ou inativa") ??
     optionalTextError(input.referredBy, LEAD_TEXT_LIMITS.referredBy) ??
     optionalTextError(input.message ?? "", LEAD_TEXT_LIMITS.message)
   );

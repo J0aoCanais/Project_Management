@@ -31,6 +31,11 @@ export function formatDate(date: Date): string {
   return `${pad2(date.getDate())}/${pad2(date.getMonth() + 1)}/${date.getFullYear()}`;
 }
 
+/** Date → "2026-11-05" (dia local), o formato de um <input type="date">. */
+export function toIsoDate(date: Date): string {
+  return `${date.getFullYear()}-${pad2(date.getMonth() + 1)}-${pad2(date.getDate())}`;
+}
+
 /** Lê uma data ISO; "2026-11-18" é um dia local, não meia-noite UTC (que noutro fuso seria o dia anterior). */
 function parseIsoDate(iso: string): Date {
   const dateOnly = /^(\d{4})-(\d{2})-(\d{2})$/.exec(iso);
@@ -53,11 +58,12 @@ export function formatActivityDate(iso: string): string {
   return `Hoje, ${pad2(date.getHours())}:${pad2(date.getMinutes())}`;
 }
 
-/** 340000 → "332 KB"; 1258291 → "1,2 MB" */
+/** 340000 → "332 KB"; 1258291 → "1,2 MB"; 2147483648 → "2,0 GB" */
 export function formatFileSize(bytes: number): string {
   const kilobytes = Math.max(1, Math.round(bytes / 1024));
   if (kilobytes < 1024) return `${kilobytes} KB`;
-  return `${(bytes / 1048576).toFixed(1).replace(".", ",")} MB`;
+  if (bytes < 1073741824) return `${(bytes / 1048576).toFixed(1).replace(".", ",")} MB`;
+  return `${(bytes / 1073741824).toFixed(1).replace(".", ",")} GB`;
 }
 
 const longDate = new Intl.DateTimeFormat("pt-PT", {
@@ -70,4 +76,46 @@ const longDate = new Intl.DateTimeFormat("pt-PT", {
 export function formatLongDate(date: Date): string {
   const text = longDate.format(date);
   return text.charAt(0).toUpperCase() + text.slice(1);
+}
+
+const compactCurrency = new Intl.NumberFormat("pt-PT", {
+  style: "currency",
+  currency: "EUR",
+  notation: "compact",
+  maximumFractionDigits: 1,
+});
+
+/** 45000 → "45 mil €"; para rótulos curtos em gráficos. */
+export function formatCompactMoney(value: number): string {
+  return compactCurrency.format(value);
+}
+
+/** Entradas com "+" e saídas com "−": (45000, true) → "+45 000 €"; (390, false) → "−390 €". */
+export function formatSignedMoney(value: number, inflow: boolean): string {
+  return `${inflow ? "+" : "−"}${currency.format(Math.abs(value))}`;
+}
+
+/** Hoje como "2026-11-05". As datas sem hora comparam-se como texto. */
+export function todayIso(): string {
+  return toIsoDate(new Date());
+}
+
+/** É uma data "aaaa-mm-dd" que existe no calendário? */
+export function isValidIsoDate(text: string): boolean {
+  if (!/^\d{4}-\d{2}-\d{2}$/.test(text)) return false;
+  const date = parseIsoDate(text);
+  return toIsoDate(date) === text;
+}
+
+/** Dias de `from` até `to` (ambas "aaaa-mm-dd"); negativo se `to` já passou. */
+export function daysBetween(from: string, to: string): number {
+  return Math.round((parseIsoDate(to).getTime() - parseIsoDate(from).getTime()) / 86_400_000);
+}
+
+const monthName = new Intl.DateTimeFormat("pt-PT", { month: "short" });
+
+/** "2026-11" → "nov. 26" */
+export function formatMonth(yearMonth: string): string {
+  const [year, month] = yearMonth.split("-").map(Number);
+  return `${monthName.format(new Date(year, month - 1, 1))} ${String(year).slice(2)}`;
 }

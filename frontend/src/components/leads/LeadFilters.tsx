@@ -1,4 +1,4 @@
-import { leadStatusOptions, leadZoneOptions } from "../../temp";
+import { leadStatusOptions, zoneOptions } from "../../temp";
 import Filters from "../ui/Filters";
 
 interface Props {
@@ -17,7 +17,7 @@ function LeadFilters({ query, status, source, zone, sources, onChange }: Props) 
       selects={[
         { id: "estado", allLabel: "Todos os estados", options: leadStatusOptions, value: status, onChange: (value) => onChange("estado", value) },
         { id: "origem", allLabel: "Todas as origens", options: sources, value: source, onChange: (value) => onChange("origem", value) },
-        { id: "zona", allLabel: "Todas as zonas", options: leadZoneOptions, value: zone, onChange: (value) => onChange("zona", value) },
+        { id: "zona", allLabel: "Todas as zonas", options: zoneOptions, value: zone, onChange: (value) => onChange("zona", value) },
       ]}
     />
   );
