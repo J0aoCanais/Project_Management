@@ -31,13 +31,20 @@
   --color-avatar: #d5ecea;
   --color-backdrop: rgb(17 28 28 / 0.35);
 
+  /* Cartão escuro de resultados (.results-card) */
+  --color-results: #113f41;
+  --color-results-raised: #174b4d;
+  --color-results-line: #386a6b;
+  --color-results-muted: #a9c2c0;
+  --color-results-accent: #89d2b6;
+
   --radius-control: 3px;
   --radius-panel: 4px;
 }
 
 @layer base {
   body {
-    @apply m-0 bg-surface font-sans text-[13px] text-ink antialiased;
+    @apply m-0 bg-surface font-sans text-[13px] text-ink antialiased print:bg-white;
   }
   button,
   input,
@@ -50,6 +57,11 @@
   button {
     cursor: pointer;
   }
+}
+
+/* Margens da folha ao imprimir (não há variante Tailwind para @page). */
+@page {
+  margin: 16mm;
 }
 
 /* ---- Página de teste da API (HealthPage) ---- */
@@ -96,4 +108,14 @@
   margin-top: 15px;
   color: var(--color-muted);
   font-size: 13px;
+}
+
+/* Seta dos dropdowns: afastada da borda e igual em todos os selects. Fora de @layer para ganhar ao padding das utilities. */
+select {
+  appearance: none;
+  padding-right: 30px;
+  background-image: url("data:image/svg+xml;utf8,<svg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%23879493' stroke-width='2.5' stroke-linecap='round' stroke-linejoin='round'><path d='m6 9 6 6 6-6'/></svg>");
+  background-repeat: no-repeat;
+  background-position: right 11px center;
+  background-size: 12px;
 }

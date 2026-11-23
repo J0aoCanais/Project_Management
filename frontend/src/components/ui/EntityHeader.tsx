@@ -28,7 +28,7 @@ function EntityHeader({ title, type, backTo, meta, media, actions }: Props) {
           {media}
           <div className="min-w-0">
             <p className="text-[11px] text-muted">{type}</p>
-            <h1 className="my-0.5 text-[22px] font-bold tracking-[-0.35px]">{title}</h1>
+            <h1 className="my-0.5 text-[22px] font-bold tracking-[-0.35px] wrap-anywhere">{title}</h1>
             {meta}
           </div>
         </div>
