@@ -8,7 +8,7 @@ from http import HTTPStatus
 import re
 
 from ..extensions import db
-from ..models import Property, Role
+from ..models import Property, Role, Zone
 from ..security import owner_required
 from ..schemas.properties_schema import (
     check_proposal_order,
@@ -37,10 +37,11 @@ properties_bp = Blueprint("properties", __name__)
 @owner_required
 def get_zones():
     stmt = (
-        db.select(Property.zone)
+        db.select(Zone.name)
+        .join(Property, Property.zone_id == Zone.id)
         .where(Property.deleted_at.is_(None))
         .distinct()
-        .order_by(Property.zone.asc())
+        .order_by(Zone.name.asc())
     )
     
     zones = db.session.execute(stmt).scalars().all()
@@ -143,7 +144,7 @@ def search_properties():
             pattern = f"%{search_term}%"
 
             conditions = or_(
-                Property.zone.ilike(pattern, escape="\\"),
+                Property.zone.has(Zone.name.ilike(pattern, escape="\\")),
                 Property.address.ilike(pattern, escape="\\"),
             )
             stmt = stmt.where(conditions)
@@ -278,5 +279,4 @@ def delete_property(property_id: int):
     except Exception:
         db.session.rollback()
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
-
 

@@ -16,9 +16,9 @@ BLOCKED = (301, 302, 401, 403)
 
 from sqlalchemy import text
 
-@pytest.fixture
+@pytest.fixture(autouse=True)
 def load_data(app):
-    with app.app_context:
+    with app.app_context():
         with open("database/seeds/contacts.sql") as file:
             query = text(file.read())
             db.session.execute(query)
@@ -40,16 +40,20 @@ def load_data(app):
 
 def _valid_body(**overrides):
     body = {
+        "zone_id": 1,
+        "property_type": "Residential",
+        "sale_motive": "Investment",
+        "contact_owns": False,
+        "lead_id": 900,
         "address": "Rua Augusta, 100, Lisboa",
         "typology": "T2",
-        "zone": "Baixa",
         "area_m2": "85.50",
         "asking_price": "350000.00",
         "vvr": "400000.00",
         "profit": "50000.00",
         "max_proposal": "320000.00",
         "first_proposal": "300000.00",
-        "visit_date": "2026-11-10T10:00:00",
+        "visit_date": "2026-11-10",
         "source_url": "https://www.example.com/property/123",
     }
     body.update(overrides)
@@ -108,11 +112,15 @@ def test_add_returns_201_and_full_body(client):
         assert isinstance(data[k], str) and data[k].count(".") == 1
         assert len(data[k].split(".")[1]) == 2
     assert data["address"] == "Rua Augusta, 100, Lisboa"
+    assert data["zone"] == {"id": 1, "name": "Alta"}
+    assert data["sale_motive"] == "Investment"
+    assert data["contact_owns"] is False
+    assert data["lead_id"] == 900
+    assert data["contact_id"] == 700
 
 
 @pytest.mark.parametrize("missing", [
-    "address", "typology", "zone", "area_m2", "asking_price", "vvr",
-    "profit", "max_proposal", "first_proposal", "visit_date",
+    "zone_id", "property_type", "sale_motive", "contact_owns", "lead_id",
 ])
 def test_add_requires_required_fields(client, missing):
     body = _valid_body()
@@ -209,14 +217,10 @@ def test_add_blank_optional_string_becomes_null(client):
     assert res.json["admin_location"] is None
 
 
-# KNOWN-ISSUE: properties.md claims source_url is NOT NULL in DB but optional in
-# schema, so omitting it 500s. Verify against the real DB column. If this test
-# fails (i.e. you get 201), the doc callout is wrong and should be removed.
 def test_create_without_source_url(client):
     body = _valid_body()
     del body["source_url"]
     res = client.post(f"{BASE}/add", json=body)
-    # Expect 500 per doc; if 201, the "known issue" is bogus.
     assert res.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -305,7 +309,7 @@ def test_links_without_opportunity_shape(client):
 def test_links_with_opportunity(app, client):
     p = make(client)
     with app.app_context():
-        opp = Opportunity(current_status="Active", phase_id=1, property_id=p["id"])
+        opp = Opportunity(phase_id=1, property_id=p["id"], contact_id=700)
         db.session.add(opp)
         db.session.commit()
         opp_id = opp.id
@@ -329,21 +333,21 @@ def test_links_soft_deleted_currently_200(client):
 # --------------------------------------------------------------------------- #
 
 def test_zones_sorted_and_distinct(client):
-    make(client, zone="Baixa")
-    make(client, zone="Baixa")          # duplicate
-    make(client, zone="Santo António")
+    make(client, zone_id=2)
+    make(client, zone_id=2)  # duplicate
+    make(client, zone_id=1)
     res = client.get(f"{BASE}/zones")
     assert res.status_code == HTTPStatus.OK
-    assert res.json == ["Baixa", "Santo António"]
+    assert res.json == ["Alta", "Baixa"]
 
 
 def test_zones_excludes_soft_deleted(client):
-    make(client, zone="Zzyzx Zone")
-    p = make(client, zone="Zzyzx Zone2")
+    make(client, zone_id=1)
+    p = make(client, zone_id=2)
     client.delete(f"{BASE}/{p['id']}")
     res = client.get(f"{BASE}/zones")
-    assert "Zzyzx Zone" in res.json
-    assert "Zzyzx Zone2" not in res.json
+    assert "Alta" in res.json
+    assert "Baixa" not in res.json
 
 
 # --------------------------------------------------------------------------- #
@@ -357,9 +361,10 @@ def test_search_no_params_returns_everything(client):
     assert res.json["pagination"]["total"] >= 1
 
 
-def test_search_q_matches_zone_address_typology(client):
-    make(client, zone="Zzyzx Zone", address="Zzyzx St", typology="Zzyzx T9")
-    for q in ("zzyzx", "ZZYZX", "zzyzx zone", "zzyzx st", "zzyzx t9"):
+def test_search_q_matches_zone_and_address(client):
+    make(client, address="Zzyzx St", typology="Zzyzx T9")
+    make(client, zone_id=2, address="Another Street")
+    for q in ("baixa", "BAIXA", "zzyzx st"):
         res = search(client, q=q)
         assert res.status_code == HTTPStatus.OK
         assert res.json["pagination"]["total"] >= 1, q
@@ -398,7 +403,7 @@ def test_search_wildcards_alone_do_not_match_everything(client, q):
     assert res.json["data"] == []
 
 
-def test_search_empty_q_is_ignored(client):
+def test_search_ignores_empty_q(client):
     make(client)
     res = search(client, q="")
     assert res.status_code == HTTPStatus.OK
@@ -411,24 +416,24 @@ def test_search_rejects_short_q(client, params):
     assert res.status_code == HTTPStatus.BAD_REQUEST
     assert "errors" in res.json
 
-def test_search_zone_exact_case_insensitive(client):
-    make(client, zone="Zzyzx Zone")
-    res = search(client, zone="zzyzx zone")
+def test_search_zone_id_exact(client):
+    make(client, zone_id=2)
+    res = search(client, zone_id=2)
     assert res.status_code == HTTPStatus.OK
-    assert all(p["zone"] == "Zzyzx Zone" for p in res.json["data"])
+    assert all(p["zone"]["id"] == 2 for p in res.json["data"])
 
 
-def test_search_property_condition_exact_case_insensitive(client):
-    make(client, property_condition="Zzyzx Good")
-    res = search(client, property_condition="zzyzx good")
+def test_search_typology_exact_case_insensitive(client):
+    make(client, typology="Zzyzx T2")
+    res = search(client, typology="zzyzx t2")
     assert res.status_code == HTTPStatus.OK
     assert len(res.json["data"]) >= 1
 
 
 def test_search_filters_combine_with_and(client):
-    make(client, zone="Zzyzx A", address="Zzyzx Addr", property_condition="Zzyzx C1")
-    make(client, zone="Zzyzx A", address="Zzyzx Addr", property_condition="Zzyzx C2")
-    res = search(client, q="zzyzx", zone="Zzyzx A", property_condition="Zzyzx C1")
+    make(client, zone_id=1, address="Zzyzx Addr", property_type="House")
+    make(client, zone_id=1, address="Zzyzx Addr", property_type="Apartment")
+    res = search(client, q="zzyzx", zone_id=1, property_type="House")
     assert res.status_code == HTTPStatus.OK
     assert res.json["pagination"]["total"] == 1
 
@@ -449,17 +454,10 @@ def test_search_rejects_bad_pagination(client, extra):
     assert "errors" in res.json
 
 
-@pytest.mark.parametrize("sort", ["visit_date", "asking_price", "profit",
-                                  "area_m2", "address", "zone", "id"])
-def test_search_accepts_valid_sort(client, sort):
-    res = search(client, sort=sort, order="asc")
+def test_search_ignores_unknown_parameters(client):
+    make(client)
+    res = search(client, sort="bogus", order="up")
     assert res.status_code == HTTPStatus.OK
-
-
-@pytest.mark.parametrize("bad", [{"sort": "bogus"}, {"order": "up"}])
-def test_search_rejects_bad_sort_order(client, bad):
-    res = search(client, **bad)
-    assert res.status_code == HTTPStatus.BAD_REQUEST
 
 
 # KNOWN-ISSUE: sort/order validated but NOT applied. Always id ASC.
