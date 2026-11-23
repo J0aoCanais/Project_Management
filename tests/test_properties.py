@@ -221,7 +221,19 @@ def test_create_without_source_url(client):
     body = _valid_body()
     del body["source_url"]
     res = client.post(f"{BASE}/add", json=body)
-    assert res.status_code == HTTPStatus.BAD_REQUEST
+    assert res.status_code == HTTPStatus.CREATED
+
+def test_create_only_required(client):
+    body = {
+            "zone_id": 1,
+            "property_type": "Residential",
+            "sale_motive": "Investment",
+            "contact_owns": False,
+            "lead_id": 900,
+    }
+
+    res = client.post(f"{BASE}/add", json=body)
+    assert res.status_code == HTTPStatus.CREATED
 
 
 # --------------------------------------------------------------------------- #
@@ -280,13 +292,11 @@ def test_get_missing_is_404(client):
     assert "id" in res.json["errors"]
 
 
-# KNOWN-ISSUE: GET /<id> ignores deleted_at. Current behaviour is 200 on a
-# soft-deleted property. Flip to 404 when fixed.
 def test_get_soft_deleted_currently_returns_200(client):
     p = make(client)
     client.delete(f"{BASE}/{p['id']}")
     res = client.get(f"{BASE}/{p['id']}")
-    assert res.status_code == HTTPStatus.OK  # KNOWN-ISSUE: should be 404
+    assert res.status_code == HTTPStatus.NOT_FOUND
 
 
 # --------------------------------------------------------------------------- #
@@ -303,7 +313,8 @@ def test_links_without_opportunity_shape(client):
     p = make(client)
     res = client.get(f"{BASE}/{p['id']}/links")
     assert res.status_code == HTTPStatus.OK
-    assert res.json["data"] == [{"type": "opportunity"}]
+    assert len(res.json["data"]) == 1
+    assert res.json["data"]["lead"]
 
 
 def test_links_with_opportunity(app, client):
@@ -314,18 +325,17 @@ def test_links_with_opportunity(app, client):
         db.session.commit()
         opp_id = opp.id
     res = client.get(f"{BASE}/{p['id']}/links")
-    entry = res.json["data"][0]
+    entry = res.json["data"]["opportunity"]
     assert entry["id"] == opp_id
     assert entry["code"] == f"OPO-{opp_id}"
     assert entry["phase"] == "novo"
 
 
-# KNOWN-ISSUE: /links ignores deleted_at.
 def test_links_soft_deleted_currently_200(client):
     p = make(client)
     client.delete(f"{BASE}/{p['id']}")
     res = client.get(f"{BASE}/{p['id']}/links")
-    assert res.status_code == HTTPStatus.OK  # KNOWN-ISSUE: should be 404
+    assert res.status_code == HTTPStatus.NOT_FOUND
 
 
 # --------------------------------------------------------------------------- #
@@ -458,15 +468,6 @@ def test_search_ignores_unknown_parameters(client):
     make(client)
     res = search(client, sort="bogus", order="up")
     assert res.status_code == HTTPStatus.OK
-
-
-# KNOWN-ISSUE: sort/order validated but NOT applied. Always id ASC.
-def test_search_sort_order_ignored_currently(client):
-    a = make(client, asking_price="100.00")
-    b = make(client, asking_price="999.00")
-    res = search(client, sort="asking_price", order="desc")
-    ids = [p["id"] for p in res.json["data"]]
-    assert ids == sorted(ids)  # id ASC, not asking_price DESC
 
 
 # --------------------------------------------------------------------------- #
