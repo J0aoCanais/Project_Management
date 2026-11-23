@@ -221,7 +221,7 @@ def test_create_without_source_url(client):
     body = _valid_body()
     del body["source_url"]
     res = client.post(f"{BASE}/add", json=body)
-    assert res.status_code == HTTPStatus.INTERNAL_SERVER_ERROR
+    assert res.status_code == HTTPStatus.BAD_REQUEST
 
 
 # --------------------------------------------------------------------------- #
