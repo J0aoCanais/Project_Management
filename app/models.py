@@ -17,7 +17,8 @@ from sqlalchemy import (
     String,
     Table,
     Text,
-    Numeric
+    Numeric,
+    Index
 )
 from sqlalchemy.orm import DeclarativeBase, Mapped, mapped_column, relationship
 from sqlalchemy.ext.associationproxy import association_proxy
@@ -381,6 +382,33 @@ class LeadSource(Base):
     leads: Mapped[List["Lead"]] = relationship(back_populates="lead_source")
 
 
+class ContactLog(Base):
+    __tablename__ = "contact_log"
+ 
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+ 
+    # Logs have no meaning without their lead, so they go with it.
+    lead_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("lead.id", ondelete="CASCADE"), nullable=False
+    )
+ 
+    channel: Mapped[str] = mapped_column(String(512), nullable=False)     
+    responsible: Mapped[str] = mapped_column(String(512), nullable=False)  
+    result: Mapped[str] = mapped_column(String(512), nullable=False)       
+    notes: Mapped[Optional[str]] = mapped_column(Text)
+ 
+    # --- when / who recorded it --------------------------------------------------
+    # When the contact happened (can be backdated); created_at is when the row was written.
+    contacted_at: Mapped[datetime] = mapped_column(DateTime(timezone=True), nullable=False)
+ 
+    lead: Mapped["Lead"] = relationship(back_populates="contact_logs")
+ 
+    __table_args__ = (
+        # timeline of one lead, newest first
+        Index("ix_contact_log_lead_id_contacted_at", "lead_id", "contacted_at"),
+    )
+
+
 class Lead(Base):
     __tablename__ = "lead"
 
@@ -389,9 +417,6 @@ class Lead(Base):
     message: Mapped[Optional[str]] = mapped_column(Text)
     discard_reason: Mapped[Optional[str]] = mapped_column(Text)
     created_at: Mapped[datetime] = mapped_column(DateTime, nullable=False)
-    campaign_name: Mapped[Optional[str]] = mapped_column(String(512))
-    ad_name: Mapped[Optional[str]] = mapped_column(String(512))
-    form_name: Mapped[Optional[str]] = mapped_column(String(512))
     lead_source_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("lead_source.id"), nullable=False
     )
@@ -399,7 +424,7 @@ class Lead(Base):
         BigInteger, ForeignKey("contact.id"), nullable=False
     )
     contact_id1: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("contact.id"), nullable=False
+        BigInteger, ForeignKey("contact.id"), nullable=True
     )
 
     lead_source: Mapped["LeadSource"] = relationship(back_populates="leads")
@@ -416,7 +441,14 @@ class Lead(Base):
         secondary=opportunity_lead, back_populates="lead", uselist=False
     )
 
-    property: Mapped["Property | None"] = relationship(back_populates="lead", uselist=False)
+    contact_logs: Mapped[List["ContactLog"]] = relationship(
+        back_populates="lead",
+        cascade="all, delete-orphan",
+        passive_deletes=True,                      # the database does the cascade
+        order_by="ContactLog.contacted_at.desc()",
+    )
+
+    property: Mapped[Optional["Property"]] = relationship(back_populates="lead", uselist=False)
 
 
 class Task(Base):
@@ -448,16 +480,16 @@ class Property(Base):
         BigInteger, ForeignKey("zone.id", ondelete="SET NULL"), nullable=False
     )
 
-    source_url: Mapped[str] = mapped_column(Text)
-    address: Mapped[str] = mapped_column(String(512))
-    typology: Mapped[str] = mapped_column(String(512))
-    area_m2: Mapped[float] = mapped_column(Numeric(10, 2))
-    asking_price: Mapped[float] = mapped_column(Numeric(14, 2))
-    vvr: Mapped[float] = mapped_column(Numeric(14, 2))
-    profit: Mapped[float] = mapped_column(Numeric(14, 2))
-    max_proposal: Mapped[float] = mapped_column(Numeric(14, 2))
-    first_proposal: Mapped[float] = mapped_column(Numeric(14, 2))
-    visit_date: Mapped[datetime] = mapped_column(DateTime)
+    source_url: Mapped[Optional[str]] = mapped_column(Text)
+    address: Mapped[Optional[str]] = mapped_column(String(512))
+    typology: Mapped[Optional[str]] = mapped_column(String(512))
+    area_m2: Mapped[Optional[float]] = mapped_column(Numeric(10, 2))
+    asking_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    vvr: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    profit: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    max_proposal: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    first_proposal: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
+    visit_date: Mapped[Optional[datetime]] = mapped_column(DateTime)
     notes: Mapped[Optional[str]] = mapped_column(Text)
     admin_location: Mapped[Optional[str]] = mapped_column(String(512))
     property_condition: Mapped[Optional[str]] = mapped_column(String(512))

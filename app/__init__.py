@@ -32,13 +32,17 @@ def create_app(config_class=Config):
     from .auth.routes import auth_bp
     from .demos import demos_bp
     from .contacts.routes import contacts_bp
+    from .leads.leads_routes import leads_bp
     from .properties.routes import properties_bp
     from .opportunities.routes import opportunities_bp
     from .zones.routes import zones_bp
+    from .configs.routes import configs_bp
  
     app.register_blueprint(demos_bp, url_prefix="/api/demos")           # /, /health, /account
     app.register_blueprint(auth_bp)                                     # /login, /logout
+    app.register_blueprint(configs_bp, url_prefix="/api/configs")
     app.register_blueprint(contacts_bp, url_prefix="/api/contacts")     # /contacts
+    app.register_blueprint(leads_bp, url_prefix="/api/leads")        # /leads
     app.register_blueprint(properties_bp, url_prefix="/api/properties")
     app.register_blueprint(opportunities_bp, url_prefix="/api/opportunities")
     app.register_blueprint(zones_bp, url_prefix="/api/zones")
