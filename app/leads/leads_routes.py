@@ -1,21 +1,20 @@
 from typing import Any, cast
 from datetime import datetime, timezone
-from datetime import datetime, time
+from datetime import datetime
 from http import HTTPStatus
 from flask import Blueprint, request, jsonify
 from marshmallow import ValidationError
-from app.extensions import csrf
-from sqlalchemy.orm import joinedload, selectinload
-from sqlalchemy.orm import contains_eager, joinedload
+from sqlalchemy.orm import joinedload, selectinload, contains_eager
 from sqlalchemy import or_
 
 from ..extensions import db
-from ..models import Lead, Contact, LeadSource, Role, ContactLog, Property
+from ..models import Lead, Contact, LeadSource, ContactLog, Property
 from ..security import owner_required
 from ..contacts.routes import validate_contact_payload
 from ..schemas.leads_schema import (
     LeadFilterSchema,
     LeadSourceResponseSchema,
+    LeadSourceCreateSchema,
     LeadCreateSchema,
     LeadResponseSchema,
     LeadUpdateSchema,
@@ -26,6 +25,7 @@ from ..schemas.leads_schema import (
 )
 
 lead_source_response_schema = LeadSourceResponseSchema()
+lead_source_create_schema = LeadSourceCreateSchema()
 lead_create_schema = LeadCreateSchema()
 lead_response_schema = LeadResponseSchema()
 lead_update_schema = LeadUpdateSchema()
@@ -34,18 +34,6 @@ contact_log_create_schema = ContactLogCreateSchema()
 contact_log_response_schema = ContactLogResponseSchema()
 
 leads_bp = Blueprint("leads", __name__, url_prefix="/leads")
-
-
-@leads_bp.route("/lead-sources", methods=["GET"])
-@owner_required
-def get_lead_sources():
-    stmt = (
-        db.select(LeadSource)
-        .where(LeadSource.is_active.is_(True))
-        .order_by(LeadSource.name.asc())
-    )
-    sources = db.session.execute(stmt).scalars().all()
-    return jsonify(lead_source_response_schema.dump(sources, many=True)), HTTPStatus.OK
 
 
 @leads_bp.route("/add", methods=["POST"])

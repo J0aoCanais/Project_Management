@@ -35,9 +35,11 @@ def create_app(config_class=Config):
     from .leads.leads_routes import leads_bp
     from .properties.routes import properties_bp
     from .zones.routes import zones_bp
+    from .configs.routes import configs_bp
  
     app.register_blueprint(demos_bp, url_prefix="/api/demos")           # /, /health, /account
     app.register_blueprint(auth_bp)                                     # /login, /logout
+    app.register_blueprint(configs_bp, url_prefix="/api/configs")
     app.register_blueprint(contacts_bp, url_prefix="/api/contacts")     # /contacts
     app.register_blueprint(leads_bp, url_prefix="/api/leads")        # /leads
     app.register_blueprint(properties_bp, url_prefix="/api/properties")

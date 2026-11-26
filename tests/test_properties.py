@@ -119,6 +119,13 @@ def test_add_returns_201_and_full_body(client):
     assert data["contact_id"] == 700
 
 
+def test_add_rejects_same_lead_id(client):
+    res = client.post(f"{BASE}/add", json=_valid_body())
+    res_repeat = client.post(f"{BASE}/add", json=_valid_body())
+
+    assert res.status_code == HTTPStatus.CREATED
+    assert res_repeat.status_code == HTTPStatus.CONFLICT
+
 @pytest.mark.parametrize("missing", [
     "zone_id", "property_type", "sale_motive", "contact_owns", "lead_id",
 ])

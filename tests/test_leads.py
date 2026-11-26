@@ -1,7 +1,7 @@
 from http import HTTPStatus
 import pytest
 from app.extensions import db
-from app.models import Contact, LeadSource, Lead, Role
+from app.models import Contact, LeadSource, Lead, Role, Property, Zone
 from datetime import datetime, timedelta, timezone
 
 now = datetime.now(timezone.utc)
@@ -58,6 +58,15 @@ def sample_referrer(app):
         db.session.commit()
         yield referrer.id
 
+@pytest.fixture
+def sample_zone(app):
+    """Seed a zone."""
+    with app.app_context():
+        zone = Zone(name="Chinatown")
+        db.session.add(zone)
+        db.session.commit()
+        yield zone.id
+
 
 # =====================================================================
 # Happy Path Tests
@@ -73,7 +82,7 @@ def test_create_lead_with_existing_contact_success(
         "message": "Interesse num apartamento T2"
     }
 
-    response = client.post("/api/leads/", json=payload)
+    response = client.post("/api/leads/add", json=payload)
 
     assert response.status_code == HTTPStatus.CREATED
     data = response.get_json()
@@ -90,7 +99,7 @@ def test_create_lead_with_existing_contact_success(
 
 def test_create_lead_requires_origin(client, sample_contact):
     response = client.post(
-        "/api/leads",
+        "/api/leads/add",
         json={"contact_id": sample_contact, "message": "Sem origem"},
     )
 
@@ -114,7 +123,7 @@ def test_create_lead_with_new_contact_and_roles_success(
         "message": "Contacto inicial via site",
     }
 
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
 
     assert response.status_code == HTTPStatus.CREATED
     data = response.get_json()
@@ -137,7 +146,7 @@ def test_create_lead_with_optional_referrer_success(
         "message": "Referenciado por parceiro",
     }
 
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
 
     assert response.status_code == HTTPStatus.CREATED
     data = response.get_json()
@@ -153,14 +162,14 @@ def test_create_lead_with_optional_referrer_success(
 
 
 def test_create_lead_invalid_or_missing_json(client):
-    response = client.post("/api/leads", data="not json", content_type="text/plain")
+    response = client.post("/api/leads/add", data="not json", content_type="text/plain")
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "body" in response.get_json()["errors"]
 
 
 def test_create_lead_missing_contact_and_new_contact(client, active_lead_source):
     payload = {"lead_source_id": active_lead_source, "message": "Sem contacto"}
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "contact_id" in response.get_json()["errors"]
 
@@ -173,21 +182,21 @@ def test_create_lead_providing_both_contact_id_and_new_contact(
         "contact_id": sample_contact,
         "new_contact": {"name": "Duplicado", "role_ids": []},
     }
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "contact_id" in response.get_json()["errors"]
 
 
 def test_create_lead_inactive_source(client, inactive_lead_source, sample_contact):
     payload = {"lead_source_id": inactive_lead_source, "contact_id": sample_contact}
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "lead_source_id" in response.get_json()["errors"]
 
 
 def test_create_lead_non_existent_contact(client, active_lead_source):
     payload = {"lead_source_id": active_lead_source, "contact_id": 999999}
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "contact_id" in response.get_json()["errors"]
 
@@ -198,7 +207,7 @@ def test_create_lead_self_referral_rejected(client, active_lead_source, sample_c
         "contact_id": sample_contact,
         "referrer_contact_id": sample_contact,
     }
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
     assert response.status_code == HTTPStatus.BAD_REQUEST
     assert "referrer_contact_id" in response.get_json()["errors"]
 
@@ -209,7 +218,7 @@ def test_create_lead_non_existent_referrer(client, active_lead_source, sample_co
         "contact_id": sample_contact,
         "referrer_contact_id": 999999,
     }
-    response = client.post("/api/leads", json=payload)
+    response = client.post("/api/leads/add", json=payload)
     assert response.status_code == HTTPStatus.NOT_FOUND
     assert "referrer_contact_id" in response.get_json()["errors"]
 
@@ -217,7 +226,7 @@ def test_create_lead_non_existent_referrer(client, active_lead_source, sample_co
 def test_list_lead_sources_returns_only_active_sources(
     client, active_lead_source, inactive_lead_source
 ):
-    response = client.get("/api/leads/lead-sources")
+    response = client.get("/api/configs/lead-sources")
 
     assert response.status_code == HTTPStatus.OK
     assert response.get_json() == [
@@ -233,7 +242,7 @@ def test_list_lead_sources_returns_only_active_sources(
 def test_create_lead_unauthorized_anon(anon_client, active_lead_source, sample_contact):
     """Anonymous client cannot access owner endpoints."""
     payload = {"lead_source_id": active_lead_source, "contact_id": sample_contact}
-    response = anon_client.post("/api/leads", json=payload)
+    response = anon_client.post("/api/leads/add", json=payload)
     assert response.status_code in (
         HTTPStatus.FOUND,
         HTTPStatus.UNAUTHORIZED,
@@ -246,7 +255,7 @@ def test_create_lead_unauthorized_investor(
 ):
     """Investor client cannot access owner endpoints."""
     payload = {"lead_source_id": active_lead_source, "contact_id": sample_contact}
-    response = investor_client.post("/api/leads", json=payload)
+    response = investor_client.post("/api/leads/add", json=payload)
     assert response.status_code in (HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
 
 
@@ -710,3 +719,41 @@ def test_update_lead_discard_requires_reason(
     db.session.refresh(lead)
     assert lead.status == "Descartada"
     assert lead.discard_reason == "Sem orçamento"
+
+def test_discarding_lead_deletes_property(
+    client, active_lead_source, sample_contact, sample_zone
+):
+
+    lead = Lead(
+        status="Qualificada",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    prop = Property(
+        sale_motive="Reasons",
+        contact_owns=True,
+        property_type="House",
+        zone_id=sample_zone,
+        lead_id = lead.id
+    )
+    db.session.add(prop)
+    db.session.commit()
+
+    #Discard lead
+    res = client.patch(
+        f"/api/leads/{lead.id}",
+        json={"status": "Descartada", "discard_reason": "Sem orçamento"},
+    )
+    assert res.status_code == HTTPStatus.OK
+
+    res = client.get("/api/properties/")
+    data = res.get_json()
+    assert res.status_code == HTTPStatus.OK
+    assert len(data["data"]) == 0
+
+    db.session.refresh(prop)
+    assert prop.deleted_at != None

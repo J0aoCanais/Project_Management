@@ -54,11 +54,38 @@ class ContactLogResponseSchema(BaseSchema):
     contacted_at = fields.DateTime()
 
 
+#############################
+#  Schemas for lead sources
+############################
+
+
 class LeadSourceResponseSchema(BaseSchema):
     id = fields.Integer()
     name = fields.String()
     is_active = fields.Boolean()
 
+
+class LeadSourceCreateSchema(BaseSchema):
+    name = fields.String(
+        required=True,
+        validate=validate.Length(min=1, max=512),
+    )
+    is_active = fields.Boolean(required=False, load_default=True)
+
+
+class LeadSourceUpdateSchema(BaseSchema):
+    name = fields.String(validate=validate.Length(min=1, max=512))
+    is_active = fields.Boolean()
+
+    @validates_schema
+    def at_least_one_field(self, data, **kwargs):
+        if not data:
+            raise ValidationError("At least one field must be provided", "body")
+
+
+#############################
+#  Schemas for leads
+############################
 
 class LeadCreateSchema(BaseSchema):
     lead_source_id = fields.Integer(required=True)
