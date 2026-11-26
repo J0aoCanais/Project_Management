@@ -156,11 +156,12 @@ class LeadFilterSchema(BaseSchema):
             cleaned[key] = value
         return cleaned
 
-
-class OportunityLinkResponse(BaseSchema):
+class LeadLinkResponse(BaseSchema):
     """Work resumed information for property links"""
-    type = fields.Constant("opportunity")
+    type = fields.Constant("lead")
     id = fields.Integer()
-    code = fields.String()
-    phase = fields.Pluck(PhaseResponseSchema, "name", dump_only=True)
+    code = fields.Method("get_code")
+    status = fields.String()
 
+    def get_code(self, obj):
+        return f"LEA-{obj.id}"

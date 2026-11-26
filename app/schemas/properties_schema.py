@@ -94,7 +94,6 @@ class PropertyCreateSchema(BaseSchema):
     # Listing the property came from. http/https only: a "javascript:" URL
     # rendered as a link in React would be an XSS vector.
     source_url = fields.URL(
-        allow_none=True,
         schemes={"http", "https"},
         validate=validate.Length(max=MAX_URL),
     )
