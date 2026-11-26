@@ -10,7 +10,7 @@ from sqlalchemy.orm import contains_eager, joinedload
 from sqlalchemy import or_
 
 from ..extensions import db
-from ..models import Lead, Contact, LeadSource, Role, ContactLog
+from ..models import Lead, Contact, LeadSource, Role, ContactLog, Property
 from ..security import owner_required
 from ..contacts.routes import validate_contact_payload
 from ..schemas.leads_schema import (
@@ -21,7 +21,8 @@ from ..schemas.leads_schema import (
     LeadUpdateSchema,
     LeadFilterSchema,
     ContactLogCreateSchema,
-    ContactLogResponseSchema
+    ContactLogResponseSchema,
+    ALLOWED_LEAD_STATUSES
 )
 
 lead_source_response_schema = LeadSourceResponseSchema()
@@ -47,8 +48,7 @@ def get_lead_sources():
     return jsonify(lead_source_response_schema.dump(sources, many=True)), HTTPStatus.OK
 
 
-@leads_bp.post("")
-@leads_bp.route("/", methods=["POST"])
+@leads_bp.route("/add", methods=["POST"])
 @owner_required
 def create_lead():
     payload = request.get_json(silent=True)
@@ -142,7 +142,6 @@ def create_lead():
 
     except Exception as e:
         db.session.rollback()
-        print(e)
         return (
             jsonify({"errors": {"server": ["Internal server error"]}}),
             HTTPStatus.INTERNAL_SERVER_ERROR,
@@ -192,7 +191,7 @@ def list_leads():
 
     show_discarted = filters.get("show_discarted")
     if not show_discarted:
-        stmt = stmt.where(Lead.status != "Descartada")
+        stmt = stmt.where(Lead.status != ALLOWED_LEAD_STATUSES[-1])
 
     stmt = stmt.order_by(Lead.created_at.desc())
     leads = db.paginate(
@@ -259,11 +258,22 @@ def update_lead(lead_id: int):
     if not isinstance(validated_data, dict):
         return jsonify({"error": "Expected a JSON object"}), HTTPStatus.BAD_REQUEST
 
-    for field, value in validated_data.items():
-        setattr(lead, field, value)
+    try:
+        for field, value in validated_data.items():
+            setattr(lead, field, value)
 
-    db.session.commit()
-    return jsonify(lead_response_schema.dump(lead)), HTTPStatus.OK
+        # Remove property info if lead is discarted
+        if validated_data.get("status") == ALLOWED_LEAD_STATUSES[-1]:
+            property = db.session.execute(db.select(Property).where(Property.lead_id == lead.id)).scalar_one_or_none()
+            if property != None:
+                property.deleted_at = datetime.now()
+
+        db.session.commit()
+        return jsonify(lead_response_schema.dump(lead)), HTTPStatus.OK
+
+    except Exception:
+        db.session.rollback()
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 @leads_bp.post("/<int:lead_id>/contact-logs")
 @owner_required

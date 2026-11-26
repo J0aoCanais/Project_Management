@@ -22,7 +22,7 @@ ALLOWED_LEAD_STATUSES = [
 ]
 
 CONTACT_FIELDS = ("name", "id", "phone_number", "zone")
-PROPERTY_FIELDS = ("id", "code", "property_type", "zone")
+PROPERTY_FIELDS = ("id", "code", "property_type", "zone", "sale_motive", "contact_owns")
 
 #############################
 #  Schemas for contact logs
