@@ -298,3 +298,7 @@ class OpportunityResponseSchema(Schema):
 #             stamp_tax=obj.stamp_tax,
 #             registry_costs=obj.registry_costs,
         # )
+
+
+class OpportunityPhaseChangeSchema(BaseSchema):
+    phase_id = _id(required=True)
