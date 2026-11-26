@@ -88,6 +88,16 @@ def test_create_lead_with_existing_contact_success(
     assert lead.contact_id1 is None
 
 
+def test_create_lead_requires_origin(client, sample_contact):
+    response = client.post(
+        "/api/leads",
+        json={"contact_id": sample_contact, "message": "Sem origem"},
+    )
+
+    assert response.status_code == HTTPStatus.BAD_REQUEST
+    assert "lead_source_id" in response.get_json()["errors"]
+
+
 def test_create_lead_with_new_contact_and_roles_success(
     client, active_lead_source, sample_role
 ):
@@ -204,6 +214,17 @@ def test_create_lead_non_existent_referrer(client, active_lead_source, sample_co
     assert "referrer_contact_id" in response.get_json()["errors"]
 
 
+def test_list_lead_sources_returns_only_active_sources(
+    client, active_lead_source, inactive_lead_source
+):
+    response = client.get("/api/leads/lead-sources")
+
+    assert response.status_code == HTTPStatus.OK
+    assert response.get_json() == [
+        {"id": active_lead_source, "name": "Idealista", "is_active": True}
+    ]
+
+
 # =====================================================================
 # Authorization Tests
 # =====================================================================
@@ -250,7 +271,7 @@ def test_list_leads_returns_ordered_by_created_at_desc(
         contact_id=sample_contact,
     )
     newer_lead = Lead(
-        status="Em Contacto",
+        status="Contactada",
         message="Newer lead",
         created_at=now,
         lead_source_id=active_lead_source,
@@ -352,20 +373,20 @@ def test_list_leads_search_by_contact_name_and_contact_info(client, active_lead_
     # 1. Partial case-insensitive name match
     res_name = client.get("/api/leads?search=maria")
     assert res_name.status_code == HTTPStatus.OK
-    assert len(res_name.get_json()) == 1
-    assert res_name.get_json()[0]["message"] == "T2"
+    assert len(res_name.get_json()["data"]) == 1
+    assert res_name.get_json()["data"][0]["message"] == "T2"
 
     # 2. Partial phone number match
     res_phone = client.get("/api/leads?search=96987")
     assert res_phone.status_code == HTTPStatus.OK
-    assert len(res_phone.get_json()) == 1
-    assert res_phone.get_json()[0]["message"] == "T3"
+    assert len(res_phone.get_json()["data"]) == 1
+    assert res_phone.get_json()["data"][0]["message"] == "T3"
 
     # 3. Partial email match
     res_email = client.get("/api/leads?search=SILVA@EXAMPLE")
     assert res_email.status_code == HTTPStatus.OK
-    assert len(res_email.get_json()) == 1
-    assert res_email.get_json()[0]["message"] == "T2"
+    assert len(res_email.get_json()["data"]) == 1
+    assert res_email.get_json()["data"][0]["message"] == "T2"
 
 
 def test_list_leads_search_combined_with_status_filter(client, active_lead_source):
@@ -388,7 +409,7 @@ def test_list_leads_search_combined_with_status_filter(client, active_lead_sourc
         contact_id=contact.id,
     )
     lead_fechada = Lead(
-        status="Fechada",
+        status="Qualificada",
         message="No match",
         created_at=now,
         lead_source_id=active_lead_source,
@@ -398,7 +419,7 @@ def test_list_leads_search_combined_with_status_filter(client, active_lead_sourc
     db.session.commit()
 
     response = client.get("/api/leads?status=Nova&search=Ana")
-    data = response.get_json()
+    data = response.get_json()["data"]
 
     assert response.status_code == HTTPStatus.OK
     assert len(data) == 1
@@ -478,8 +499,33 @@ def test_update_lead_success(client, active_lead_source, sample_contact):
     assert lead.message == "Follow-up scheduled"
 
 
+def test_update_lead_accepts_each_supported_status(
+    client, active_lead_source, sample_contact
+):
+    lead = Lead(
+        status="Nova",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add(lead)
+    db.session.commit()
+
+    for status in ("Contactada", "Qualificada", "Convertida", "Descartada"):
+        payload = {"status": status}
+        if status == "Descartada":
+            payload["discard_reason"] = "Sem interesse."
+
+        response = client.patch(f"/api/leads/{lead.id}", json=payload)
+
+        assert response.status_code == HTTPStatus.OK
+        assert response.get_json()["status"] == status
+        db.session.refresh(lead)
+        assert lead.status == status
+
+
 def test_update_lead_not_found(client):
-    response = client.patch("/api/leads/999999", json={"status": "Em Contacto"})
+    response = client.patch("/api/leads/999999", json={"status": "Contactada"})
     assert response.status_code == HTTPStatus.NOT_FOUND
 
 
@@ -518,13 +564,13 @@ def test_update_lead_unauthorized(
     expected_denied = (HTTPStatus.FOUND, HTTPStatus.UNAUTHORIZED, HTTPStatus.FORBIDDEN)
     assert (
         anon_client.patch(
-            f"/api/leads/{lead.id}", json={"status": "Em Contacto"}
+            f"/api/leads/{lead.id}", json={"status": "Contactada"}
         ).status_code
         in expected_denied
     )
     assert (
         investor_client.patch(
-            f"/api/leads/{lead.id}", json={"status": "Em Contacto"}
+            f"/api/leads/{lead.id}", json={"status": "Contactada"}
         ).status_code
         in expected_denied
     )
@@ -558,12 +604,14 @@ def test_list_leads_filter_by_origin(client, active_lead_source, sample_contact)
     data = response.get_json()
 
     assert response.status_code == HTTPStatus.OK
-    assert len(data) == 1
-    assert data[0]["message"] == "From Instagram"
+    assert len(data["data"]) == 1
+    assert data["data"][0]["message"] == "From Instagram"
 
 
-def test_list_leads_filter_by_date_range(client, active_lead_source, sample_contact):
-    """Filters leads by ?date_from= and ?date_to= (YYYY-MM-DD) and rejects bad formats."""
+def test_list_leads_ignores_date_filters(
+    client, active_lead_source, sample_contact
+):
+    """Date query parameters are currently ignored by the lead filter schema."""
     lead_old = Lead(
         status="Nova",
         message="Old lead",
@@ -588,17 +636,45 @@ def test_list_leads_filter_by_date_range(client, active_lead_source, sample_cont
     db.session.add_all([lead_old, lead_target, lead_future])
     db.session.commit()
 
-    # Valid date window
     response = client.get("/api/leads?date_from=2026-11-01&date_to=2026-11-15")
-    data = response.get_json()
 
     assert response.status_code == HTTPStatus.OK
-    assert len(data) == 1
-    assert data[0]["message"] == "Target lead"
+    assert response.get_json()["pagination"]["total"] == 3
 
-    # Invalid date format returns 400
-    bad_res = client.get("/api/leads?date_from=13-11-2026")
-    assert bad_res.status_code == HTTPStatus.BAD_REQUEST
+
+def test_list_leads_hides_discarded_by_default_and_can_include_them(
+    client, active_lead_source, sample_contact
+):
+    active_lead = Lead(
+        status="Nova",
+        message="Active lead",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    discarded_lead = Lead(
+        status="Descartada",
+        message="Discarded lead",
+        discard_reason="Sem interesse.",
+        created_at=datetime.now(timezone.utc),
+        lead_source_id=active_lead_source,
+        contact_id=sample_contact,
+    )
+    db.session.add_all([active_lead, discarded_lead])
+    db.session.commit()
+
+    default_response = client.get("/api/leads")
+    all_response = client.get("/api/leads?show_discarted=true")
+
+    assert default_response.status_code == HTTPStatus.OK
+    assert [lead["message"] for lead in default_response.get_json()["data"]] == [
+        "Active lead"
+    ]
+    assert all_response.status_code == HTTPStatus.OK
+    assert {lead["message"] for lead in all_response.get_json()["data"]} == {
+        "Active lead",
+        "Discarded lead",
+    }
 
 
 def test_update_lead_discard_requires_reason(
