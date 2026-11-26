@@ -218,6 +218,13 @@ def create_property():
     try:
         data = property_create_schema.load(payload)
         
+        lead_taken = db.session.execute(
+            db.select(Property).where(Property.lead_id == data["lead_id"])
+        ).scalar_one_or_none()
+
+        if lead_taken:
+            return jsonify({"errors": {"body": ["Lead already has an assigned property"]}}), HTTPStatus.CONFLICT
+
         new_property = Property(**data)
         
         db.session.add(new_property)
