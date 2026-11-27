@@ -185,12 +185,13 @@ class OpportunityUpdateSchema(_OpportunityFields, BaseSchema):
 
 class OpportunityPhaseChangeSchema(BaseSchema):
     phase_id = _id(required=True)
-    # Drop `note` if your PhaseHistory table has no column for it.
     note = fields.String(load_default=None, validate=validate.Length(min=1, max=2000))
 
 
 class OpportunityListQuerySchema(BaseSchema):
     """Query string for GET /opportunities/ (all optional)."""
+
+    #TODO: make this fields compliant with front-end (no sroting)
 
     class Meta:
         unknown = EXCLUDE
@@ -226,7 +227,7 @@ class OpportunityListItemSchema(Schema):
     code = fields.String()
     phase = fields.Nested(PhaseResponseSchema)
     property = fields.Nested(PropertyResponseSchema(only=PROPERTY_SUMMARY_FIELDS))
-    contact = fields.Nested(ContactResponseSchema(only=("id", "name")))
+    # contact = fields.Nested(ContactResponseSchema(only=("id", "name")))
 
     expected_sale_price = _money(allow_none=True, load_default=0)
     purchase_price = _money(allow_none=True, load_default=0)
@@ -237,6 +238,7 @@ class OpportunityListItemSchema(Schema):
     #return profit expected
     profit = fields.Method("get_profit")
 
+    # TODO: Change this to check a new field "phase_started_at"
     def get_days_since_last_activity(self, obj):
         if obj.last_activity_at is None:
             return None
@@ -251,10 +253,9 @@ class OpportunityListItemSchema(Schema):
         str(profit.quantize(Decimal("0.01")))
         
 
-
-
 class OpportunityResponseSchema(Schema):
     """Flat representation for create/update responses."""
+    #TODO: change this schema to show summary; create more shcemas for each tab
 
     id = fields.Integer()
     code = fields.String()
@@ -298,7 +299,3 @@ class OpportunityResponseSchema(Schema):
 #             stamp_tax=obj.stamp_tax,
 #             registry_costs=obj.registry_costs,
         # )
-
-
-class OpportunityPhaseChangeSchema(BaseSchema):
-    phase_id = _id(required=True)

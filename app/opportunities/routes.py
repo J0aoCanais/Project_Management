@@ -55,14 +55,13 @@ def _fail(errors: dict, status: HTTPStatus):
 def enter_phase(opportunity: Opportunity, phase: Phase, note: str=None):
     now = datetime.now(timezone.utc)
 
+    #TODO: 
+
     opportunity.phase_id = phase.id
     opportunity.last_activity_at = now
     opportunity.phase_histories.append(
         PhaseHistory(phase_id=phase.id, changed_at=now, note=note)
     )
-    
-    
-
 
 
 #========================================
@@ -130,12 +129,32 @@ def get_opportunities():
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
+@opportunities_bp.get("/<int:property_id>")
+@owner_required
+def get_property(property_id):
+    #TODO: show opportunity summary (property and contact details)
+    return
 
 
+@opportunities_bp.get("/<int:property_id>/finance")
+@owner_required
+def get_property(property_id):
+    #TODO: show opportunity financial details
+    return
 
 
+@opportunities_bp.get("/<int:property_id>/fase-history")
+@owner_required
+def get_property(property_id):
+    #TODO: show opportunity phase history
+    return
 
 
+@opportunities_bp.get("/<int:property_id>/documents")
+@owner_required
+def get_property(property_id):
+    #TODO: show opportunity documents
+    return
 
 #===============================================
 #  3.Opportunities Write Endpoints (POST/PATCH)
@@ -167,7 +186,6 @@ def create_opportunity():
     lead = db.session.get(Lead, lead_id, with_for_update=True)
     if lead is None:
         return _fail({"lead_id": ["Lead not found"]}, HTTPStatus.BAD_REQUEST)
-
     
     if lead.opportunity is not None:
         return _fail(
@@ -256,16 +274,16 @@ def change_opportunity_phase(opportunity_id: int):
     return jsonify(opportunity_response_schema.dump(opportunity)), HTTPStatus.OK
 
 
+@opportunities_bp.patch("/<int:opportunity_id>")
+@owner_required
+def update_opportunity(opportunity_id):
+    #TODO: update an opportunity fields
+    return
 
 
-
-
-
-
-
-
-
-
+########################
+# Opportunity delete
+#######################
 
 @opportunities_bp.delete("/<int:opportunity_id>")
 @owner_required

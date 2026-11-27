@@ -31,6 +31,16 @@ class BaseSchema(Schema):
         return cleaned
 
 class PhaseResponseSchema(BaseSchema):
-    """Simple schema to return contact role"""
-    id = fields.Integer()
-    name = fields.String()
+    """
+    Schema representing a phase response.
+
+    Attributes:
+        id (int): Unique identifier of the phase.
+        name (str): Name of the phase.
+    """
+    id = fields.Integer(
+        description="Unique identifier of the phase."
+    )
+    name = fields.String(
+        description="Name of the phase."
+    )
