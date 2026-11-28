@@ -20,6 +20,17 @@ export const AGREEMENT_DATE_RANGE = {
   max: `${new Date().getFullYear() + 10}-12-31`,
 } as const;
 
+/** Estados da relação, pela ordem do cliente. Substituem os antigos. */
+export const RELATION_STATUSES = ["Por contactar", "Inativo", "Qualificado", "Ativo"] as const;
+
+/**
+ * Estado da relação vindo do servidor: os antigos "prospeto" passam a "Por contactar" (a migração dos valores
+ * guardados é do backend; isto só garante que um valor antigo não aparece solto).
+ */
+export function normalizeRelationStatus(status: string): string {
+  return /^prospe(c)?to$/i.test(status.trim()) ? "Por contactar" : status;
+}
+
 /** Perfil de um investidor novo: tudo por preencher. */
 export const emptyInvestorProfile: InvestorProfile = {
   investorKind: "",
@@ -27,6 +38,8 @@ export const emptyInvestorProfile: InvestorProfile = {
   availableCapital: 0,
   riskProfile: "",
   preferredZones: [],
+  minAmount: 0,
+  maxAmount: 0,
   preferredTerms: "",
   relationStatus: "",
   notes: "",
@@ -47,8 +60,16 @@ export function investorProfileErrors(profile: InvestorProfile): InvestorProfile
     investorKind: profile.investorKind && INVESTOR_KINDS.includes(profile.investorKind) ? undefined : "Escolha se é particular ou empresa.",
     caepTerm: CAEP_TERMS.includes(profile.caepTerm) ? undefined : "Escolha o prazo do CAEP.",
     availableCapital: positiveMoney(profile.availableCapital) ? undefined : "Indique o capital disponível.",
+    minAmount: !positiveMoney(profile.minAmount) ? "Indique o montante mínimo." : undefined,
+    maxAmount: !positiveMoney(profile.maxAmount)
+      ? "Indique o montante máximo."
+      : profile.minAmount > profile.maxAmount
+        ? "O máximo não pode ser inferior ao mínimo."
+        : profile.availableCapital > 0 && profile.maxAmount > profile.availableCapital
+          ? "O máximo não pode passar o capital disponível."
+          : undefined,
     riskProfile: profile.riskProfile ? undefined : "Escolha o perfil de risco.",
-    relationStatus: profile.relationStatus ? undefined : "Escolha o estado da relação.",
+    relationStatus: (RELATION_STATUSES as readonly string[]).includes(profile.relationStatus) ? undefined : "Escolha o estado da relação.",
     preferredTerms: optionalTextError(profile.preferredTerms, INVESTOR_TEXT_LIMITS.preferredTerms),
     notes: optionalTextError(profile.notes, INVESTOR_TEXT_LIMITS.notes),
   });

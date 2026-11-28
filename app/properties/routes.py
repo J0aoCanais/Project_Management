@@ -1,14 +1,14 @@
 from flask import flash, jsonify, render_template, request, session, url_for, Blueprint
 from datetime import datetime
 from sqlalchemy import or_, func, cast, String
-from sqlalchemy.orm import selectinload
+from sqlalchemy.orm import selectinload, joinedload
 from marshmallow import ValidationError
 from flask_login import current_user
 from http import HTTPStatus
 import re
 
 from ..extensions import db
-from ..models import Property, Role
+from ..models import Property, Role, Zone
 from ..security import owner_required
 from ..schemas.properties_schema import (
     check_proposal_order,
@@ -19,6 +19,7 @@ from ..schemas.properties_schema import (
     PropertyUpdateSchema,
 )
 from ..schemas.oportunity_schema import OportunityLinkResponse
+from ..schemas.leads_schema import LeadLinkResponse
 
 # Schema Instances
 property_list_schema = PropertyListSchema()
@@ -26,6 +27,7 @@ property_create_schema = PropertyCreateSchema()
 property_response_schema = PropertyResponseSchema()
 search_schema = PropertySearchSchema()
 property_update_schema = PropertyUpdateSchema()
+lead_link_respoonse = LeadLinkResponse()
 oportunity_link_schema = OportunityLinkResponse()
 
 properties_bp = Blueprint("properties", __name__)
@@ -37,10 +39,11 @@ properties_bp = Blueprint("properties", __name__)
 @owner_required
 def get_zones():
     stmt = (
-        db.select(Property.zone)
+        db.select(Zone.name)
+        .join(Property, Property.zone_id == Zone.id)
         .where(Property.deleted_at.is_(None))
         .distinct()
-        .order_by(Property.zone.asc())
+        .order_by(Zone.name.asc())
     )
     
     zones = db.session.execute(stmt).scalars().all()
@@ -96,7 +99,7 @@ def get_properties():
 def get_property(property_id: int):
     """Returns the detailts of a specific property."""
     property = db.session.get(Property, property_id)
-    if property is None:
+    if property is None or property.deleted_at:
         return jsonify({"errors": {"id": ["Property not found"]}}), HTTPStatus.NOT_FOUND
    
     return jsonify(property_response_schema.dump(property)), HTTPStatus.OK
@@ -105,13 +108,22 @@ def get_property(property_id: int):
 @owner_required
 def get_property_links(property_id: int):
     """Returns the works, operation and oportunity related with a specific property."""
-    property = db.session.get(Property, property_id)
+    property =  db.session.scalar(db.select(Property)
+                        .options(
+                            joinedload(Property.lead),
+                            joinedload(Property.opportunity)
+                        )
+                        .where(
+                            Property.id == property_id,
+                            Property.deleted_at.is_(None))
+                    )
     if property is None:
         return jsonify({"errors": {"id": ["Property not found"]}}), HTTPStatus.NOT_FOUND
 
-    #TODO: add logic for leads operation and works when they are implemented
-    links = []
-    links.append(oportunity_link_schema.dump(property.opportunity))
+    links = {}
+    links["lead"] = lead_link_respoonse.dump(property.lead)
+    if property.opportunity:
+        links["opportunity"] = oportunity_link_schema.dump(property.opportunity) 
    
     return jsonify({
         "success": True,
@@ -143,14 +155,14 @@ def search_properties():
             pattern = f"%{search_term}%"
 
             conditions = or_(
-                Property.zone.ilike(pattern, escape="\\"),
+                Property.zone.has(Zone.name.ilike(pattern, escape="\\")),
                 Property.address.ilike(pattern, escape="\\"),
             )
             stmt = stmt.where(conditions)
         
-        zone_param = params.get("zone")
+        zone_param = params.get("zone_id")
         if zone_param is not None:
-            stmt = stmt.where(func.lower(Property.zone) == func.lower(zone_param))
+            stmt = stmt.where(Property.zone_id == zone_param)
         
         typology = params.get("typology")
         if typology is not None:
@@ -206,6 +218,13 @@ def create_property():
     try:
         data = property_create_schema.load(payload)
         
+        lead_taken = db.session.execute(
+            db.select(Property).where(Property.lead_id == data["lead_id"])
+        ).scalar_one_or_none()
+
+        if lead_taken:
+            return jsonify({"errors": {"body": ["Lead already has an assigned property"]}}), HTTPStatus.CONFLICT
+
         new_property = Property(**data)
         
         db.session.add(new_property)
@@ -216,8 +235,9 @@ def create_property():
     except ValidationError as err:
         return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
 
-    except Exception:
+    except Exception as e:
         db.session.rollback()
+        print(e)
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
@@ -278,5 +298,4 @@ def delete_property(property_id: int):
     except Exception:
         db.session.rollback()
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
-
 

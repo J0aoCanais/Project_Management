@@ -5,12 +5,14 @@ import {
   createContact,
   deleteContact,
   getContact,
+  listConsultants,
   importContacts,
   listContactRoles,
   listContactTypes,
   listContacts,
   searchContacts,
   updateContact,
+  withConsultantRole,
   type ContactImportRow,
   type ContactInput,
   type ContactSearch,
@@ -32,10 +34,15 @@ export function useContactSearch(search: ContactSearch) {
   return useQuery({ queryKey: [...listKey, "search", search], queryFn: () => searchContacts(search), placeholderData: keepPreviousData });
 }
 
-/** Nomes dos papéis para o filtro por tipo. */
+/** Nomes dos papéis para o filtro por tipo (com Consultor, para se poder ver só os consultores). */
 export function useContactRoleNames(): string[] {
   const query = useQuery({ queryKey: ["contact-roles"], queryFn: listContactRoles, staleTime: 5 * 60_000 });
-  return (query.data ?? []).map((role) => role.name);
+  return withConsultantRole((query.data ?? []).map((role) => role.name));
+}
+
+/** Consultores (contactos com o tipo Consultor), para associar a uma lead. */
+export function useConsultants(enabled = true) {
+  return useQuery({ queryKey: [...listKey, "consultants"], queryFn: listConsultants, enabled, staleTime: 60_000 });
 }
 
 export function useContact(id: number) {

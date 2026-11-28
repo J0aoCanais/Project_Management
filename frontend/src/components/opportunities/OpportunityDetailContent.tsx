@@ -104,7 +104,7 @@ function OpportunityDetailContent({ detail, backTo }: Props) {
       <div role="tabpanel">
         {tab === "resumo" && (
           <div className="grid items-start gap-3.5 min-[721px]:grid-cols-[1.3fr_.7fr]">
-            <OpportunitySummary detail={detail} />
+            <OpportunitySummary detail={detail} editable={!closed} />
             <OpportunityActivity activity={detail.activity} />
           </div>
         )}

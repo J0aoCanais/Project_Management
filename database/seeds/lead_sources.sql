@@ -4,5 +4,5 @@ INSERT INTO lead_source (
     is_active
 )
 VALUES
-    (800, 'Facebook', TRUE),
-    (801, 'Website', TRUE);
+    (800, 'Instagram', TRUE),
+    (801, 'Forms', TRUE);

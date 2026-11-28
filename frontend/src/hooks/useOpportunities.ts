@@ -11,6 +11,7 @@ import {
   rejectOpportunity,
   saveOpportunityFinance,
   updateOpportunity,
+  updateOpportunityNotes,
   updatePhaseNote,
   type ExtraCost,
   type FinanceValues,
@@ -64,6 +65,15 @@ export function useUpdateOpportunity(id: number) {
   const client = useQueryClient();
   return useMutation({
     mutationFn: (changes: OpportunityChanges) => updateOpportunity(id, changes),
+    onSuccess: (detail) => storeDetail(client, detail),
+  });
+}
+
+/** Edita as observações da oportunidade (Resumo). */
+export function useUpdateOpportunityNotes(id: number) {
+  const client = useQueryClient();
+  return useMutation({
+    mutationFn: (notes: string) => updateOpportunityNotes(id, notes),
     onSuccess: (detail) => storeDetail(client, detail),
   });
 }

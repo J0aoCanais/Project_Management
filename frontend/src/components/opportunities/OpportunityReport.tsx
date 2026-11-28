@@ -8,7 +8,7 @@ import { useEscape } from "../ui/useEscape";
 import type { ReportAudience } from "./ReportAudienceDialog";
 import ReportCostTable from "./ReportCostTable";
 import ReportKpis from "./ReportKpis";
-import ReportNetReturn from "./ReportNetReturn";
+import ReportInvestorSteps from "./ReportInvestorSteps";
 
 interface Props {
   detail: OpportunityDetail;
@@ -41,6 +41,7 @@ function OpportunityReport({ detail, values, extras, audience, onClose }: Props)
       role="dialog"
       aria-modal="true"
       aria-label="Relatório de oportunidade"
+      data-print-root
       className="fixed inset-0 z-[200] overflow-auto bg-line px-4 pb-10 print:static print:overflow-visible print:bg-white print:p-0"
     >
       <div className="sticky top-0 z-10 -mx-4 mb-5 flex flex-wrap items-center gap-2 border-b border-line bg-white px-5 py-2.5 print:hidden">
@@ -101,7 +102,7 @@ function OpportunityReport({ detail, values, extras, audience, onClose }: Props)
               ))}
             </dl>
             <h2 className={heading}>Estratégia</h2>
-            <p className="text-xs leading-relaxed text-muted">{property.notes ?? "—"}</p>
+            <p className="text-xs leading-relaxed text-muted">{detail.notes ?? "—"}</p>
           </section>
           <section>
             <h2 className={heading}>Estrutura de custos</h2>
@@ -109,7 +110,7 @@ function OpportunityReport({ detail, values, extras, audience, onClose }: Props)
           </section>
         </div>
 
-        <ReportNetReturn values={values} result={result} audience={audience} className={heading} />
+        <ReportInvestorSteps values={values} result={result} audience={audience} className={heading} />
 
         <footer className="mt-[18px] border-t border-line pt-3 text-[10px] text-muted">
           Valores estimados com base nos pressupostos da análise financeira à data do relatório. Documento confidencial, destinado apenas a investidores convidados.

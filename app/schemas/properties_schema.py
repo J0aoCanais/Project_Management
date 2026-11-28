@@ -25,6 +25,7 @@ from marshmallow import (
 )
 
 from .phases_schema import PhaseResponseSchema
+from .zones_schema import ZoneResponseSchema
 
 class BaseSchema(Schema):
     """Shared behaviour: trim strings, turn blank strings into None."""
@@ -84,7 +85,7 @@ def check_proposal_order(first_proposal, max_proposal):
 class PropertyCreateSchema(BaseSchema):
     """Schema to create a property, with valid required fields"""
 
-    zone = fields.String(required=True, validate=SHORT_TEXT)
+    zone_id = fields.Integer(required=True)
     property_type = fields.String(required=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     sale_motive = fields.String(required=True, validate=validate.Length(max=MAX_SHORT_TEXT))
     contact_owns = fields.Boolean(required=True)
@@ -93,7 +94,6 @@ class PropertyCreateSchema(BaseSchema):
     # Listing the property came from. http/https only: a "javascript:" URL
     # rendered as a link in React would be an XSS vector.
     source_url = fields.URL(
-        allow_none=True,
         schemes={"http", "https"},
         validate=validate.Length(max=MAX_URL),
     )
@@ -153,7 +153,7 @@ class PropertySearchSchema(BaseSchema):
     q = fields.String(load_default=None, validate=validate.Length(min=2, max=MAX_SHORT_TEXT))
 
     # exact filters
-    zone = fields.String(load_default=None, validate=SHORT_TEXT)
+    zone_id = fields.Integer(load_default=None)
     typology = fields.String(load_default=None, validate=SHORT_TEXT)
     property_type = fields.String(load_default=None, validate=SHORT_TEXT)
 
@@ -170,7 +170,7 @@ class PropertyResponseSchema(Schema):
 
     id = fields.Integer()
     code = fields.Method("get_code")
-    zone = fields.String()
+    zone = fields.Nested(ZoneResponseSchema)
     property_type = fields.String()
     sale_motive = fields.String()
     contact_owns = fields.Boolean()

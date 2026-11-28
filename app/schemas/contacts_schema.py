@@ -34,7 +34,7 @@ class RoleResponseSchema(BaseSchema):
 class ContactCreateSchema(BaseSchema):
     """Contact creation schema. Name and roles fields are required"""
     name = fields.String(required=True, validate=validate.Length(min=1, max=512))
-    role_ids = fields.List(fields.Integer(), required=True, allow_none=True)
+    role_ids = fields.List(fields.Integer(), required=True, allow_none=False)
     email = fields.Email(allow_none=True, validate=validate.Length(max=512))
     phone_number = fields.String(allow_none=True, validate=validate.Length(max=512))
     address = fields.String(allow_none=True, validate=validate.Length(max=512))
@@ -45,6 +45,19 @@ class ContactCreateSchema(BaseSchema):
     consent_given = fields.Boolean(allow_none=True, load_default=False)
     consent_date = fields.DateTime(allow_none=True)
     consent_channel = fields.String(allow_none=True)
+
+    @pre_load
+    def normalize_role_ids(self, data, **kwargs):
+        if not isinstance(data, dict):
+            return data
+        
+        role_ids = data.get("role_ids")
+
+        if isinstance(role_ids, int):
+            # data = data.copy()
+            data["role_ids"] = [role_ids]
+
+        return data
 
 
 class ContactResponseSchema(BaseSchema):
@@ -83,4 +96,4 @@ class ContactSearchSchema(ContactListSchema):
     """Search schema: List Schema with a query field"""
     q = fields.String(required=False, allow_none=True, validate=validate.Length(min=2, max=512))
     role_id = fields.Integer(allow_none=True)
-    consent = fields.Boolean(allow_none=True)
+    zone_id = fields.Integer(allow_none=True)

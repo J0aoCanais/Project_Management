@@ -3,6 +3,8 @@ import type { FinanceResult } from "../../lib/finance";
 import { formatMoney, formatPercent } from "../../lib/format";
 import { IRC_RATE } from "../../lib/taxRules";
 import Pill from "../ui/Pill";
+import FinanceSplitResults from "./FinanceSplitResults";
+import ResultsLine from "./ResultsLine";
 
 interface Props {
   values: FinanceValues;
@@ -18,6 +20,8 @@ function FinanceResultsCard({ values, result }: Props) {
     { label: "Obra", value: values.workCost },
     { label: "Comissão imobiliária (c/ IVA)", value: result.commission },
     { label: "Outros custos", value: result.other },
+    // O IRC vem logo a seguir a "Outros custos", como na folha do cliente; não entra no investimento total.
+    { label: `IRC (${IRC_RATE}% do lucro)`, value: result.irc },
   ];
   return (
     <aside className="min-w-0 rounded-panel bg-results p-[22px] wrap-anywhere text-white tabular-nums">
@@ -25,15 +29,12 @@ function FinanceResultsCard({ values, result }: Props) {
       <small className="text-[11px] text-results-muted">Atualizada em tempo real</small>
 
       <div className="mt-5">
-        <span className="mb-1 block text-[11px] text-results-muted">Investimento total</span>
+        <span className="mb-1 block text-[11px] text-results-muted">Investimento total (sem IRC)</span>
         <strong className="text-lg">{formatMoney(result.cost)}</strong>
       </div>
       <ul className="m-0 mt-3 grid list-none gap-1.5 border-t border-results-line p-0 pt-2.5">
         {breakdown.map((item) => (
-          <li key={item.label} className="flex justify-between gap-2.5 text-[11px] text-results-muted">
-            <span>{item.label}</span>
-            <b className="shrink-0 font-semibold text-white">{formatMoney(item.value)}</b>
-          </li>
+          <ResultsLine key={item.label} label={item.label} value={formatMoney(item.value)} />
         ))}
       </ul>
 
@@ -44,29 +45,12 @@ function FinanceResultsCard({ values, result }: Props) {
           {values.expectedSalePrice > 0 ? formatPercent(result.marginOnSale) : "—"} sobre a venda
         </small>
         <ul className="m-0 mt-3 grid list-none gap-1.5 border-t border-results-line p-0 pt-2.5">
-          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
-            <span>IRC ({IRC_RATE}%)</span>
-            <b className="shrink-0 font-semibold text-white">{formatMoney(-result.irc)}</b>
-          </li>
-          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
-            <span>Margem após IRC</span>
-            <b className="shrink-0 font-semibold text-white">{formatMoney(result.marginAfterTax)}</b>
-          </li>
+          <ResultsLine label={`IRC (${IRC_RATE}%)`} value={formatMoney(-result.irc || 0)} />
+          <ResultsLine label="Margem após IRC" value={formatMoney(result.marginAfterTax)} strong />
         </ul>
       </div>
 
-      {values.investorSharePercent > 0 && (
-        <ul className="m-0 mt-3 grid list-none gap-1.5 p-0">
-          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
-            <span>Para o investidor ({formatPercent(values.investorSharePercent, Number.isInteger(values.investorSharePercent) ? 0 : 2)})</span>
-            <b className="shrink-0 font-semibold text-white">{formatMoney(result.investorProfit)}</b>
-          </li>
-          <li className="flex justify-between gap-2.5 text-[11px] text-results-muted">
-            <span>Fica para a empresa</span>
-            <b className="shrink-0 font-semibold text-white">{formatMoney(result.companyProfit)}</b>
-          </li>
-        </ul>
-      )}
+      <FinanceSplitResults values={values} result={result} />
 
       <div className="mt-5 grid grid-cols-2 gap-[15px]">
         <div>

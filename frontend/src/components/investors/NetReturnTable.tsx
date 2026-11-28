@@ -15,7 +15,7 @@ interface Props {
 function NetReturnTable({ grossProfit, result, structure, hasTerm }: Props) {
   const rows = [
     { label: "Lucro estimado com impostos", value: formatMoney(grossProfit) },
-    { label: `Imposto (${structure} · ${formatPercent(result.taxRate, 0)})`, value: formatMoney(-result.tax) },
+    { label: `Imposto (${structure} · ${formatPercent(result.taxRate, 0)})`, value: formatMoney(-result.tax || 0) },
     { label: "Lucro líquido", value: formatMoney(result.netProfit), strong: true },
     { label: "Cash-on-cash", value: formatPercent(result.cashOnCash) },
     { label: "Anualizado", value: hasTerm ? formatPercent(result.annualized) : "—" },

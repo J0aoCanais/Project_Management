@@ -1,0 +1,133 @@
+<!doctype html>
+<html lang="pt-PT">
+<head>
+<meta charset="utf-8">
+<title>Evidência de utilização de LLMs</title>
+<style>
+body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;color:#000;background:#fff;max-width:800px;margin:24px auto;padding:0 16px}
+h1,h2{font-family:Arial,sans-serif;font-size:15pt;font-weight:bold;margin:18pt 0 6pt}
+p,li,td,th{font-family:Arial,sans-serif;font-size:11pt}
+table{border-collapse:collapse;width:100%;margin:6pt 0 10pt}
+th,td{border:1px solid #999;padding:3pt 6pt;text-align:left;vertical-align:top}
+th{background:#eeeeee;font-weight:bold}
+code{font-family:'Courier New',monospace;font-size:10pt}
+</style>
+</head>
+<body>
+
+<h1>Evidência de utilização responsável de LLMs no projeto ImoVentures</h1>
+
+<p>Documento preparado para os auditores de certificação de software, a pedido do cliente (Evento 2). Data: 24/11/2026.</p>
+
+<table>
+<tr><th>Nome</th><th>Nº</th><th>E-mail</th><th>Função</th></tr>
+<tr><td>Carlos Baptista</td><td>2023210980</td><td>uc2023210980@student.uc.pt</td><td>Backend developer (manager)</td></tr>
+<tr><td>Inês Sequeira</td><td>2018283321</td><td>uc2018283321@student.uc.pt</td><td>Project Manager, Documentation</td></tr>
+<tr><td>Miguel Pinheiro Rodrigues</td><td>2023217656</td><td>uc2023217656@student.uc.pt</td><td>Frontend developer</td></tr>
+<tr><td>Rui Pedro Madeira Marques</td><td>2023209756</td><td>uc2023209756@student.uc.pt</td><td>Frontend developer</td></tr>
+<tr><td>Tiago Machado Teixeira</td><td>2023224647</td><td>uc2023224647@student.uc.pt</td><td>Frontend developer</td></tr>
+<tr><td>Vasco Botelho de Almeida</td><td>2023231465</td><td>uc2023231465@student.uc.pt</td><td>Backend developer</td></tr>
+<tr><td>Ivo Leonardo Almeida Freire</td><td>2022257546</td><td>uc2022257546@student.uc.pt</td><td>Backend developer</td></tr>
+<tr><td>Rodrigo José Godinho Barata</td><td>2022212664</td><td>uc2022212664@student.uc.pt</td><td>Backend developer</td></tr>
+<tr><td>João André Pinheiro Canais</td><td>2023213000</td><td>uc2023213000@student.uc.pt</td><td>Frontend developer (manager)</td></tr>
+<tr><td>Francisco António Simões Costa</td><td>2026193403</td><td>uc2026193403@student.uc.pt</td><td>Backend developer</td></tr>
+<tr><td>João Loreto Dias</td><td>2023214314</td><td>uc2023214314@student.uc.pt</td><td>Backend developer</td></tr>
+</table>
+
+<h2>Objetivo e âmbito</h2>
+
+<p>O cliente pediu provas de que a equipa usa LLMs de forma responsável e inovadora na versão atual do projeto. Este documento apresenta três exemplos reais, todos verificáveis no repositório Git do projeto. Cada exemplo indica o commit onde está, o que o LLM fez, o que a equipa verificou e decidiu, e como um auditor pode confirmar.</p>
+
+<p>Os commits feitos com apoio de um LLM levam no histórico a marca de coautoria da ferramenta. Há duas ferramentas identificadas desta forma:</p>
+
+<table>
+<tr><th>Ferramenta</th><th>Marca no commit</th><th>Commits</th><th>Datas</th></tr>
+<tr><td>Claude Opus 5.5 (Anthropic)</td><td><code>Co-Authored-By: Claude Opus 5.5</code></td><td>6</td><td>20/11/2026</td></tr>
+<tr><td>GitHub Copilot</td><td><code>Co-authored-by: Copilot</code></td><td>4</td><td>05/11/2026 e 11/11/2026</td></tr>
+</table>
+
+<p>Além disso, a equipa de frontend usa um prompt-padrão, o ficheiro <code>frontend/prompt.md</code>, que é colado no início de cada tarefa feita com um LLM.</p>
+
+<h2>Exemplo 1: cálculo do retorno líquido do investidor</h2>
+
+<p>Este é o exemplo mais detalhado. Mostra um LLM a escrever uma regra de negócio com impacto financeiro e a equipa a validá-la contra os números do cliente antes de a aceitar.</p>
+
+<p>O cliente usa uma folha de cálculo para saber quanto recebe um investidor depois de impostos. A taxa depende da estrutura do investidor: uma empresa paga IRC de 19% (ou 0% com CAEP superior a 1 ano) e um particular paga IRS de 28%. Na tarefa 09 era preciso levar esta regra para a aplicação, para ser usada nas páginas de investidores, oportunidades, finanças e operações.</p>
+
+<p>O trabalho está no commit <code>665ff89</code> (20/11/2026), feito com o Claude Opus 5.5. A mensagem do commit diz: "Taxas da folha do cliente (IRC 0%/19%, IRS 28%) e testes com os 3 casos ao cêntimo (npm test)." O LLM escreveu três coisas:</p>
+
+<table>
+<tr><th>Ficheiro</th><th>Linhas</th><th>Conteúdo</th></tr>
+<tr><td><code>frontend/src/lib/taxRules.ts</code></td><td>59</td><td>Taxa por estrutura do investidor e cálculo do lucro líquido, do cash-on-cash e do retorno anualizado</td></tr>
+<tr><td><code>frontend/tests/taxRules.test.ts</code></td><td>42</td><td>Testes com os três casos da folha do cliente e três casos-limite</td></tr>
+<tr><td><code>frontend/package.json</code></td><td>3</td><td>Comando <code>npm test</code>, que corre os testes no Node sem dependências extra</td></tr>
+</table>
+
+<p>A validação foi feita contra a folha do cliente, ao cêntimo. Partindo de um lucro estimado de 47 037,39 €, um capital de 231 700 € e um prazo de 6 meses, os testes exigem exatamente estes valores:</p>
+
+<table>
+<tr><th>Investidor</th><th>CAEP</th><th>Taxa</th><th>Lucro líquido</th><th>Cash-on-cash</th><th>Anualizado</th></tr>
+<tr><td>Empresa</td><td>Mais de 1 ano</td><td>0%</td><td>47 037,39 €</td><td>20,3%</td><td>40,6%</td></tr>
+<tr><td>Empresa</td><td>Menos de 1 ano</td><td>19%</td><td>38 100,28 €</td><td>16,4%</td><td>32,9%</td></tr>
+<tr><td>Particular</td><td>Menos de 1 ano</td><td>28%</td><td>33 866,92 €</td><td>14,6%</td><td>29,2%</td></tr>
+</table>
+
+<p>Há três pormenores que mostram uso responsável. O primeiro é o arredondamento. A folha corta o lucro líquido ao cêntimo (47 037,39 × 0,81 = 38 100,2859, que fica 38 100,28). Um cálculo normal com números decimais arredondaria para 38 100,29. Por isso, as contas são feitas em cêntimos e o código explica porquê, para o comportamento não ser "corrigido" mais tarde por engano.</p>
+
+<p>O segundo é a forma como a lacuna foi tratada. A folha do cliente não diz que taxa paga um particular com CAEP superior a 1 ano. Em vez de inventar uma taxa, o código usa o IRS por defeito e deixa um comentário <code>TODO: confirmar com o cliente</code>, com um teste próprio para esse caso. A pergunta fica visível para a equipa e para quem rever o código.</p>
+
+<p>O terceiro são os limites, que ficam escritos no próprio ficheiro: só se aplicam as três taxas da folha, sem derramas, tributação autónoma nem englobamento. Quem usar a função sabe o que ela não cobre. Os testes cobrem também um prejuízo (não paga imposto) e um capital ou prazo a zero (os retornos ficam a 0, sem divisão por zero).</p>
+
+<p>A parte inovadora é que estes foram os primeiros testes automáticos do frontend. Usam o executor de testes que já vem com o Node (<code>node --test</code>), por isso não foi preciso acrescentar nenhuma biblioteca ao projeto. Na verificação de 24/11/2026, os 6 testes passaram.</p>
+
+<h2>Exemplo 2: a equipa reverteu trabalho do LLM fora do âmbito</h2>
+
+<p>Este exemplo mostra o controlo humano sobre o que o LLM produz. Nem tudo o que o LLM gerou foi aceite, mesmo estando a funcionar.</p>
+
+<p>A tarefa 09 era uma tarefa de frontend. Durante o trabalho com o Claude, alguns commits alteraram também ficheiros do backend: as rotas e o schema dos contactos, o modelo de dados, os dados de exemplo da base, os testes de contactos, a documentação da API e uma migração nova da base de dados (<code>investor_structure_and_opportunity_contact</code>).</p>
+
+<p>No mesmo dia, o autor reverteu essas alterações no commit <code>a25a83f</code>, com esta justificação: "O backend fica a cargo da equipa de backend. Repõe app/, migrations/, tests/, database/ e docs/ no estado do merge da ZON-01; o frontend da tarefa 09 fica igual." Foram repostos 8 ficheiros, com 173 linhas removidas. O LLM ajudou a fazer o revert, mas a decisão foi do autor.</p>
+
+<p>A regra que se aplicou é que cada parte do sistema tem dono. Uma alteração ao esquema da base de dados gerada por um LLM, dentro de uma tarefa de outra área, não entrou no projeto sem passar pela equipa responsável por essa área.</p>
+
+<h2>Exemplo 3: prompt-padrão da equipa de frontend</h2>
+
+<p>Este exemplo mostra como a equipa controla o uso de LLMs em várias pessoas ao mesmo tempo, e não só numa tarefa.</p>
+
+<p>O ficheiro <code>frontend/prompt.md</code> foi criado a 05/11/2026 (commit <code>e26e0ed</code>) e é colado no início de cada tarefa de frontend feita com um LLM. Define regras obrigatórias. Todos os pedidos ao servidor passam por uma única função (<code>apiFetch</code>), não se usa o tipo <code>any</code> e os componentes partilhados são reutilizados em vez de duplicados. Os dados de exemplo ficam num só ficheiro e os limites de validação ficam em <code>src/lib/</code>. Toda a interface fica em português de Portugal. No fim, a tarefa tem de passar no <code>typecheck</code> e no <code>build</code>.</p>
+
+<p>O prompt foi mudando com o que a equipa observou. O primeiro commit de leads feito com o Copilot (<code>08e1da9</code>, 05/11/2026) criou os dados de exemplo em ficheiros próprios (<code>api/fixtures/leads.ts</code> e <code>api/fixtures/leadSources.ts</code>). No dia seguinte, o commit <code>94b4b2f</code> juntou os dados de exemplo num só ficheiro e atualizou o <code>prompt.md</code>. A 09/11/2026, o commit <code>6b933c9</code> passou esse ficheiro para <code>src/temp.tsx</code> e voltou a atualizar o prompt, que hoje diz que "tudo o que é hard coded vive aí". Assim, os pedidos seguintes ao LLM já seguiram a regra nova.</p>
+
+<p>A verificação de 24/11/2026 confirmou que as regras são cumpridas no código atual:</p>
+
+<table>
+<tr><th>Regra do prompt-padrão</th><th>Resultado no código</th></tr>
+<tr><td>Nenhum componente chama <code>fetch</code> diretamente</td><td>Cumprida: só <code>src/api/client.ts</code> o faz</td></tr>
+<tr><td>Sem tipo <code>any</code></td><td>Cumprida: 0 ocorrências</td></tr>
+<tr><td>Sem ficheiros CSS por componente</td><td>Cumprida: só existe <code>src/index.css</code></td></tr>
+<tr><td>Dados de exemplo num só ficheiro</td><td>Cumprida: os simuladores do servidor leem todos de <code>src/temp.tsx</code></td></tr>
+<tr><td>Dinheiro e percentagens formatados por <code>src/lib/format.ts</code></td><td>Quase cumprida: duas percentagens formatadas à mão</td></tr>
+</table>
+
+<h2>Limitações</h2>
+
+<p>Os prompts exatos de cada tarefa não estão guardados no repositório. O que existe é o prompt-padrão, as mensagens dos commits e os comentários no código. Também não é possível garantir que todos os commits feitos com LLM têm a marca de coautoria, porque a marca depende da ferramenta e de quem faz o commit.</p>
+
+<p>A verificação de 24/11/2026 encontrou ainda problemas que o uso de LLMs não apanhou. O ficheiro de configuração do TypeScript tem o nome com maiúscula (<code>Tsconfig.json</code>), o que faz o build falhar em Linux, e 53 testes de imóveis estão desatualizados. Por isso a equipa decidiu passar a guardar o prompt, o modelo e a data de cada tarefa, e propôs ao cliente agentes que correm os testes e o build em cada pull request (Evento 1).</p>
+
+<h2>Como verificar</h2>
+
+<p>Um auditor com acesso ao repositório pode confirmar cada exemplo com estes comandos:</p>
+
+<table>
+<tr><th>O que confirmar</th><th>Comando</th></tr>
+<tr><td>Commits feitos com o Claude</td><td><code>git log --all -i --grep="Co-Authored-By: Claude"</code></td></tr>
+<tr><td>Commits feitos com o Copilot</td><td><code>git log --all -i --grep="Co-authored-by: Copilot"</code></td></tr>
+<tr><td>Exemplo 1 (código e testes)</td><td><code>git show 665ff89</code></td></tr>
+<tr><td>Exemplo 1 (testes a passar)</td><td><code>cd frontend &amp;&amp; npm test</code></td></tr>
+<tr><td>Exemplo 2 (revert)</td><td><code>git show a25a83f</code></td></tr>
+<tr><td>Exemplo 3 (prompt-padrão)</td><td><code>git log -- frontend/prompt.md</code></td></tr>
+</table>
+
+</body>
+</html>

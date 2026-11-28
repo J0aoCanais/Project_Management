@@ -122,3 +122,13 @@ select {
   background-position: right 11px center;
   background-size: 12px;
 }
+
+/* Relatório para investidores: ao imprimir, só o relatório aparece (sem sidebar, topbar nem botões). */
+@media print {
+  @page {
+    margin: 14mm;
+  }
+  body:has(> [data-print-root]) > #root {
+    display: none;
+  }
+}

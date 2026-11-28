@@ -1,5 +1,7 @@
-import type { FinanceValues } from "../../api/opportunitiesApi";
+import type { FinanceNumberKey, FinanceValues } from "../../api/opportunitiesApi";
 import { FINANCE_RULES } from "../../lib/opportunityRules";
+import { fromPassiveProfile, toPassiveProfile } from "../../lib/taxRules";
+import InvestorStructureFields from "../investors/InvestorStructureFields";
 import FormField from "../ui/FormField";
 import NumberInput from "../ui/NumberInput";
 import PanelHeader from "../ui/PanelHeader";
@@ -11,7 +13,7 @@ interface Props {
   onChange: (values: FinanceValues) => void;
 }
 
-const fields: { label: string; key: keyof FinanceValues; suffix: string }[] = [
+const fields: { label: string; key: FinanceNumberKey; suffix: string }[] = [
   { label: "Preço de compra", key: "purchasePrice", suffix: "€" },
   { label: "IMT", key: "imt", suffix: "€" },
   { label: "Imposto do selo", key: "stampDuty", suffix: "€" },
@@ -43,6 +45,14 @@ function FinanceAssumptionsForm({ values, errors, onChange }: Props) {
             </FormField>
           );
         })}
+      </div>
+      <PanelHeader title="Estrutura do investidor" />
+      <div className="grid gap-3.5 px-3.5 py-4 min-[721px]:grid-cols-2">
+        <InvestorStructureFields
+          value={fromPassiveProfile(values.investorProfile)}
+          onChange={(structure) => onChange({ ...values, investorProfile: toPassiveProfile(structure) })}
+          hint="Só para simular: o imposto da estrutura aplica-se à parte do investidor, depois do IRC da operação. Ao gerar o relatório para um investidor, usa-se a estrutura do perfil dele."
+        />
       </div>
     </>
   );

@@ -6,6 +6,11 @@ import { findZoneId, listZones, type Zone } from "./zonesApi";
 
 /** Papel que transforma um contacto em investidor. O backend esconde estes contactos da lista. */
 export const INVESTOR_ROLE = "Investidor";
+/**
+ * Papel dos consultores: um consultor é um contacto com este tipo (a tarefa 10 associa um consultor a cada lead).
+ * Aparece sempre na lista de tipos; se ainda não existir no backend, é criado ao gravar o primeiro consultor.
+ */
+export const CONSULTANT_ROLE = "Consultor";
 /** Tipo mostrado de um contacto sem papel (contactos antigos). Não se pode escolher: o tipo é obrigatório. */
 export const OTHER_TYPE = "Outro";
 
@@ -151,10 +156,16 @@ async function listFromApi(): Promise<Contact[]> {
 
 // ---- Pedidos ----
 
-/** Tipos que se podem escolher: os papéis do backend, sem Investidor. */
+/** Junta o tipo Consultor aos nomes dos papéis, se o backend ainda não o tiver. */
+export function withConsultantRole(names: string[]): string[] {
+  const has = names.some((name) => name.toLowerCase() === CONSULTANT_ROLE.toLowerCase());
+  return has ? names : [...names, CONSULTANT_ROLE].sort((a, b) => a.localeCompare(b, "pt"));
+}
+
+/** Tipos que se podem escolher: os papéis do backend, sem Investidor, e sempre com Consultor. */
 export async function listContactTypes(): Promise<string[]> {
   const roles = await apiFetch<ApiRole[]>("/contacts/roles");
-  return roles.map((role) => role.name).filter((name) => !isInvestorRole(name));
+  return withConsultantRole(roles.map((role) => role.name).filter((name) => !isInvestorRole(name)));
 }
 
 /** Papéis que se podem usar no filtro por tipo (sem Investidor; "Outro" não existe no backend). */
@@ -181,6 +192,19 @@ export async function searchContacts({ q = "", type = "", page, perPage }: Conta
   }
   const result = await apiFetch<Paginated<ApiContact>>(`/contacts/search?${params}`);
   return { contacts: result.data.map(fromApi), total: result.pagination.total, pages: result.pagination.pages };
+}
+
+/**
+ * Consultores para o `Select` das leads (tarefa 10): GET /api/contacts/search?role_id=<id do papel Consultor>.
+ * O backend filtra pelo id do papel (não pelo nome), por isso o nome é convertido aqui. Lê as páginas todas.
+ */
+export async function listConsultants(): Promise<Contact[]> {
+  const consultants: Contact[] = [];
+  for (let page = 1; ; page++) {
+    const result = await searchContacts({ type: CONSULTANT_ROLE, page, perPage: 100 });
+    consultants.push(...result.contacts);
+    if (page >= result.pages) return consultants;
+  }
 }
 
 export async function getContact(id: number): Promise<Contact> {

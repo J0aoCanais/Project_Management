@@ -1,0 +1,1146 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml" lang="" xml:lang="">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>ImoVentures Handbook</title>
+  <style>
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      background-color: #1a1a1a;
+      border: none;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+  <style>
+  body{font-family:Arial,sans-serif;font-size:11pt;line-height:1.5;max-width:800px;margin:24px auto;padding:0 16px;color:#000;background:#fff}
+  h1,h2{font-family:Arial,sans-serif;font-size:15pt;font-weight:bold;color:#000;margin:18pt 0 6pt}
+  p,li,td,th{font-family:Arial,sans-serif;font-size:11pt;color:#000}
+  a{color:#000;text-decoration:none}
+  table{border-collapse:collapse;width:100%;margin:6pt 0 10pt}
+  th,td{border:1px solid #999;padding:3pt 6pt;vertical-align:top;text-align:left}
+  th{background:#eeeeee;font-weight:bold}
+  code{font-family:'Courier New',monospace;font-size:10pt;color:#000}
+  </style>
+</head>
+<body>
+<h1 id="imoventures-ai-project-management-handbook">ImoVentures: AI
+Project Management Handbook</h1>
+<p>Regras para a equipa usar IA no projeto ImoVentures, escritas a
+partir do estado real do repositório (ramo <code>miguel-frontend</code>,
+commit <code>9cd43b8</code>).</p>
+<h2 id="estado-do-projeto">Estado do projeto</h2>
+<p>As regras deste handbook partem do estado atual do código, parte a
+parte.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Parte</th>
+<th>O que existe</th>
+<th>Onde se confirma</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Autenticação</td>
+<td>Login por formulário e por JSON, logout, <code>/api/me</code>;
+utilizadores criados só pela linha de comandos</td>
+<td><code>app/auth/routes.py</code>, <code>app/cli.py</code></td>
+</tr>
+<tr class="even">
+<td>API</td>
+<td>Contactos e papéis, imóveis e zonas, todos só para o
+<code>owner</code></td>
+<td><code>app/contacts</code>, <code>app/properties</code>,
+<code>app/zones</code></td>
+</tr>
+<tr class="odd">
+<td>Base de dados</td>
+<td>Modelo v2 completo (leads, oportunidades, operações, obras,
+investimentos, finanças, documentos, tarefas, auditoria), mas sem API
+para estas entidades</td>
+<td><code>app/models.py</code>, <code>migrations/</code></td>
+</tr>
+<tr class="even">
+<td>Frontend</td>
+<td>22 páginas; só o login, os contactos e as zonas usam a API</td>
+<td><code>src/App.tsx</code>, <code>src/api/</code></td>
+</tr>
+<tr class="odd">
+<td>Dados de exemplo</td>
+<td>Usados por leads, oportunidades, operações, obras, imóveis,
+investidores, finanças, documentos e definições</td>
+<td><code>src/temp.tsx</code>, <code>src/api/fixtures/</code></td>
+</tr>
+<tr class="even">
+<td>Ramos por integrar</td>
+<td>Backend de leads (<code>LEA-01</code>) e de oportunidades
+(<code>OPO-01</code>)</td>
+<td><code>git branch -a</code></td>
+</tr>
+</tbody>
+</table>
+<p>O frontend parece mais avançado do que o produto está, porque as
+páginas com dados de exemplo funcionam como se tivessem backend. Um caso
+concreto: os imóveis já têm API, mas a página de imóveis ainda usa dados
+de exemplo. Além disso, o investidor ainda não tem acesso a nada: recebe
+403 em todas as rotas de imóveis, e o portal do investidor previsto no
+<code>frontend/prompt.md</code> não existe.</p>
+<p>Os dados de exemplo estão organizados para facilitar a troca pelo
+backend real. Cada ficheiro em <code>src/api/</code> devolve os dados
+com a mesma forma da resposta prevista e tem o comentário
+<code>TODO: trocar pelo endpoint quando existir</code>. As stores de
+<code>src/api/fixtures/</code> simulam o servidor: respondem com 150 ms
+de atraso e validam com as mesmas regras de <code>src/lib/</code> que os
+formulários usam. Assim, ligar uma página ao backend só obriga a mudar o
+ficheiro da API, e os componentes ficam iguais. Falta ainda decidir qual
+é o ramo de referência: este handbook foi escrito sobre o
+<code>miguel-frontend</code>, mas a <code>main</code> tem 8 commits que
+este ramo não tem.</p>
+<h2 id="regras-de-utilização-da-ia">Regras de utilização da IA</h2>
+<p>A IA é usada para ler código, propor alterações, escrever testes e
+documentação. Estas regras definem até onde vai o papel dela e onde
+começa a decisão da equipa.</p>
+<p>Desde 24/11/2026 (Evento 3), o uso de ferramentas de IA está suspenso
+no projeto. As regras desta secção ficam válidas para quando a equipa
+voltar a autorizar essas ferramentas.</p>
+<table>
+<thead>
+<tr class="header">
+<th>A IA pode</th>
+<th>Só uma pessoa decide</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Ler o repositório e explicar um módulo</td>
+<td>O que entra no âmbito e com que prioridade</td>
+</tr>
+<tr class="even">
+<td>Propor código, testes e migrações</td>
+<td>Fazer merge e aplicar migrações</td>
+</tr>
+<tr class="odd">
+<td>Rever um diff e apontar problemas</td>
+<td>Dar uma tarefa como concluída</td>
+</tr>
+<tr class="even">
+<td>Criar dados de exemplo fictícios</td>
+<td>Usar dados reais</td>
+</tr>
+</tbody>
+</table>
+<p>A IA recebe os ficheiros relevantes, e cada afirmação que faz sobre o
+projeto indica o ficheiro de onde vem. Nas tarefas de frontend, o prompt
+inclui sempre o <code>frontend/prompt.md</code>, que já é o
+prompt-padrão da equipa e define a estrutura de pastas, os componentes a
+reutilizar, as regras de validação e a checklist final. Quem pede código
+à IA tem de o saber explicar na revisão. Cada commit feito com apoio de
+um LLM leva a marca de coautoria da ferramenta
+(<code>Co-Authored-By</code>), e o prompt, o modelo e a data de cada
+tarefa ficam guardados junto da tarefa.</p>
+<p>Nunca entram num prompt:</p>
+<ul>
+<li>o <code>.env</code>, palavras-passe, tokens ou cookies;</li>
+<li>dados reais de clientes ou investidores (os exemplos usam emails
+<code>@exemplo.pt</code>);</li>
+<li>URLs da base de dados com credenciais.</li>
+</ul>
+<p>O README do projeto está desatualizado em vários pontos, por isso uma
+IA que o leia sem ver o código dá respostas erradas, como o endereço
+antigo do health. Além disso, o produto vai guardar dados pessoais e
+fiscais: os contactos têm NIF, morada e consentimento RGPD, e os
+investidores têm capital disponível e perfil de risco. Por isso, nenhum
+dado real entra num prompt, nem para testar uma validação.</p>
+<h2 id="workflow">Workflow</h2>
+<p>Com este workflow, cada alteração feita com IA é pequena e passa
+pelos testes e pela revisão de outra pessoa antes de entrar na
+<code>main</code>.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Fase</th>
+<th>O que se faz</th>
+<th>Quem</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Preparar</td>
+<td>Escrever o objetivo numa frase, ligado ao requisito; dar à IA os
+ficheiros e o prompt-padrão</td>
+<td>Autor</td>
+</tr>
+<tr class="even">
+<td>Planear</td>
+<td>A IA lê o código e diz o que vai reutilizar e alterar</td>
+<td>IA, aprovado pelo autor</td>
+</tr>
+<tr class="odd">
+<td>Implementar</td>
+<td>Diff pequeno num ramo próprio (como <code>CON-01</code> ou
+<code>ZON-01</code>)</td>
+<td>IA e autor</td>
+</tr>
+<tr class="even">
+<td>Verificar</td>
+<td><code>pytest</code>, <code>npm test</code>,
+<code>npm run typecheck</code>, <code>npm run build</code></td>
+<td>Autor</td>
+</tr>
+<tr class="odd">
+<td>Rever e fechar</td>
+<td>Revisão do PR, atualização do README e <code>docs/</code>, registo
+do prompt</td>
+<td>Outra pessoa e autor</td>
+</tr>
+</tbody>
+</table>
+<p>A equipa já trabalha com um ramo por tarefa, com códigos como
+<code>CON-01</code>, <code>LEA-01</code>, <code>OPO-01</code> e
+<code>ZON-01</code>, e junta o trabalho por pull requests no GitHub. O
+workflow com IA usa esta mesma prática. No frontend, a checklist no fim
+do <code>frontend/prompt.md</code> funciona como lista de verificação do
+PR e pede um resumo dos componentes criados, dos componentes alterados e
+das diferenças face ao mockup. A IA pode redigir esse resumo, mas o
+autor confirma-o. A verificação corre em Linux ou no Docker, porque o
+erro do <code>Tsconfig.json</code> passou despercebido no Windows.
+Enquanto a IA estiver suspensa, o autor planeia e implementa sozinho, e
+a revisão de outra pessoa passa a ser obrigatória em todos os PRs, mesmo
+nos pequenos.</p>
+<h2 id="requisitos-e-testes">Requisitos e testes</h2>
+<p>Um requisito só está cumprido se houver um teste que o prove.</p>
+<p>Cada requisito tem um ID, uma frase verificável e um teste que só
+pode falhar por esse motivo. No projeto, o
+<code>test_add_invalid_role_id</code> passa por causa de um campo
+desconhecido no pedido. Sem esse campo, a API aceita um papel que não
+existe e responde 201.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Conjunto de testes</th>
+<th>Resultado nesta análise</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>tests/test_auth.py</code></td>
+<td>Passam todos</td>
+</tr>
+<tr class="even">
+<td><code>tests/test_contacts.py</code></td>
+<td>Passam todos</td>
+</tr>
+<tr class="odd">
+<td><code>tests/test_zones.py</code></td>
+<td>Passam todos</td>
+</tr>
+<tr class="even">
+<td><code>tests/test_properties.py</code></td>
+<td>53 falham: os testes não enviam os campos que passaram a ser
+obrigatórios no imóvel</td>
+</tr>
+<tr class="odd">
+<td><code>frontend/tests/taxRules.test.ts</code></td>
+<td>6 passam</td>
+</tr>
+<tr class="even">
+<td><code>npm run typecheck</code> e <code>npm run build</code></td>
+<td>Falham em Linux por causa do nome <code>Tsconfig.json</code>; com
+<code>tsconfig.json</code> passam</td>
+</tr>
+</tbody>
+</table>
+<p>Uma tarefa só está feita quando está na <code>main</code>, tem um
+teste que falhava antes, passa os testes de autorização (anónimo,
+investor e owner), passa no typecheck e no build, e tem o PR aprovado
+por outra pessoa.</p>
+<p>Os testes de backend seguem um padrão que vale a pena manter. O
+<code>tests/conftest.py</code> cria uma base <code>_test</code> nova em
+cada execução e dá três clientes: um <code>owner</code>, um
+<code>investor</code> e um anónimo. Cada ficheiro testa primeiro que o
+anónimo e o investor são bloqueados e só depois o comportamento da rota.
+Há também testes que registam defeitos conhecidos com a marca
+<code>KNOWN-ISSUE</code>, como o imóvel apagado que continua visível e a
+ordenação da pesquisa que é ignorada. Cada um destes testes deve dar
+origem a um requisito para corrigir o defeito. No frontend só as regras
+de impostos têm testes. As outras regras de <code>src/lib/</code> são
+funções simples, sem dependências, e por isso são um bom ponto de
+partida para a IA gerar testes.</p>
+<h2 id="qualidade-do-código">Qualidade do código</h2>
+<p>O <code>frontend/prompt.md</code> já define as regras de código do
+frontend. Verificámos no código se estão a ser cumpridas; o resultado
+orienta o que a IA deve corrigir ou evitar.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Regra</th>
+<th>Estado</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Todos os pedidos passam por <code>apiFetch</code>, nunca por
+<code>fetch</code> num componente</td>
+<td>Cumprida</td>
+</tr>
+<tr class="even">
+<td>Sem <code>any</code> no TypeScript</td>
+<td>Cumprida</td>
+</tr>
+<tr class="odd">
+<td>Sem CSS por componente, só Tailwind e
+<code>src/index.css</code></td>
+<td>Cumprida</td>
+</tr>
+<tr class="even">
+<td>Dados de exemplo só em <code>src/temp.tsx</code></td>
+<td>Cumprida: as stores de <code>src/api/fixtures/</code> leem de
+lá</td>
+</tr>
+<tr class="odd">
+<td>Listas com quatro estados (a carregar, erro, vazio, com dados)</td>
+<td>Cumprida nas páginas de dados</td>
+</tr>
+<tr class="even">
+<td>Dinheiro, datas e percentagens por
+<code>src/lib/format.ts</code></td>
+<td>Duas percentagens formatadas à mão em
+<code>OperationDetailContent.tsx</code></td>
+</tr>
+<tr class="odd">
+<td>Componentes com menos de ~150 linhas</td>
+<td>5 componentes acima disso, por exemplo
+<code>WorkDetailPage.tsx</code></td>
+</tr>
+</tbody>
+</table>
+<p>No backend, o padrão a seguir é o de
+<code>app/contacts/routes.py</code>: validação com Marshmallow, campos
+desconhecidos recusados, <code>rollback</code> em caso de erro e
+registos apagados filtrados na própria query. A rota de detalhe do
+imóvel não segue este último ponto e devolve imóveis apagados.</p>
+<p>Há dois pontos do backend que a IA não deve copiar como padrão. Em
+<code>app/contacts/routes.py</code>, a verificação
+<code>if roles is None</code> nunca é verdadeira, porque a consulta
+devolve uma lista. Por isso, um papel inexistente é ignorado em silêncio
+em vez de dar erro. Depois, as mensagens de erro da API estão em inglês
+(por exemplo, "Contact not found"), enquanto a interface está toda em
+português de Portugal. No frontend, o build gera um ficheiro JavaScript
+de 587 kB e o Vite avisa que passa dos 500 kB. Não é urgente, mas fica
+registado para quando o número de páginas crescer.</p>
+<h2 id="segurança">Segurança</h2>
+<p>A base de segurança está feita. A IA não a pode enfraquecer, e
+qualquer alteração a estes pontos precisa de revisão explícita.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Proteção</th>
+<th>Onde está</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Palavras-passe com Argon2; mínimo de 12 caracteres na criação</td>
+<td><code>app/security.py</code>, <code>app/cli.py</code></td>
+</tr>
+<tr class="even">
+<td>Login limitado a 5 tentativas por minuto e com a mesma mensagem para
+email ou palavra-passe errados</td>
+<td><code>app/auth/routes.py</code></td>
+</tr>
+<tr class="odd">
+<td>Sessão limpa no login, cookie <code>HttpOnly</code> e
+<code>SameSite=Lax</code>, <code>Secure</code> em produção, 8 horas</td>
+<td><code>app/auth/routes.py</code>, <code>app/config.py</code></td>
+</tr>
+<tr class="even">
+<td>CSRF em todos os pedidos que alteram dados</td>
+<td><code>app/extensions.py</code>, <code>src/api/client.ts</code></td>
+</tr>
+<tr class="odd">
+<td>Rotas privadas por omissão; públicas só as listadas</td>
+<td><code>app/security.py</code></td>
+</tr>
+</tbody>
+</table>
+<p>Quando o email não existe, o login verifica na mesma uma
+palavra-passe fictícia, para que o tempo de resposta não revele que
+contas existem. O utilizador é lido da base de dados em cada pedido, por
+isso um utilizador apagado perde a sessão de imediato. As páginas
+privadas são enviadas com <code>Cache-Control: no-store</code>, para o
+botão "Retroceder" não as mostrar depois do logout. O limite de
+tentativas de login fica guardado em memória, o que basta em
+desenvolvimento, mas em produção com vários processos precisa de um
+armazenamento partilhado, como o README já indica. A IA nunca acrescenta
+uma rota à lista de rotas públicas sem uma decisão da equipa.</p>
+<h2 id="dados-e-base-de-dados">Dados e base de dados</h2>
+<p>A base de dados é onde um erro custa mais a corrigir. Por isso, as
+alterações seguem regras próprias, que o projeto em parte já cumpre.</p>
+<p>O esquema ativo é o de <code>app/models.py</code> e de
+<code>migrations/</code>. O <code>database/schema.sql</code> é igual ao
+modelo de referência v2 e já não coincide com a base (não tem, por
+exemplo, a tabela das zonas); como diz o README, nunca se aplica à base.
+A aplicação liga como <code>app_user</code>, que só lê e escreve dados,
+e as migrações correm como <code>app_owner</code>. Os testes usam uma
+base própria, com nome terminado em <code>_test</code>, criada e apagada
+em cada execução.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Migração</th>
+<th>Conteúdo</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>a795ee02f743</code></td>
+<td>Esquema inicial</td>
+</tr>
+<tr class="even">
+<td><code>64795a66ab73</code></td>
+<td>Modelo de dados v2</td>
+</tr>
+<tr class="odd">
+<td><code>830175708b08</code></td>
+<td>Alterações aos contactos</td>
+</tr>
+<tr class="even">
+<td><code>923e45090da8</code></td>
+<td>Alterações aos imóveis e aos valores monetários</td>
+</tr>
+<tr class="odd">
+<td><code>0c0606dbb142</code></td>
+<td>Alterações aos imóveis</td>
+</tr>
+<tr class="even">
+<td><code>8bf10af5234d</code></td>
+<td>Tabela de zonas</td>
+</tr>
+</tbody>
+</table>
+<p>Uma migração nova, gerada pelo Flask-Migrate ou proposta pela IA, é
+lida e testada com upgrade e downgrade numa base de teste antes de ser
+aplicada. Até hoje isto não é testado automaticamente, porque os testes
+criam as tabelas diretamente a partir dos modelos.</p>
+<p>Os dados de teste e de demonstração estão em
+<code>database/seeds/</code> (contactos, leads, origens de leads,
+oportunidades, fases e imóveis). Os nomes das fases no seed estão em
+minúsculas, sem acentos e com uma gralha ("em preparcao para venda"). O
+frontend usa "Em preparação para venda", por isso os nomes vão deixar de
+coincidir quando as fases passarem a vir da API. Há ainda duas coisas
+que só existem no modelo. O nível de acesso do utilizador é um texto sem
+restrição na base de dados, e só a linha de comandos garante que é
+<code>owner</code> ou <code>investor</code>. A tabela de auditoria
+existe, mas nenhum código escreve nela.</p>
+<h2 id="riscos">Riscos</h2>
+<p>Os quatro primeiros riscos já aconteceram neste repositório.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Risco</th>
+<th>Exemplo no projeto</th>
+<th>Mitigação</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Documentação que contradiz o código</td>
+<td>O README diz que o investidor vê os imóveis (dá 403) e que o health
+está em <code>/health</code> (está em
+<code>/api/demos/health</code>)</td>
+<td>Atualizar o README no mesmo PR que muda rotas</td>
+</tr>
+<tr class="even">
+<td>Testes que passam pelo motivo errado</td>
+<td><code>test_add_invalid_role_id</code></td>
+<td>Um só motivo de falha por teste</td>
+</tr>
+<tr class="odd">
+<td>Testes desatualizados</td>
+<td>53 falhas em <code>test_properties.py</code></td>
+<td>O esquema e os testes mudam no mesmo PR</td>
+</tr>
+<tr class="even">
+<td>Build que só funciona em Windows</td>
+<td><code>Tsconfig.json</code> com maiúscula</td>
+<td>Correr o build em Linux antes do merge</td>
+</tr>
+<tr class="odd">
+<td>A IA inventa ficheiros ou campos</td>
+<td>Sem caso registado</td>
+<td>Dar os ficheiros à IA; testes e typecheck antes do PR</td>
+</tr>
+<tr class="even">
+<td>Segredos em prompts</td>
+<td>Existe um <code>.env</code> local</td>
+<td>Nunca colar o <code>.env</code>; usar só dados fictícios</td>
+</tr>
+<tr class="odd">
+<td>Código escrito com IA com falhas de segurança</td>
+<td>10 commits marcados como feitos com IA</td>
+<td>Rever esses commits antes da entrega</td>
+</tr>
+<tr class="even">
+<td>Menor velocidade sem IA</td>
+<td>Os commits do Copilot e do Claude tiveram até 38 ficheiros e 2179
+linhas</td>
+<td>Reduzir o âmbito da entrega</td>
+</tr>
+<tr class="odd">
+<td>Entrega a 09/12/2026 sem tudo o que o frontend mostra</td>
+<td>9 áreas do frontend usam dados de exemplo</td>
+<td>Acordar o âmbito com o cliente na primeira semana</td>
+</tr>
+</tbody>
+</table>
+<p>Os riscos têm uma causa comum: falta de verificação. Em todos os
+casos que já aconteceram havia um teste, um documento ou um build que
+ninguém confirmou depois de uma alteração. Por isso, as mitigações
+passam quase todas por fazer a verificação no mesmo PR que faz a
+alteração. A tabela é revista na reunião semanal da equipa, e cada risco
+fica a cargo do responsável da área onde aparece.</p>
+<h2 id="responsabilidades">Responsabilidades</h2>
+<p>Cada área do projeto tem um responsável, que é também quem responde
+pelo uso da IA nessa área.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Nome</th>
+<th>Nº</th>
+<th>E-mail</th>
+<th>Função</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Inês Sequeira</td>
+<td>2018283321</td>
+<td>uc2018283321@student.uc.pt</td>
+<td>Project Manager, Documentation</td>
+</tr>
+<tr class="even">
+<td>Carlos Baptista</td>
+<td>2023210980</td>
+<td>uc2023210980@student.uc.pt</td>
+<td>Backend developer (manager)</td>
+</tr>
+<tr class="odd">
+<td>João André Pinheiro Canais</td>
+<td>2023213000</td>
+<td>uc2023213000@student.uc.pt</td>
+<td>Frontend developer (manager)</td>
+</tr>
+<tr class="even">
+<td>Vasco Botelho de Almeida</td>
+<td>2023231465</td>
+<td>uc2023231465@student.uc.pt</td>
+<td>Backend developer</td>
+</tr>
+<tr class="odd">
+<td>Ivo Leonardo Almeida Freire</td>
+<td>2022257546</td>
+<td>uc2022257546@student.uc.pt</td>
+<td>Backend developer</td>
+</tr>
+<tr class="even">
+<td>Rodrigo José Godinho Barata</td>
+<td>2022212664</td>
+<td>uc2022212664@student.uc.pt</td>
+<td>Backend developer</td>
+</tr>
+<tr class="odd">
+<td>Francisco António Simões Costa</td>
+<td>2026193403</td>
+<td>uc2026193403@student.uc.pt</td>
+<td>Backend developer</td>
+</tr>
+<tr class="even">
+<td>João Loreto Dias</td>
+<td>2023214314</td>
+<td>uc2023214314@student.uc.pt</td>
+<td>Backend developer</td>
+</tr>
+<tr class="odd">
+<td>Miguel Pinheiro Rodrigues</td>
+<td>2023217656</td>
+<td>uc2023217656@student.uc.pt</td>
+<td>Frontend developer</td>
+</tr>
+<tr class="even">
+<td>Rui Pedro Madeira Marques</td>
+<td>2023209756</td>
+<td>uc2023209756@student.uc.pt</td>
+<td>Frontend developer</td>
+</tr>
+<tr class="odd">
+<td>Tiago Machado Teixeira</td>
+<td>2023224647</td>
+<td>uc2023224647@student.uc.pt</td>
+<td>Frontend developer</td>
+</tr>
+</tbody>
+</table>
+<p>A Inês, como Project Manager, coordena a equipa, decide a ordem em
+que os ramos entram na <code>main</code> e mantém o README e este
+handbook. O Carlos é o responsável do backend: aprova os PRs de
+<code>app/</code>, <code>migrations/</code> e <code>tests/</code> e
+mantém os <code>docs/api/</code> e os <code>docs/database/</code>. O
+João Canais é o responsável do frontend: aprova os PRs de
+<code>frontend/</code> e mantém o <code>frontend/prompt.md</code>. Os
+restantes elementos desenvolvem nas respetivas áreas e só alteram
+ficheiros de outra área com o acordo do responsável dessa área.</p>
+<h2 id="lições-do-caso-army-crew">Lições do caso Army Crew</h2>
+<p>O caso Army Crew ajuda a explicar porque é que este handbook avalia o
+trabalho da equipa e não o de cada pessoa isoladamente.</p>
+<p>Em 2002, o treinador da equipa de remo de West Point pôs no barco
+Varsity os oito remadores com os melhores resultados individuais. Mesmo
+assim, o barco Junior Varsity, com os oito piores, ganhava-lhe cerca de
+dois terços das vezes. Em pares ou grupos de quatro e seis, os remadores
+do Varsity venciam sempre, mas com os oito juntos perdiam. O Varsity não
+tinha nenhum líder e tinha vários elementos que criticavam os colegas
+individualmente, enquanto o JV corrigia os erros em conjunto e confiava
+que cada um recuperava a remada seguinte. No ImoVentures o risco é
+parecido: a IA deixa cada pessoa produzir mais código, mais depressa,
+mas isso não garante que as partes encaixem. O revert
+<code>a25a83f</code> e os testes de imóveis a falhar na integração
+mostram isso mesmo. Por isso, o progresso mede-se pelo que passa os
+testes na <code>main</code>, e não por quantos commits ou linhas cada
+pessoa gerou. A revisão dos PRs comenta o código e não quem o escreveu,
+e as críticas ao trabalho de alguém vão para o responsável da área ou
+para a Inês, tal como o treinador pedia que lhe fossem dirigidas a ele.
+Cada área tem um responsável com papel de liderança, que é precisamente
+o que faltava ao Varsity.</p>
+<h2 id="o-que-mudou-depois-do-evento-1">O que mudou depois do Evento
+1</h2>
+<p>O cliente pediu agentes de IA que melhorem a gestão do projeto e a
+qualidade do produto. Até aqui o handbook tratava a IA apenas como um
+assistente usado a pedido. Passa a prever dois agentes automáticos,
+escolhidos por causa de problemas que encontrámos no repositório. Um
+agente de qualidade corre em cada PR: executa <code>pytest</code>,
+<code>npm test</code>, <code>typecheck</code> e <code>build</code> em
+Linux e verifica as regras de <code>frontend/prompt.md</code>. Teria
+detetado o problema do <code>Tsconfig.json</code> e os 53 testes de
+imóveis a falhar. Um agente de estado corre uma vez por semana, antes da
+reunião: compara o README e os <code>docs/</code> com o código e lista
+as páginas que ainda usam dados de exemplo e os ramos por integrar.
+Assim, a reunião semanal parte de um estado verificado pelo agente.</p>
+<p>Por isso, mudam as regras de utilização da IA, o workflow e as
+responsabilidades. Os agentes podem ler o repositório, correr testes
+numa base <code>_test</code> e comentar, mas não fazem merge, não
+aplicam migrações e não leem o <code>.env</code>. Um PR só segue para
+revisão humana depois de o agente de qualidade passar, e cada agente tem
+um dono na tabela de responsabilidades. Os agentes ainda não estão
+implementados. A ferramenta está por decidir (o repositório está no
+GitHub, por isso GitHub Actions é a opção óbvia). Falta também confirmar
+com o cliente se queria agentes no processo de desenvolvimento, como
+aqui se assume, ou dentro do próprio CRM.</p>
+<h2 id="evidência-de-utilização-de-llms">Evidência de utilização de
+LLMs</h2>
+<p>O cliente pediu evidência real do uso responsável de LLMs para
+entregar aos auditores de certificação. Tudo o que está aqui vem do
+histórico do Git e pode ser confirmado no repositório.</p>
+<p>Os commits feitos com apoio de um LLM levam a marca de coautoria da
+ferramenta. Há duas ferramentas identificadas desta forma:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Ferramenta</th>
+<th>Marca no commit</th>
+<th>Commits</th>
+<th>Datas</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Claude Opus 5.5 (Anthropic)</td>
+<td><code>Co-Authored-By: Claude Opus 5.5</code></td>
+<td>6</td>
+<td>20/11/2026</td>
+</tr>
+<tr class="even">
+<td>GitHub Copilot</td>
+<td><code>Co-authored-by: Copilot</code></td>
+<td>4</td>
+<td>05/11/2026 e 11/11/2026</td>
+</tr>
+</tbody>
+</table>
+<p>O exemplo mais detalhado é o cálculo do retorno líquido do investidor
+(commit <code>665ff89</code>, tarefa 09). O cliente calcula numa folha
+de cálculo quanto recebe um investidor depois de impostos: uma empresa
+paga IRC de 19% (0% com CAEP superior a 1 ano) e um particular paga IRS
+de 28%. O Claude escreveu o <code>frontend/src/lib/taxRules.ts</code>
+(59 linhas), os testes em <code>frontend/tests/taxRules.test.ts</code>
+(42 linhas) e o comando <code>npm test</code>. Os testes exigem os
+valores da folha do cliente ao cêntimo, para um lucro de 47 037,39 €, um
+capital de 231 700 € e um prazo de 6 meses:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Investidor</th>
+<th>CAEP</th>
+<th>Taxa</th>
+<th>Lucro líquido</th>
+<th>Cash-on-cash</th>
+<th>Anualizado</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Empresa</td>
+<td>Mais de 1 ano</td>
+<td>0%</td>
+<td>47 037,39 €</td>
+<td>20,3%</td>
+<td>40,6%</td>
+</tr>
+<tr class="even">
+<td>Empresa</td>
+<td>Menos de 1 ano</td>
+<td>19%</td>
+<td>38 100,28 €</td>
+<td>16,4%</td>
+<td>32,9%</td>
+</tr>
+<tr class="odd">
+<td>Particular</td>
+<td>Menos de 1 ano</td>
+<td>28%</td>
+<td>33 866,92 €</td>
+<td>14,6%</td>
+<td>29,2%</td>
+</tr>
+</tbody>
+</table>
+<p>O código faz as contas em cêntimos e corta o resultado como a folha
+do cliente (38 100,2859 fica 38 100,28, quando um arredondamento normal
+daria 38 100,29). A folha não diz que taxa paga um particular com CAEP
+superior a 1 ano, por isso o código usa o IRS por defeito e deixa um
+<code>TODO: confirmar com o cliente</code>. Os limites também ficam
+escritos no ficheiro: só se aplicam as três taxas da folha, sem
+derramas, tributação autónoma nem englobamento. Foram os primeiros
+testes automáticos do frontend e correm com o executor de testes do
+Node, sem bibliotecas novas. Na verificação de 24/11/2026, os 6 testes
+passaram.</p>
+<p>O segundo exemplo mostra o controlo humano. Durante a tarefa 09, que
+era de frontend, os commits feitos com o Claude alteraram também
+ficheiros do backend, incluindo uma migração nova da base de dados. No
+mesmo dia, o autor reverteu essas alterações (commit
+<code>a25a83f</code>) com a justificação: "O backend fica a cargo da
+equipa de backend." Foram repostos 8 ficheiros e o frontend da tarefa
+ficou igual.</p>
+<p>O terceiro exemplo é o prompt-padrão <code>frontend/prompt.md</code>,
+criado a 05/11/2026 (commit <code>e26e0ed</code>), que se cola no início
+de cada tarefa de frontend feita com um LLM. O prompt foi mudando com o
+que a equipa observou. O primeiro commit de leads feito com o Copilot
+(<code>08e1da9</code>) criou os dados de exemplo em ficheiros próprios.
+Depois disso, os commits <code>94b4b2f</code> e <code>6b933c9</code>
+juntaram esses dados em <code>src/temp.tsx</code> e acrescentaram a
+regra ao prompt. Hoje o código cumpre-a.</p>
+<p>Um auditor pode confirmar estes exemplos com os comandos
+seguintes:</p>
+<table>
+<thead>
+<tr class="header">
+<th>O que confirmar</th>
+<th>Comando</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Commits feitos com o Claude</td>
+<td><code>git log --all -i --grep="Co-Authored-By: Claude"</code></td>
+</tr>
+<tr class="even">
+<td>Commits feitos com o Copilot</td>
+<td><code>git log --all -i --grep="Co-authored-by: Copilot"</code></td>
+</tr>
+<tr class="odd">
+<td>Código e testes do exemplo 1</td>
+<td><code>git show 665ff89</code> e
+<code>cd frontend &amp;&amp; npm test</code></td>
+</tr>
+<tr class="even">
+<td>Revert do exemplo 2</td>
+<td><code>git show a25a83f</code></td>
+</tr>
+<tr class="odd">
+<td>Histórico do prompt-padrão</td>
+<td><code>git log -- frontend/prompt.md</code></td>
+</tr>
+</tbody>
+</table>
+<h2 id="o-que-mudou-depois-do-evento-2">O que mudou depois do Evento
+2</h2>
+<p>O cliente pediu evidência real do uso de LLMs para os auditores, e o
+handbook passou a incluí-la na secção "Evidência de utilização de LLMs",
+com três exemplos tirados do histórico do Git e os comandos para os
+confirmar. Ao reunir essa evidência, vimos que os prompts exatos de cada
+tarefa não estavam guardados no repositório, por isso as regras de
+utilização da IA passaram a exigir a marca de coautoria em cada commit
+feito com um LLM e o registo do prompt, do modelo e da data de cada
+tarefa. A tabela de responsabilidades deixou de ter papéis genéricos e
+passou a ter a equipa real, com o nome, o número, o e-mail e a função de
+cada pessoa, e com o responsável de cada área identificado.</p>
+<h2 id="resposta-à-falha-de-segurança-das-ferramentas-de-ia">Resposta à
+falha de segurança das ferramentas de IA</h2>
+<p>A equipa foi informada de que todas as ferramentas de IA que usa têm
+uma falha grave de segurança, incluindo as de desenvolvimento de código.
+Isto abrange o Claude e o GitHub Copilot, as duas ferramentas registadas
+no histórico do Git. A resposta tem quatro partes.</p>
+<p>A primeira é parar. A partir de 24/11/2026 ninguém usa ferramentas de
+IA no projeto, seja para código, documentação ou prompts, e as extensões
+de IA dos editores ficam desligadas. Os agentes propostos no Evento 1
+também ficam suspensos, porque dependiam destas ferramentas. A parte que
+não usa IA mantém-se: correr <code>pytest</code>, <code>npm test</code>,
+<code>typecheck</code> e <code>build</code> em cada PR pode ser um
+script normal de integração contínua, sem nenhum LLM.</p>
+<p>A segunda é tratar os segredos como expostos. As ferramentas podem
+ter tido acesso ao repositório e aos ficheiros abertos no editor, por
+isso mudam-se todos os segredos do <code>.env</code>:
+<code>SECRET_KEY</code>, <code>POSTGRES_ADMIN_PASSWORD</code>,
+<code>APP_OWNER_PASSWORD</code> e <code>APP_USER_PASSWORD</code>. Os
+tokens de acesso ao GitHub que as ferramentas usaram são revogados.</p>
+<p>A terceira é rever o código escrito com IA. O Git identifica 10
+commits:</p>
+<table>
+<thead>
+<tr class="header">
+<th>Commit</th>
+<th>Ferramenta</th>
+<th>Conteúdo</th>
+<th>Área</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td><code>08e1da9</code></td>
+<td>Copilot</td>
+<td>Gestão de leads (15 ficheiros)</td>
+<td>Frontend</td>
+</tr>
+<tr class="even">
+<td><code>cb80ef7</code></td>
+<td>Copilot</td>
+<td>Merge da tarefa 02 (leads)</td>
+<td>Frontend</td>
+</tr>
+<tr class="odd">
+<td><code>b186ae1</code></td>
+<td>Copilot</td>
+<td>Componentes partilhados do pipeline (12 ficheiros)</td>
+<td>Frontend</td>
+</tr>
+<tr class="even">
+<td><code>e8f4253</code></td>
+<td>Copilot</td>
+<td>Operações e definições (38 ficheiros)</td>
+<td>Frontend</td>
+</tr>
+<tr class="odd">
+<td><code>665ff89</code></td>
+<td>Claude</td>
+<td>Cálculo do retorno do investidor</td>
+<td>Frontend</td>
+</tr>
+<tr class="even">
+<td><code>629cbde</code></td>
+<td>Claude</td>
+<td>Contactos com zona e tipo obrigatório (14 ficheiros)</td>
+<td>Frontend e backend</td>
+</tr>
+<tr class="odd">
+<td><code>38143d3</code></td>
+<td>Claude</td>
+<td>Investidores com estrutura e CAEP (20 ficheiros)</td>
+<td>Frontend e backend</td>
+</tr>
+<tr class="even">
+<td><code>e3f9cfa</code></td>
+<td>Claude</td>
+<td>Oportunidades com imóvel, contacto e relatório (21 ficheiros)</td>
+<td>Frontend</td>
+</tr>
+<tr class="odd">
+<td><code>481a836</code></td>
+<td>Claude</td>
+<td>Documentação da API de contactos</td>
+<td>Documentação</td>
+</tr>
+<tr class="even">
+<td><code>a25a83f</code></td>
+<td>Claude</td>
+<td>Revert das alterações de backend da tarefa 09</td>
+<td>Backend</td>
+</tr>
+</tbody>
+</table>
+<p>As alterações de backend destes commits já foram revertidas, por isso
+a revisão concentra-se no frontend. Revê-se em especial o que toca em
+segurança: o <code>src/api/client.ts</code>, os formulários, a validação
+em <code>src/lib/</code> e qualquer dependência nova no
+<code>package.json</code> ou no <code>requirements.txt</code>. Pode
+haver código escrito com IA em commits sem a marca de coautoria. Por
+isso, cada responsável de área confirma com a sua equipa que commits
+foram feitos com IA e acrescenta-os à revisão.</p>
+<p>A quarta é registar o incidente: a data, as ferramentas afetadas, os
+segredos mudados, os commits revistos e o que se encontrou. Este registo
+junta-se à evidência entregue aos auditores no Evento 2.</p>
+<h2 id="plano-de-entrega-em-15-dias">Plano de entrega em 15 dias</h2>
+<p>O cliente quer o produto entregue em 15 dias, a 09/12/2026, com a
+mesma equipa de 11 pessoas e sem ferramentas de IA. Com o prazo e as
+pessoas fixos, a única variável que sobra é o âmbito, porque a qualidade
+não se corta num produto que guarda dados pessoais e financeiros. A
+entrega fica limitada ao que já tem backend ou está perto de o ter.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Entra na entrega</th>
+<th>Fica para depois</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>Autenticação e gestão de utilizadores pela linha de comandos</td>
+<td>Portal do investidor</td>
+</tr>
+<tr class="even">
+<td>Contactos e zonas (já têm API e testes)</td>
+<td>Operações e obras</td>
+</tr>
+<tr class="odd">
+<td>Imóveis, com a página ligada à API que já existe</td>
+<td>Finanças e financiamentos</td>
+</tr>
+<tr class="even">
+<td>Leads e oportunidades, integrando os ramos <code>LEA-01</code> e
+<code>OPO-01</code></td>
+<td>Documentos e upload de ficheiros</td>
+</tr>
+<tr class="odd">
+<td>Correção dos defeitos conhecidos (<code>Tsconfig.json</code>, 53
+testes de imóveis, papel inexistente aceite, imóvel apagado
+visível)</td>
+<td>Auditoria e tarefas</td>
+</tr>
+</tbody>
+</table>
+<p>As páginas que ficam para depois continuam no código, mas saem do
+menu na versão entregue, para o cliente não confundir dados de exemplo
+com dados reais. Esta divisão é uma proposta da equipa e tem de ser
+aceite pelo cliente na primeira reunião.</p>
+<table>
+<thead>
+<tr class="header">
+<th>Datas</th>
+<th>Fase</th>
+<th>Responsável</th>
+</tr>
+</thead>
+<tbody>
+<tr class="odd">
+<td>24/11 a 26/11</td>
+<td>Resposta de segurança (parar a IA, mudar segredos, inventário de
+commits) e acordo do âmbito com o cliente</td>
+<td>Inês, Carlos e João Canais</td>
+</tr>
+<tr class="even">
+<td>27/11 a 04/12</td>
+<td>Desenvolvimento do âmbito acordado e revisão do código feito com
+IA</td>
+<td>Equipas de backend e frontend</td>
+</tr>
+<tr class="odd">
+<td>05/12</td>
+<td>Congelamento de funcionalidades: a partir daqui só entram
+correções</td>
+<td>Inês</td>
+</tr>
+<tr class="even">
+<td>05/12 a 07/12</td>
+<td>Testes completos, testes manuais a 390 px e correções</td>
+<td>Todos</td>
+</tr>
+<tr class="odd">
+<td>09/12</td>
+<td>Entrega ao cliente</td>
+<td>Inês</td>
+</tr>
+</tbody>
+</table>
+<p>O dia 08/12 é feriado nacional, por isso o plano não conta com
+trabalho nesse dia. No backend, as 6 pessoas dividem-se entre a
+integração de leads e oportunidades e as correções de imóveis e
+contactos. No frontend, as 4 pessoas ligam as páginas de imóveis, leads
+e oportunidades à API e tiram do menu as restantes. A Inês acompanha o
+progresso todos os dias com uma lista de requisitos e o estado de cada
+um.</p>
+<h2 id="o-que-mudou-depois-do-evento-3">O que mudou depois do Evento
+3</h2>
+<p>A falha de segurança nas ferramentas de IA e o prazo de 15 dias
+mudaram o handbook em vários pontos. O uso de IA ficou suspenso, e as
+regras de utilização passaram a valer só para quando a equipa o voltar a
+autorizar. O workflow passou a ser feito sem IA e com revisão
+obrigatória em todos os PRs. Os agentes do Evento 1 foram suspensos, mas
+a verificação automática por script mantém-se. Foram acrescentadas duas
+secções novas: a resposta à falha de segurança (parar, mudar os
+segredos, rever os 10 commits feitos com IA e registar o incidente) e o
+plano de entrega até 09/12/2026, que reduz o âmbito a contactos,
+imóveis, leads e oportunidades, mantendo as 11 pessoas da equipa. A
+tabela de riscos ganhou três riscos novos: código escrito com IA com
+falhas, menor velocidade sem IA e um âmbito que o cliente ainda tem de
+aceitar.</p>
+</body>
+</html>

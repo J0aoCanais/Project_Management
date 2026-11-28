@@ -4,6 +4,7 @@
 // A lógica que simula o servidor está em api/fixtures/*Store.ts (também a remover).
 
 import { calcFinance } from "./lib/finance";
+import { RELATION_STATUSES } from "./lib/investorRules";
 import { OPERATION_PHASES, OPPORTUNITY_PHASES } from "./lib/phases";
 import type { DashboardSummary } from "./api/dashboardApi";
 import type { DocumentOwner, DocumentOwnerKind, DocumentRecord } from "./api/documentsApi";
@@ -199,6 +200,7 @@ export function defaultFinance(askingPrice: number, vvr: number, estimatedProfit
     commissionVatPercent: 23,
     termMonths: 12,
     investorSharePercent: 0,
+    investorProfile: "Particular",
   };
   if (estimatedProfit === undefined) return base;
   const { margin } = calcFinance(base, []);
@@ -249,6 +251,7 @@ const baixaDeCoimbra: OpportunityDetail = {
   daysInPhase: 2,
   owner: rodrigo,
   contactName: "Marta Ribeiro",
+  notes: "Imóvel com boa luz natural e excelente localização. Necessita renovação integral de cozinha, instalações sanitárias e rede elétrica.",
   updatedAt: daysAgo(0),
   property: {
     id: 1042,
@@ -275,6 +278,7 @@ const baixaDeCoimbra: OpportunityDetail = {
     commissionVatPercent: 23,
     termMonths: 10,
     investorSharePercent: 60,
+    investorProfile: "Empresa - CAEP inferior a um ano",
   },
   extraCosts: [
     { id: "extra-1", label: "Licenças e projeto", value: 3500 },
@@ -456,7 +460,7 @@ export const contactImportSample: string[][] = [
 
 // TODO: trocar pelo endpoint (perfis de risco, estados da relação, tipos de retorno).
 export const riskProfileOptions = ["Conservador", "Moderado", "Agressivo"];
-export const relationStatusOptions = ["Inativo", "Por contactar", "Qualificado", "Ativo"];
+export const relationStatusOptions: string[] = [...RELATION_STATUSES];
 export const returnTypeOptions = ["Juro fixo", "Participação nos lucros"];
 
 // TODO: trocar pelo endpoint das operações quando existir.
@@ -466,7 +470,7 @@ export const investmentOperationOptions = ["OP-2025-014", "OP-2026-001", "OP-202
 export const investorsFixture: InvestorRecord[] = [
   {
     id: 5, name: "Ana Lourenço", email: "ana.lourenco@exemplo.pt", phone: "912 830 445", company: "", zone: "Alta",
-    profile: { availableCapital: 180000, riskProfile: "Moderado", preferredZones: ["Alta", "Baixa"], preferredTerms: "8 a 18 meses, retorno mínimo de 8%", relationStatus: "Ativo", investorKind: "Particular", caepTerm: "Menos de 1 ano", notes: "Prefere receber os relatórios por email." },
+    profile: { availableCapital: 180000, riskProfile: "Moderado", preferredZones: ["Alta", "Baixa"], minAmount: 40000, maxAmount: 120000, preferredTerms: "8 a 18 meses, retorno mínimo de 8%", relationStatus: "Ativo", investorKind: "Particular", caepTerm: "Menos de 1 ano", notes: "Prefere receber os relatórios por email." },
     investments: [
       { id: 1, operationCode: "OP-2026-001", committedValue: 80000, participationPercent: 46.4, returnType: "Juro fixo", returnRate: 8, agreementDate: "2026-11-08" },
       { id: 2, operationCode: "OP-2025-014", committedValue: 65000, participationPercent: 26.2, returnType: "Juro fixo", returnRate: 8, agreementDate: "2025-06-12" },
@@ -474,22 +478,22 @@ export const investorsFixture: InvestorRecord[] = [
   },
   {
     id: 6, name: "Manuel Gouveia", email: "manuel.gouveia@exemplo.pt", phone: "934 112 887", company: "Gouveia Capital", zone: "Celas",
-    profile: { availableCapital: 250000, riskProfile: "Agressivo", preferredZones: ["Celas", "Solum"], preferredTerms: "Até 24 meses", relationStatus: "Ativo", investorKind: "Empresa", caepTerm: "Mais de 1 ano", notes: "" },
+    profile: { availableCapital: 250000, riskProfile: "Agressivo", preferredZones: ["Celas", "Solum"], minAmount: 50000, maxAmount: 200000, preferredTerms: "Até 24 meses", relationStatus: "Ativo", investorKind: "Empresa", caepTerm: "Mais de 1 ano", notes: "" },
     investments: [{ id: 3, operationCode: "OP-2026-001", committedValue: 52000, participationPercent: 30.2, returnType: "Participação nos lucros", returnRate: 25, agreementDate: "2026-11-09" }],
   },
   {
     id: 7, name: "Teresa Faria", email: "teresa.faria@exemplo.pt", phone: "961 309 210", company: "", zone: "Baixa",
-    profile: { availableCapital: 95000, riskProfile: "Conservador", preferredZones: ["Baixa"], preferredTerms: "Juro fixo, até 12 meses", relationStatus: "Qualificado", investorKind: "Empresa", caepTerm: "Menos de 1 ano", notes: "" },
+    profile: { availableCapital: 95000, riskProfile: "Conservador", preferredZones: ["Baixa"], minAmount: 20000, maxAmount: 60000, preferredTerms: "Juro fixo, até 12 meses", relationStatus: "Qualificado", investorKind: "Empresa", caepTerm: "Menos de 1 ano", notes: "" },
     investments: [],
   },
   {
     id: 8, name: "Pedro Alvim", email: "pedro.alvim@exemplo.pt", phone: "922 874 601", company: "", zone: "Solum",
-    profile: { availableCapital: 120000, riskProfile: "Moderado", preferredZones: ["Solum", "Santa Clara"], preferredTerms: "", relationStatus: "Inativo", investorKind: "Particular", caepTerm: "Menos de 1 ano", notes: "" },
+    profile: { availableCapital: 120000, riskProfile: "Moderado", preferredZones: ["Solum", "Santa Clara"], minAmount: 30000, maxAmount: 100000, preferredTerms: "", relationStatus: "Inativo", investorKind: "Particular", caepTerm: "Menos de 1 ano", notes: "" },
     investments: [],
   },
   {
     id: 9, name: "Sofia Matos", email: "sofia.matos@exemplo.pt", phone: "917 552 038", company: "", zone: "Celas",
-    profile: { availableCapital: 70000, riskProfile: "Conservador", preferredZones: ["Celas"], preferredTerms: "", relationStatus: "Por contactar", investorKind: "Particular", caepTerm: "Menos de 1 ano", notes: "Indicada pela Ana Lourenço." },
+    profile: { availableCapital: 70000, riskProfile: "Conservador", preferredZones: ["Celas"], minAmount: 15000, maxAmount: 50000, preferredTerms: "", relationStatus: "Por contactar", investorKind: "Particular", caepTerm: "Menos de 1 ano", notes: "Indicada pela Ana Lourenço." },
     investments: [],
   },
 ];

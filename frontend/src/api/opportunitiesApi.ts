@@ -1,3 +1,4 @@
+import type { PassiveInvestorProfile } from "../lib/taxRules";
 import * as store from "./fixtures/opportunitiesStore";
 
 // Alinhado com `Opportunity` e `Property` em app/models.py.
@@ -27,9 +28,20 @@ export interface FinanceValues {
   commissionPercent: number;
   commissionVatPercent: number;
   termMonths: number;
-  /** Parte do lucro que vai para o investidor ativo, em percentagem (0–100, 2 casas). O resto fica para a empresa. */
+  /**
+   * Parte do lucro (depois de IRC) que vai para o investidor ativo, em percentagem inteira de 0 a 100
+   * (`Opportunity.active_investor_percentage`, Integer no backend). O resto fica para a empresa.
+   */
   investorSharePercent: number;
+  /**
+   * Estrutura do investidor usada para simular o retorno líquido (`Opportunity.passive_investor_profile`).
+   * Decide o imposto aplicado só à parte do investidor.
+   */
+  investorProfile: PassiveInvestorProfile;
 }
+
+/** Campos numéricos da análise (todos menos a estrutura do investidor). */
+export type FinanceNumberKey = Exclude<keyof FinanceValues, "investorProfile">;
 
 export interface ExtraCost {
   id: string;
@@ -50,9 +62,12 @@ export interface OpportunityDetail extends OpportunityCard {
     energyCertificate?: string;
     photos?: { url: string; caption: string }[];
   };
+  /** Nome do contacto associado (no backend vem de `opportunity.property.lead.contact`). */
   contactName?: string;
-  /** Contacto em /contactos (`Opportunity.contact_id`). */
+  /** Contacto em /contactos. */
   contactId?: number;
+  /** Observações da oportunidade (até 1000), editáveis no Resumo. */
+  notes?: string;
   updatedAt: string;
   finance: FinanceValues;
   extraCosts: ExtraCost[];
@@ -126,6 +141,12 @@ export async function updatePhaseNote(id: number, index: number, note: string): 
 export async function saveOpportunityFinance(id: number, finance: FinanceValues, extraCosts: ExtraCost[]): Promise<OpportunityDetail> {
   // PUT /v1/opportunities/${id}/finance
   return store.saveFinance(id, finance, extraCosts);
+}
+
+/** Edita as observações da oportunidade. Fica registado na atividade. */
+export async function updateOpportunityNotes(id: number, notes: string): Promise<OpportunityDetail> {
+  // PATCH /v1/opportunities/${id}  { notes }
+  return store.updateNotes(id, notes);
 }
 
 export async function rejectOpportunity(id: number, reason: string): Promise<OpportunityDetail> {

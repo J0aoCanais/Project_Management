@@ -1,5 +1,5 @@
 import { useState } from "react";
-import { useParams, useSearchParams } from "react-router-dom";
+import { Link, useParams, useSearchParams } from "react-router-dom";
 
 import { ApiError } from "../api/client";
 import InvestmentsTable from "../components/investors/InvestmentsTable";
@@ -73,20 +73,34 @@ function InvestorDetailPage() {
           <RecordFields
             title="Perfil de investidor"
             fields={[
-              { label: "Estrutura", value: investorKindLabel(profile) },
-              { label: "Imposto sobre o lucro", value: profile.investorKind ? `${taxRate(profile.investorKind, profile.caepTerm)}%` : "—" },
-              { label: "Zona", value: profile.preferredZones.join(" · ") || "—" },
               { label: "Capital disponível", value: formatMoney(profile.availableCapital) },
               { label: "Capital comprometido", value: formatMoney(investor.committedCapital) },
               { label: "Perfil de risco", value: profile.riskProfile },
-              { label: "Estado", value: <InvestorStatusPill status={profile.relationStatus} /> },
+              { label: "Zonas preferidas", value: profile.preferredZones.join(" · ") || "—" },
+              { label: "Montante mínimo", value: profile.minAmount ? formatMoney(profile.minAmount) : "—" },
+              { label: "Montante máximo", value: profile.maxAmount ? formatMoney(profile.maxAmount) : "—" },
               { label: "Prazos preferidos", value: profile.preferredTerms || "—", wide: true },
+              { label: "Estrutura", value: investorKindLabel(profile) },
+              { label: "Imposto sobre o lucro", value: profile.investorKind ? `${taxRate(profile.investorKind, profile.caepTerm)}%` : "—" },
+              { label: "Estado da relação", value: <InvestorStatusPill status={profile.relationStatus} /> },
               { label: "Notas", value: profile.notes || "—", wide: true },
             ]}
           />
           <RecordFields
             title="Contacto"
             fields={[
+              {
+                label: "Nome",
+                value:
+                  investor.contactId !== undefined ? (
+                    <Link to={entityPath({ kind: "contact", id: investor.contactId })} className="text-brand hover:underline">
+                      {investor.name}
+                    </Link>
+                  ) : (
+                    investor.name
+                  ),
+                wide: true,
+              },
               { label: "Email", value: investor.email || "—", wide: true },
               { label: "Telemóvel", value: investor.phone || "—" },
               { label: "Empresa", value: investor.company || "—" },

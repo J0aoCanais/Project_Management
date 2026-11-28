@@ -1,5 +1,5 @@
 import { calcFinance } from "../../lib/finance";
-import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, phaseNoteError, titleError } from "../../lib/opportunityRules";
+import { MONEY, TEXT_LIMITS, extraCostErrors, financeErrors, fitsRule, opportunityNotesError, phaseNoteError, titleError } from "../../lib/opportunityRules";
 import { LAST_OPPORTUNITY_PHASE, OPPORTUNITY_PHASES } from "../../lib/phases";
 import { createOperationFromOpportunity } from "./operationsStore";
 import { ApiError } from "../client";
@@ -86,6 +86,7 @@ export async function addOpportunity(input: NewOpportunity) {
     owner: { name: currentUserFixture.name },
     contactName: contact?.name ?? lead?.name,
     contactId: contact?.id,
+    notes: property?.notes,
     updatedAt: now,
     property: property
       ? { id: property.id, code: property.code, areaM2: property.areaM2, visitDate: property.visitDate, notes: property.notes, constructionYear: property.constructionYear, condition: property.condition, energyCertificate: property.energyCertificate }
@@ -110,6 +111,17 @@ export async function updateOpportunity(id: number, changes: OpportunityChanges)
   if (name !== undefined) opportunity.contactName = name;
   else if (hadContact) opportunity.contactName = undefined;
   record(opportunity, "Dados da oportunidade atualizados");
+  return structuredClone(opportunity);
+}
+
+export async function updateNotes(id: number, notes: string) {
+  await respond(null);
+  const opportunity = find(id);
+  if (opportunity.rejection || opportunity.operationId) throw new ApiError(409, "Oportunidade fechada");
+  if (opportunityNotesError(notes)) throw new ApiError(422, "Observações demasiado longas");
+  const text = notes.trim();
+  opportunity.notes = text || undefined;
+  record(opportunity, text ? "Observações atualizadas" : "Observações removidas");
   return structuredClone(opportunity);
 }
 

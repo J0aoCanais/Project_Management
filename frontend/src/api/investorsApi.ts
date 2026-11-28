@@ -15,8 +15,12 @@ export interface InvestorProfile {
   riskProfile: string;
   /** Nomes das zonas (tabela de zonas). */
   preferredZones: string[];
+  /** Montante mínimo por investimento, em euros. Só aparece no perfil (não na listagem). */
+  minAmount: number;
+  /** Montante máximo por investimento, em euros: mínimo ≤ máximo ≤ capital disponível. */
+  maxAmount: number;
   preferredTerms: string;
-  /** Inativo, Por contactar, Qualificado ou Ativo. */
+  /** Por contactar, Inativo, Qualificado ou Ativo (`RELATION_STATUSES`). */
   relationStatus: string;
   notes: string;
 }

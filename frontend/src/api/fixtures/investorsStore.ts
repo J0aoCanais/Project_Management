@@ -1,5 +1,5 @@
 import { contactErrors } from "../../lib/contactRules";
-import { investmentErrors, investorProfileErrors } from "../../lib/investorRules";
+import { investmentErrors, investorProfileErrors, normalizeRelationStatus } from "../../lib/investorRules";
 import { investorsFixture } from "../../temp";
 import { ApiError } from "../client";
 import { getContact } from "../contactsApi";
@@ -26,7 +26,11 @@ function find(id: number): InvestorRecord {
 }
 
 function toDetail(record: InvestorRecord): InvestorDetail {
-  return { ...record, committedCapital: record.investments.reduce((total, item) => total + item.committedValue, 0) };
+  return {
+    ...record,
+    profile: { ...record.profile, relationStatus: normalizeRelationStatus(record.profile.relationStatus) },
+    committedCapital: record.investments.reduce((total, item) => total + item.committedValue, 0),
+  };
 }
 
 function toListItem(record: InvestorRecord): Investor {
