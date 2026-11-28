@@ -54,6 +54,13 @@ def _id(**kwargs):
     return fields.Integer(strict=True, validate=ID, **kwargs)
 
 
+def _percentage(**kwargs):
+    return fields.Decimal(
+        places=2, as_string=True, allow_nan=False,
+        validate=validate.Range(min=Decimal(0), max=Decimal(100)), **kwargs,
+    )
+
+
 # --------------------------------------------------------------------------- #
 # Financial calculations (read-only, derived on output)
 # --------------------------------------------------------------------------- #
@@ -65,7 +72,10 @@ def compute_financials(
     imt,
     stamp_tax,
     registry_costs,
-    other_costs=Decimal("0"),
+    commission_percentage,
+    commission_vat_percentage,
+    term_months,
+    other_costs_total,
 ):
     """Derived figures for the detail view. Returns None until at least the
     purchase price and expected sale price are known.
@@ -88,16 +98,28 @@ def compute_financials(
         return str(value.quantize(Decimal("0.01")))
 
     sale = d(expected_sale_price)
-    acquisition = d(purchase_price) + d(imt) + d(stamp_tax) + d(registry_costs) + d(other_costs)
-    investment = acquisition + d(work_cost)
-    profit = sale - investment
+    commission = sale * d(commission_percentage) / 100 * (1 + d(commission_vat_percentage) / 100)
+    taxes_and_fees = d(imt) + d(stamp_tax) + d(registry_costs)
+    other = d(other_costs_total)
+    investment = d(purchase_price) + taxes_and_fees + d(work_cost) + commission + other
+    margin = sale - investment
+    roi = margin / investment if investment else None
+    
+    annualized_roi = None
+    if roi is not None and term_months and roi > -1:
+        annualized_roi = Decimal(str((1 + float(roi)) ** (12 / term_months) - 1))
 
     return {
-        "total_acquisition_cost": q(acquisition),
         "total_investment": q(investment),
-        "expected_gross_profit": q(profit),
-        "margin_percentage": q(profit / sale * 100) if sale else None,
-        "roi_percentage": q(profit / investment * 100) if investment else None,
+        "purchase_price": q(d(purchase_price)),
+        "taxes_and_fees": q(taxes_and_fees),
+        "work_cost": q(d(work_cost)),
+        "commission_value": q(commission),
+        "other_costs_total": q(other),
+        "estimated_margin": q(margin),
+        "margin_percentage": q(margin / sale * 100) if sale else None,
+        "roi_percentage": q(roi * 100) if roi is not None else None,
+        "annualized_roi_percentage": q(annualized_roi * 100) if annualized_roi is not None else None,
     }
 
 
@@ -126,6 +148,9 @@ class _OpportunityFields:
     passive_investor_profile = fields.String(
         allow_none=True, validate=validate.Length(max=MAX_LONG_TEXT)
     )
+    
+    commission_percentage = _percentage(allow_none=True)
+    commission_vat_percentage = _percentage(allow_none=True)
 
 
 class BaseSchema(Schema):
@@ -249,8 +274,10 @@ class OpportunityListItemSchema(Schema):
         if obj.expected_sale_price is None or obj.purchase_price is None or obj.irc is None:
             return "0.0"
 
-        profit = (obj.expected_sale_price - obj.purchase_price) * (100 - obj.irc)/100.0
+        profit = (obj.expected_sale_price - obj.purchase_price) * Decimal(100 - obj.irc)/ Decimal(100)
         str(profit.quantize(Decimal("0.01")))
+        
+        return profit
         
 
 class OpportunityResponseSchema(Schema):
@@ -299,3 +326,87 @@ class OpportunityResponseSchema(Schema):
 #             stamp_tax=obj.stamp_tax,
 #             registry_costs=obj.registry_costs,
         # )
+
+
+class OpportunityActivitySchema(Schema):
+    id = fields.Integer()
+    type = fields.String()
+    created_at = fields.DateTime()
+
+
+class OpportunitySummarySchema(Schema):
+    id = fields.Integer()
+    code = fields.String()
+    last_activity_at = fields.DateTime(allow_none=True)
+    phase = fields.Nested(PhaseResponseSchema)
+    property = fields.Nested(PropertyResponseSchema(only=PROPERTY_SUMMARY_FIELDS))
+    contact = fields.Nested(ContactResponseSchema(only=("id", "name")))
+
+
+class AcquisitionCostInputSchema(BaseSchema):
+    name = fields.String(required=True, validate=validate.Length(min=1, max=512))
+    cost = _money(required=True, validate=NON_NEGATIVE_MONEY)
+
+
+class OpportunityFinanceUpdateSchema(BaseSchema):
+    purchase_price = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
+    imt = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
+    stamp_tax = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
+    registry_costs = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
+    work_cost = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
+    expected_sale_price = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
+    term_months = fields.Integer(
+        allow_none=True, strict=True, validate=validate.Range(min=1, max=MAX_TERM_MONTHS)
+    )
+    commission_percentage = _percentage(allow_none=True)
+    commission_vat_percentage = _percentage(allow_none=True)
+    other_costs = fields.List(
+        fields.Nested(AcquisitionCostInputSchema), validate=validate.Length(max=50)
+    )
+
+    @validates_schema
+    def _at_least_one_field(self, data, **kwargs):
+        if not data:
+            raise ValidationError("At least one field must be provided.", field_name="_schema")
+
+
+class AcquisitionCostSchema(Schema):
+    id = fields.Integer()
+    name = fields.String()
+    cost = _money()
+
+
+class OpportunityFinanceSchema(Schema):
+    id = fields.Integer()
+    purchase_price = _money(allow_none=True)
+    imt = _money(allow_none=True)
+    stamp_tax = _money(allow_none=True)
+    registry_costs = _money(allow_none=True)
+    work_cost = _money(allow_none=True)
+    expected_sale_price = _money(allow_none=True)
+    term_months = fields.Integer(allow_none=True)
+    commission_percentage = _percentage(allow_none=True)
+    commission_vat_percentage = _percentage(allow_none=True)
+    other_costs = fields.Nested(AcquisitionCostSchema, many=True)
+    financials = fields.Method("get_financials")
+
+    def get_financials(self, obj):
+        return compute_financials(
+            purchase_price=obj.purchase_price,
+            imt=obj.imt,
+            stamp_tax=obj.stamp_tax,
+            registry_costs=obj.registry_costs,
+            work_cost=obj.work_cost,
+            expected_sale_price=obj.expected_sale_price,
+            commission_percentage=obj.commission_percentage,
+            commission_vat_percentage=obj.commission_vat_percentage,
+            term_months=obj.term_months,
+            other_costs_total=sum((Decimal(str(c.cost)) for c in obj.other_costs), Decimal("0")),
+        )
+
+
+class PhaseHistoryItemSchema(Schema):
+    previous_phase = fields.String()
+    phase = fields.String()
+    changed_at = fields.DateTime()
+    note = fields.String(allow_none=True)

@@ -1,7 +1,7 @@
 """SQLAlchemy 2.0 models generated from the provided SQL schema (PostgreSQL)."""
 from __future__ import annotations
 
-from datetime import date, datetime
+from datetime import date, datetime, timezone
 from typing import List, Optional
 import builtins
 
@@ -518,8 +518,8 @@ class Property(Base):
     def contact_id(self):
         return self.lead.contact.id
 
-class AquisitionCost(Base):
-    __tablename__ = "aquisition_cost"
+class AcquisitionCost(Base):
+    __tablename__ = "acquisition_cost"
 
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
     name: Mapped[str] = mapped_column(String(512), nullable=False) 
@@ -545,6 +545,8 @@ class Opportunity(Base):
     irc: Mapped[Optional[int]] = mapped_column(Integer)
     active_investor_percentage: Mapped[Optional[int]] = mapped_column(Integer)
     passive_investor_profile: Mapped[Optional[str]] = mapped_column(Text)
+    commission_percentage: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))
+    commission_vat_percentage: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))
 
 
     phase_id: Mapped[int] = mapped_column(
@@ -557,7 +559,7 @@ class Opportunity(Base):
         BigInteger, ForeignKey("contact.id"), nullable=False
     )
 
-    other_costs: Mapped[List["AquisitionCost"]] = relationship(back_populates="opportunity")
+    other_costs: Mapped[List["AcquisitionCost"]] = relationship(back_populates="opportunity")
     contact: Mapped["Contact"] = relationship(back_populates="opportunities")
     phase: Mapped["Phase"] = relationship(back_populates="opportunities")
     property: Mapped["Property"] = relationship(back_populates="opportunity")
@@ -580,6 +582,34 @@ class Opportunity(Base):
     @builtins.property
     def code(self) -> str:
         return f"OPO-{self.id}"
+
+
+class OpportunityActivity(Base):
+    __tablename__ = "opportunity_activity"
+    
+    id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
+    
+    opportunity_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("opportunity.id"), nullable=False
+    )
+    
+    type: Mapped[str] = mapped_column(String(64), nullable=False)
+    
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False,
+        default=lambda: datetime.now(timezone.utc),
+    )
+    
+    opportunity_id: Mapped[int] = mapped_column(
+        BigInteger, ForeignKey("opportunity.id", ondelete="CASCADE"), nullable=False
+    )
+    
+    __table_args__ = (
+        Index("ix_opportunity_activity_opp_created", "opportunity_id", "created_at"),
+    )
+    
+
 
 
 class Operation(Base):

@@ -8,18 +8,23 @@ from flask_login import current_user
 from marshmallow import ValidationError
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy import or_, func
-from sqlalchemy.orm import contains_eager, joinedload 
+from sqlalchemy.orm import contains_eager, joinedload, selectinload
 
 
 
 from ..extensions import db
-from ..models import Contact, Opportunity, Phase, Property, Lead, PhaseHistory, Zone
+from ..models import AcquisitionCost, Contact, Opportunity, OpportunityActivity, Phase, Property, Lead, PhaseHistory, Zone
 from ..schemas.opportunity_schema import (
     OpportunityCreateSchema,
     OpportunityListQuerySchema,
     OpportunityListItemSchema,
     OpportunityResponseSchema,
     OpportunityPhaseChangeSchema,
+    OpportunityActivitySchema,
+    OpportunitySummarySchema,
+    OpportunityFinanceSchema,
+    OpportunityFinanceUpdateSchema,
+    PhaseHistoryItemSchema,
 )
 from ..security import owner_required
 
@@ -32,6 +37,11 @@ opportunity_response_schema = OpportunityResponseSchema()
 opportunity_list_schema = OpportunityListQuerySchema()
 opportunity_list_item_schema = OpportunityListItemSchema()
 opportunity_phase_change_schema = OpportunityPhaseChangeSchema()
+opportunity_summary_schema = OpportunitySummarySchema()
+opportunity_activity_schema = OpportunityActivitySchema()
+opportunity_finance_schema = OpportunityFinanceSchema()
+opportunity_finance_update_schema = OpportunityFinanceUpdateSchema()
+phase_history_item_schema = PhaseHistoryItemSchema()
 
 # Every opportunity starts here. Phases are lookup data: seed this row in a
 # migration so the id is guaranteed in every environment (dev, test, prod).
@@ -39,6 +49,9 @@ INITIAL_PHASE_ID = 1
 
 # Phases 1 to 8, 9 already belongs to Operation
 PIPELINE_LAST_POSITION = 8
+
+# Recent activity number
+RECENT_ACTIVITY_LIMIT = 5
 
 def _to_money(value) -> Decimal:
     """Normalise to a 2-decimal Decimal (works whether the Property price
@@ -62,6 +75,9 @@ def enter_phase(opportunity: Opportunity, phase: Phase, note: str=None):
     opportunity.phase_histories.append(
         PhaseHistory(phase_id=phase.id, changed_at=now, note=note)
     )
+
+def log_activity(opportunity, type_):
+    opportunity.activities.append(OpportunityActivity(type=type_))
 
 
 #========================================
@@ -129,36 +145,122 @@ def get_opportunities():
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-@opportunities_bp.get("/<int:property_id>")
+@opportunities_bp.get("/<int:opportunity_id>")
 @owner_required
-def get_property(property_id):
-    #TODO: show opportunity summary (property and contact details)
+def get_opportunity_summary(opportunity_id):
+    """Opportunity summary tab: property and contact details + recent activity"""
+    try:
+        # base query: opportunity + property + zone + contact + phase
+        stmt = (
+            db.select(Opportunity)
+            .join(Opportunity.property)
+            .join(Property.zone)
+            .join(Opportunity.contact)
+            .options(
+                contains_eager(Opportunity.property).contains_eager(Property.zone),
+                contains_eager(Opportunity.contact),
+                joinedload(Opportunity.phase),
+            )
+            .where(Opportunity.id == opportunity_id)
+        )
+
+        opportunity = db.session.execute(stmt).scalars().unique().one_or_none()
+        if opportunity is None:
+            return jsonify({"errors": {"id": ["Opportunity not found"]}}), HTTPStatus.NOT_FOUND
+
+        # recent activity: limited in the query, newest first
+        activity_stmt = (
+            db.select(OpportunityActivity)
+            .where(OpportunityActivity.opportunity_id == opportunity_id)
+            .order_by(OpportunityActivity.created_at.desc(), OpportunityActivity.id.desc())
+            .limit(RECENT_ACTIVITY_LIMIT)
+        )
+        activities = db.session.execute(activity_stmt).scalars().all()
+
+        data = opportunity_summary_schema.dump(opportunity)
+        data["recent_activity"] = opportunity_activity_schema.dump(activities, many=True)
+
+        return jsonify({"success": True, "data": data}), HTTPStatus.OK
+
+    except Exception:
+        logger.exception("Failed to load opportunity %s", opportunity_id)
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
     return
 
 
-@opportunities_bp.get("/<int:property_id>/finance")
+@opportunities_bp.get("/<int:opportunity_id>/finance")
 @owner_required
-def get_property(property_id):
-    #TODO: show opportunity financial details
-    return
+def get_opportunity_finance(opportunity_id):
+    """Opportunity financial analysis tab: inputs, other costs and derived figures"""
+    try:
+        stmt = (
+            db.select(Opportunity)
+            .options(selectinload(Opportunity.other_costs))
+            .where(Opportunity.id == opportunity_id)
+        )
+        opportunity = db.session.execute(stmt).scalars().one_or_none()
+        if opportunity is None:
+            return jsonify({"errors": {"id": ["Opportunity not found"]}}), HTTPStatus.NOT_FOUND
+
+        return jsonify({
+            "success": True,
+            "data": opportunity_finance_schema.dump(opportunity),
+        }), HTTPStatus.OK
+
+    except Exception:
+        logger.exception("Failed to load finance of opportunity %s", opportunity_id)
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-@opportunities_bp.get("/<int:property_id>/fase-history")
+@opportunities_bp.get("/<int:opportunity_id>/phase-history")
 @owner_required
-def get_property(property_id):
-    #TODO: show opportunity phase history
-    return
+def get_opportunity_phase_history(opportunity_id):
+    """Opportunity phase history tab: previous phase, new phase, date and note"""
+    try:
+        stmt = (
+            db.select(Opportunity)
+            .options(selectinload(Opportunity.phase_histories).joinedload(PhaseHistory.phase))
+            .where(Opportunity.id == opportunity_id)
+        )
+        opportunity = db.session.execute(stmt).scalars().one_or_none()
+        if opportunity is None:
+            return jsonify({"errors": {"id": ["Opportunity not found"]}}), HTTPStatus.NOT_FOUND
+
+        history = sorted(opportunity.phase_histories, key=lambda h: (h.changed_at, h.id))
+        rows = [
+            {
+                "previous_phase": before.phase.name,
+                "phase": after.phase.name,
+                "changed_at": after.changed_at,
+                "note": after.note,
+            }
+            for before, after in zip(history, history[1:])
+        ]
+        rows.reverse()  # newest first
+
+        return jsonify({
+            "success": True,
+            "data": [phase_history_item_schema.dump(r) for r in rows],
+            "total": len(rows),
+        }), HTTPStatus.OK
+
+    except Exception:
+        logger.exception("Failed to load phase history of opportunity %s", opportunity_id)
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
-@opportunities_bp.get("/<int:property_id>/documents")
+@opportunities_bp.get("/<int:opportunity_id>/documents")
 @owner_required
-def get_property(property_id):
+def get_opportunity_documents(opportunity_id):
     #TODO: show opportunity documents
     return
 
-#===============================================
-#  3.Opportunities Write Endpoints (POST/PATCH)
-#===============================================
+
+
+
+#===================================================
+#  3.Opportunities Write Endpoints (POST/PATCH/PUT)
+#===================================================
 
 @opportunities_bp.post("/")
 @owner_required
@@ -272,6 +374,47 @@ def change_opportunity_phase(opportunity_id: int):
         return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
     return jsonify(opportunity_response_schema.dump(opportunity)), HTTPStatus.OK
+
+
+@opportunities_bp.put("/<int:opportunity_id>/finance")
+@owner_required
+def update_opportunity_finance(opportunity_id):
+    """Saves the financial analysis; other_costs, when sent, replaces the whole list"""
+    payload = request.get_json(silent=True)
+    if not isinstance(payload, dict):
+        return jsonify({"errors": {"body": ["Request body must be a JSON object"]}}), HTTPStatus.BAD_REQUEST
+
+    try:
+        data = opportunity_finance_update_schema.load(payload)
+    except ValidationError as err:
+        return jsonify({"errors": err.messages}), HTTPStatus.BAD_REQUEST
+
+    try:
+        opportunity = db.session.get(Opportunity, opportunity_id, with_for_update=True)
+        if opportunity is None:
+            return _fail({"id": ["Opportunity not found"]}, HTTPStatus.NOT_FOUND)
+
+        other_costs = data.pop("other_costs", None)
+        for field, value in data.items():
+            setattr(opportunity, field, value)
+
+        if other_costs is not None:
+            opportunity.other_costs = [AcquisitionCost(**c) for c in other_costs]
+
+        opportunity.last_activity_at = datetime.now(timezone.utc)
+        log_activity(opportunity, "financials_updated")
+
+        db.session.commit()
+
+        return jsonify({
+            "success": True,
+            "data": opportunity_finance_schema.dump(opportunity),
+        }), HTTPStatus.OK
+
+    except Exception:
+        db.session.rollback()
+        logger.exception("Failed to update finance of opportunity %s", opportunity_id)
+        return jsonify({"errors": {"server": ["Internal server error"]}}), HTTPStatus.INTERNAL_SERVER_ERROR
 
 
 @opportunities_bp.patch("/<int:opportunity_id>")
