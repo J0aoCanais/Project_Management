@@ -38,9 +38,5 @@ class PhaseResponseSchema(BaseSchema):
         id (int): Unique identifier of the phase.
         name (str): Name of the phase.
     """
-    id = fields.Integer(
-        description="Unique identifier of the phase."
-    )
-    name = fields.String(
-        description="Name of the phase."
-    )
+    id = fields.Integer()
+    name = fields.String()

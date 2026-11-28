@@ -191,23 +191,6 @@ class OpportunityCreateSchema(_OpportunityFields, BaseSchema):
     )
 
 
-class OpportunityUpdateSchema(_OpportunityFields, BaseSchema):
-    """PATCH body. property_id is immutable (a different property is a different
-    opportunity) and phase_id changes only through the phase endpoint, so that
-    history and last_activity_at are always updated."""
-
-    contact_id = _id()
-
-    def __init__(self, *args, **kwargs):
-        kwargs.setdefault("partial", True)
-        super().__init__(*args, **kwargs)
-
-    @validates_schema
-    def _at_least_one_field(self, data, **kwargs):
-        if not data:
-            raise ValidationError("At least one field must be provided.", field_name="_schema")
-
-
 class OpportunityPhaseChangeSchema(BaseSchema):
     phase_id = _id(required=True)
     note = fields.String(load_default=None, validate=validate.Length(min=1, max=2000))
@@ -224,20 +207,10 @@ class OpportunityListQuerySchema(BaseSchema):
     # route joins property + contact: matches property address/zone or contact name
     q = fields.String(load_default=None, validate=validate.Length(min=2, max=512))
 
-    phase_id = fields.Integer(load_default=None, validate=ID)
-    property_id = fields.Integer(load_default=None, validate=ID)
-    contact_id = fields.Integer(load_default=None, validate=ID)
-
-    # "no activity for at least N days": last_activity_at < now - N days
-    stale_days = fields.Integer(load_default=None, validate=validate.Range(min=1, max=3650))
-
-    sort = fields.String(
-        load_default="last_activity_at", validate=validate.OneOf(OPPORTUNITY_SORTABLE_FIELDS)
-    )
-    order = fields.String(load_default="desc", validate=validate.OneOf(("asc", "desc")))
+    zone_id = fields.Integer(load_default=None, validate=ID)
 
     page = fields.Integer(load_default=1, validate=validate.Range(min=1))
-    per_page = fields.Integer(load_default=20, validate=validate.Range(min=1, max=100))
+    per_page = fields.Integer(load_default=100, validate=validate.Range(min=1))
 
 
 # --------------------------------------------------------------------------- #
@@ -302,32 +275,6 @@ class OpportunityResponseSchema(Schema):
     last_activity_at = fields.DateTime(allow_none=True)
 
 
-# class OpportunityDetailSchema(OpportunityResponseSchema):
-#     """Opportunity profile. Nested objects, counts and financials trigger lazy
-#     loads: use it for a single opportunity only, never for lists."""
-
-#     phase = fields.Nested(PhaseSummarySchema)
-#     property = fields.Nested(PropertySummarySchema)
-#     contact = fields.Nested(ContactSummarySchema)
-
-#     operation_id = fields.Function(lambda obj: obj.operation.id if obj.operation else None)
-#     tasks_count = fields.Function(lambda obj: len(obj.tasks))
-#     documents_count = fields.Function(lambda obj: len(obj.documents))
-#     financials = fields.Method("get_financials")
-
-#     def get_financials(self, obj):
-#         # TODO: pass other_costs=sum(c.<amount column> for c in obj.other_costs)
-#         # once AquisitionCost has a schema; until then "other" costs are NOT included.
-#         return compute_financials(
-#             purchase_price=obj.purchase_price,
-#             work_cost=obj.work_cost,
-#             expected_sale_price=obj.expected_sale_price,
-#             imt=obj.imt,
-#             stamp_tax=obj.stamp_tax,
-#             registry_costs=obj.registry_costs,
-        # )
-
-
 class OpportunityActivitySchema(Schema):
     id = fields.Integer()
     type = fields.String()
@@ -348,18 +295,15 @@ class AcquisitionCostInputSchema(BaseSchema):
     cost = _money(required=True, validate=NON_NEGATIVE_MONEY)
 
 
-class OpportunityFinanceUpdateSchema(BaseSchema):
-    purchase_price = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
-    imt = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
-    stamp_tax = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
-    registry_costs = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
-    work_cost = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
-    expected_sale_price = _money(allow_none=True, validate=NON_NEGATIVE_MONEY)
-    term_months = fields.Integer(
-        allow_none=True, strict=True, validate=validate.Range(min=1, max=MAX_TERM_MONTHS)
-    )
-    commission_percentage = _percentage(allow_none=True)
-    commission_vat_percentage = _percentage(allow_none=True)
+class OpportunityFinanceUpdateSchema(_OpportunityFields, BaseSchema):
+    """PATCH body. property_id is immutable (a different property is a different
+        opportunity) and phase_id changes only through the phase endpoint, so that
+        history and last_activity_at are always updated."""
+
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("partial", True)
+        super().__init__(*args, **kwargs)
+
     other_costs = fields.List(
         fields.Nested(AcquisitionCostInputSchema), validate=validate.Length(max=50)
     )
@@ -410,3 +354,11 @@ class PhaseHistoryItemSchema(Schema):
     phase = fields.String()
     changed_at = fields.DateTime()
     note = fields.String(allow_none=True)
+
+
+class OportunityLinkResponse(BaseSchema):
+    """Work resumed information for property links"""
+    type = fields.Constant("opportunity")
+    id = fields.Integer()
+    code = fields.String()
+    phase = fields.Pluck(PhaseResponseSchema, "name", dump_only=True)

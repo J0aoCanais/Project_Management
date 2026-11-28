@@ -355,6 +355,8 @@ class PhaseHistory(Base):
     )
 
     phase: Mapped["Phase"] = relationship(back_populates="phase_histories")
+
+    #TODO: Is this worth keeping? if not dont forget to delete all relations
     linked_phase: Mapped[Optional["Phase"]] = relationship(
         secondary=phase_history_phase,
         back_populates="linked_phase_histories",
@@ -537,7 +539,8 @@ class Opportunity(Base):
     purchase_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     work_cost: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     expected_sale_price: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
-    last_activity_at: Mapped[Optional[datetime]] = mapped_column(DateTime)
+    last_activity_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
+    phase_entered_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
     term_months: Mapped[Optional[int]] = mapped_column(Integer)
     imt: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
     stamp_tax: Mapped[Optional[float]] = mapped_column(Numeric(14, 2))
@@ -548,6 +551,7 @@ class Opportunity(Base):
     commission_percentage: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))
     commission_vat_percentage: Mapped[Optional[float]] = mapped_column(Numeric(5, 2))
 
+    deleted_at: Mapped[Optional[datetime]] = mapped_column(DateTime(timezone=True))
 
     phase_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("phase.id"), nullable=False
@@ -559,6 +563,7 @@ class Opportunity(Base):
         BigInteger, ForeignKey("contact.id"), nullable=False
     )
 
+    activity_log: Mapped[List["ActivityLog"]] = relationship(back_populates="opportunity")
     other_costs: Mapped[List["AcquisitionCost"]] = relationship(back_populates="opportunity")
     contact: Mapped["Contact"] = relationship(back_populates="opportunities")
     phase: Mapped["Phase"] = relationship(back_populates="opportunities")
@@ -584,32 +589,25 @@ class Opportunity(Base):
         return f"OPO-{self.id}"
 
 
-class OpportunityActivity(Base):
-    __tablename__ = "opportunity_activity"
+class ActivityLog(Base):
+    __tablename__ = "activity_log"
     
     id: Mapped[int] = mapped_column(BigInteger, primary_key=True, autoincrement=True)
-    
+    type: Mapped[str] = mapped_column(String(64), nullable=False)
+    created_at: Mapped[datetime] = mapped_column(
+        DateTime(timezone=True),
+        nullable=False
+    )
+
     opportunity_id: Mapped[int] = mapped_column(
         BigInteger, ForeignKey("opportunity.id"), nullable=False
     )
-    
-    type: Mapped[str] = mapped_column(String(64), nullable=False)
-    
-    created_at: Mapped[datetime] = mapped_column(
-        DateTime(timezone=True),
-        nullable=False,
-        default=lambda: datetime.now(timezone.utc),
-    )
-    
-    opportunity_id: Mapped[int] = mapped_column(
-        BigInteger, ForeignKey("opportunity.id", ondelete="CASCADE"), nullable=False
-    )
+
+    opportunity: Mapped["Opportunity"] = relationship(back_populates="activity_log")
     
     __table_args__ = (
         Index("ix_opportunity_activity_opp_created", "opportunity_id", "created_at"),
     )
-    
-
 
 
 class Operation(Base):

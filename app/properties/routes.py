@@ -18,7 +18,7 @@ from ..schemas.properties_schema import (
     PropertySearchSchema,
     PropertyUpdateSchema,
 )
-from ..schemas.oportunity_schema import OportunityLinkResponse
+from ..schemas.opportunity_schema import OportunityLinkResponse
 from ..schemas.leads_schema import LeadLinkResponse
 
 # Schema Instances
