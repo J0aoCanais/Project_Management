@@ -7,9 +7,11 @@ import {
   getWorkOptions,
   getWorks,
   getWorkStats,
+  importBudgetItems,
   markWorkCompleted,
   saveBudgetItem,
   updateWork,
+  type BudgetImportMode,
   type BudgetItem,
   type NewWorkInput,
   type UpdateWorkInput,
@@ -84,6 +86,23 @@ export function useSaveBudgetItem(workId: number) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: (item: Omit<BudgetItem, "id"> & { id?: number }) => saveBudgetItem(workId, item),
+    onSuccess: () => {
+      void queryClient.invalidateQueries({ queryKey: ["works"] });
+      void queryClient.invalidateQueries({ queryKey: ["work", workId] });
+    },
+  });
+}
+
+export function useImportBudgetItems(workId: number) {
+  const queryClient = useQueryClient();
+  return useMutation({
+    mutationFn: ({
+      items,
+      mode,
+    }: {
+      items: (Omit<BudgetItem, "id"> & { id?: number })[];
+      mode: BudgetImportMode;
+    }) => importBudgetItems(workId, items, mode),
     onSuccess: () => {
       void queryClient.invalidateQueries({ queryKey: ["works"] });
       void queryClient.invalidateQueries({ queryKey: ["work", workId] });

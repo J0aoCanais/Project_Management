@@ -25,6 +25,7 @@ import PropertiesPage from "./pages/PropertiesPage";
 import PropertyDetailPage from "./pages/PropertyDetailPage";
 import WorksPage from "./pages/WorksPage";
 import WorkDetailPage from "./pages/WorkDetailPage";
+import PrivacyPolicyPage from "./pages/PrivacyPolicyPage";
 
 // Páginas do menu já implementadas.
 const pages: Record<string, ReactNode> = {
@@ -45,6 +46,7 @@ function App() {
   return (
     <Routes>
       <Route path="login" element={<LoginPage />} />
+      <Route path="politica-de-privacidade" element={<PrivacyPolicyPage />} />
       <Route element={<AuthGate />}>
         {/* TODO: substituir cada PlaceholderPage pela página real à medida que forem implementadas */}
         {navItems.map((item) =>

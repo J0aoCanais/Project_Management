@@ -7,14 +7,17 @@ import {
   MONEY,
   budgetItemErrors,
   type BudgetItemValues,
+  type WorkPeriodBounds,
 } from "../../lib/workRules";
 import FormField from "../ui/FormField";
 import Notice from "../ui/Notice";
 import NumberInput from "../ui/NumberInput";
 import Select from "../ui/Select";
+import { inputClasses } from "../ui/inputClasses";
 
 interface Props {
   initialValues?: Partial<BudgetItem>;
+  workPeriod?: WorkPeriodBounds;
   onSubmit: (item: Omit<BudgetItem, "id"> & { id?: number }) => void;
   serverError?: string | null;
   formId?: string;
@@ -22,6 +25,7 @@ interface Props {
 
 function BudgetItemForm({
   initialValues,
+  workPeriod,
   onSubmit,
   serverError,
   formId = "budget-item-form",
@@ -39,6 +43,10 @@ function BudgetItemForm({
   const [executedValue, setExecutedValue] = useState(initialValues?.executedValue ?? 0);
   const [invoicedValue, setInvoicedValue] = useState(initialValues?.invoicedValue ?? 0);
   const [paidValue, setPaidValue] = useState(initialValues?.paidValue ?? 0);
+  const [plannedStartDate, setPlannedStartDate] = useState(initialValues?.plannedStartDate ?? "");
+  const [plannedEndDate, setPlannedEndDate] = useState(initialValues?.plannedEndDate ?? "");
+  const [realStartDate, setRealStartDate] = useState(initialValues?.realStartDate ?? "");
+  const [realEndDate, setRealEndDate] = useState(initialValues?.realEndDate ?? "");
   const [showErrors, setShowErrors] = useState(false);
 
   const values: BudgetItemValues = {
@@ -49,9 +57,13 @@ function BudgetItemForm({
     executedValue,
     invoicedValue,
     paidValue,
+    plannedStartDate: plannedStartDate || undefined,
+    plannedEndDate: plannedEndDate || undefined,
+    realStartDate: realStartDate || undefined,
+    realEndDate: realEndDate || undefined,
   };
 
-  const errors = budgetItemErrors(values);
+  const errors = budgetItemErrors(values, workPeriod);
 
   const handleSubmit = (e: FormEvent) => {
     e.preventDefault();
@@ -71,6 +83,10 @@ function BudgetItemForm({
       executedValue: values.executedValue,
       invoicedValue: values.invoicedValue,
       paidValue: values.paidValue,
+      plannedStartDate: values.plannedStartDate,
+      plannedEndDate: values.plannedEndDate,
+      realStartDate: values.realStartDate,
+      realEndDate: values.realEndDate,
     });
   };
 
@@ -159,6 +175,46 @@ function BudgetItemForm({
             max={MONEY.max}
             decimals={MONEY.decimals}
             invalid={showErrors && !!errors.paidValue}
+          />
+        </FormField>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2.5 min-[721px]:grid-cols-2">
+        <FormField label="Início previsto (opcional)" error={showErrors ? errors.plannedStartDate : undefined}>
+          <input
+            type="date"
+            className={`${inputClasses} ${showErrors && errors.plannedStartDate ? "border-danger" : ""}`}
+            value={plannedStartDate}
+            onChange={(e) => setPlannedStartDate(e.target.value)}
+          />
+        </FormField>
+
+        <FormField label="Fim previsto (opcional)" error={showErrors ? errors.plannedEndDate : undefined}>
+          <input
+            type="date"
+            className={`${inputClasses} ${showErrors && errors.plannedEndDate ? "border-danger" : ""}`}
+            value={plannedEndDate}
+            onChange={(e) => setPlannedEndDate(e.target.value)}
+          />
+        </FormField>
+      </div>
+
+      <div className="grid grid-cols-1 gap-2.5 min-[721px]:grid-cols-2">
+        <FormField label="Início real (opcional)" error={showErrors ? errors.realStartDate : undefined}>
+          <input
+            type="date"
+            className={`${inputClasses} ${showErrors && errors.realStartDate ? "border-danger" : ""}`}
+            value={realStartDate}
+            onChange={(e) => setRealStartDate(e.target.value)}
+          />
+        </FormField>
+
+        <FormField label="Fim real (opcional)" error={showErrors ? errors.realEndDate : undefined}>
+          <input
+            type="date"
+            className={`${inputClasses} ${showErrors && errors.realEndDate ? "border-danger" : ""}`}
+            value={realEndDate}
+            onChange={(e) => setRealEndDate(e.target.value)}
           />
         </FormField>
       </div>

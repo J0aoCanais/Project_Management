@@ -2,19 +2,21 @@ import { useState } from "react";
 
 import type { BudgetItem } from "../../api/worksApi";
 import { useSaveBudgetItem } from "../../hooks/useWorks";
+import type { WorkPeriodBounds } from "../../lib/workRules";
 import Button from "../ui/Button";
 import Drawer from "../ui/Drawer";
 import BudgetItemForm from "./BudgetItemForm";
 
 interface Props {
   workId: number;
+  workPeriod?: WorkPeriodBounds;
   itemToEdit?: BudgetItem | null;
   onClose: () => void;
 }
 
 const FORM_ID = "budget-item-drawer-form";
 
-function NewBudgetItemDrawer({ workId, itemToEdit, onClose }: Props) {
+function NewBudgetItemDrawer({ workId, workPeriod, itemToEdit, onClose }: Props) {
   const save = useSaveBudgetItem(workId);
   const [serverError, setServerError] = useState<string | null>(null);
 
@@ -47,6 +49,7 @@ function NewBudgetItemDrawer({ workId, itemToEdit, onClose }: Props) {
       <BudgetItemForm
         formId={FORM_ID}
         initialValues={itemToEdit ?? undefined}
+        workPeriod={workPeriod}
         onSubmit={handleSubmit}
         serverError={serverError}
       />

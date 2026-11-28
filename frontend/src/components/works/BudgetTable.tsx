@@ -1,14 +1,16 @@
 import { useState } from "react";
 
 import type { BudgetItem, WorkDetail } from "../../api/worksApi";
+import { useDeleteBudgetItem } from "../../hooks/useWorks";
+import { downloadBudgetTemplate } from "../../lib/budgetExcel";
 import { formatMoney } from "../../lib/format";
 import Button from "../ui/Button";
 import EmptyState from "../ui/EmptyState";
 import Icon from "../ui/Icon";
 import Panel from "../ui/Panel";
 import Table, { type TableColumn } from "../ui/Table";
+import ImportBudgetDrawer from "./ImportBudgetDrawer";
 import NewBudgetItemDrawer from "./NewBudgetItemDrawer";
-import { useDeleteBudgetItem } from "../../hooks/useWorks";
 
 interface Props {
   work: WorkDetail;
@@ -17,6 +19,7 @@ interface Props {
 function BudgetTable({ work }: Props) {
   const [editingItem, setEditingItem] = useState<BudgetItem | null>(null);
   const [isAdding, setIsAdding] = useState(false);
+  const [isImporting, setIsImporting] = useState(false);
   const deleteMutation = useDeleteBudgetItem(work.id);
 
   const handleDelete = (e: React.MouseEvent, item: BudgetItem) => {
@@ -107,7 +110,13 @@ function BudgetTable({ work }: Props) {
           <h2 className="text-xs font-bold text-ink">Orçamento por categoria</h2>
           <p className="text-[11px] text-muted">Controlo de custos por empreiteiro e rúbrica da obra</p>
         </div>
-        <div className="min-[721px]:ml-auto">
+        <div className="flex flex-wrap items-center gap-2 min-[721px]:ml-auto">
+          <Button icon="download" onClick={() => void downloadBudgetTemplate(work, work.id)}>
+            Descarregar template
+          </Button>
+          <Button icon="upload" onClick={() => setIsImporting(true)}>
+            Importar orçamento
+          </Button>
           <Button variant="primary" icon="plus" onClick={() => setIsAdding(true)}>
             Nova categoria
           </Button>
@@ -138,9 +147,14 @@ function BudgetTable({ work }: Props) {
         <EmptyState
           message="Ainda não existem categorias de orçamento nesta obra."
           action={
-            <Button variant="primary" icon="plus" onClick={() => setIsAdding(true)}>
-              Adicionar categoria
-            </Button>
+            <div className="flex flex-wrap justify-center gap-2">
+              <Button icon="upload" onClick={() => setIsImporting(true)}>
+                Importar orçamento
+              </Button>
+              <Button variant="primary" icon="plus" onClick={() => setIsAdding(true)}>
+                Adicionar categoria
+              </Button>
+            </div>
           }
         />
       )}
@@ -148,12 +162,17 @@ function BudgetTable({ work }: Props) {
       {(isAdding || editingItem) && (
         <NewBudgetItemDrawer
           workId={work.id}
+          workPeriod={work}
           itemToEdit={editingItem}
           onClose={() => {
             setIsAdding(false);
             setEditingItem(null);
           }}
         />
+      )}
+
+      {isImporting && (
+        <ImportBudgetDrawer work={work} onClose={() => setIsImporting(false)} />
       )}
     </Panel>
   );

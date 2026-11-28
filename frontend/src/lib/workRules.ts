@@ -1,5 +1,7 @@
-// Regras de validação e limites de obras e orçamentos.
-// Usados tanto nos formulários de cliente como no servidor simulado (422).
+// Regras de validação, limites e cálculo de planeamento de obras e orçamentos.
+// Usados tanto nos formulários de cliente como na importação Excel e no servidor simulado (422).
+
+import { daysBetween, formatIsoDate, isValidIsoDate, todayIso } from "./format";
 
 export const WORK_TEXT_LIMITS = {
   name: 80,
@@ -113,6 +115,13 @@ export function workFormErrors(values: WorkFormValues): Record<string, string> {
   return errors;
 }
 
+export interface WorkPeriodBounds {
+  plannedStartDate?: string;
+  plannedEndDate?: string;
+  realStartDate?: string;
+  realEndDate?: string;
+}
+
 export interface BudgetItemValues {
   categoryName: string;
   contractorName: string;
@@ -121,6 +130,27 @@ export interface BudgetItemValues {
   executedValue: number;
   invoicedValue: number;
   paidValue: number;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
+  realStartDate?: string;
+  realEndDate?: string;
+}
+
+function dateWithinPeriodError(
+  date: string | undefined,
+  minDate: string | undefined,
+  maxDate: string | undefined,
+  periodLabel: string,
+): string | undefined {
+  if (!date) return undefined;
+  if (!isValidIsoDate(date)) return "Data inválida.";
+  if (minDate && date < minDate) {
+    return `Tem de ser igual ou posterior ao início ${periodLabel} da obra (${formatIsoDate(minDate)}).`;
+  }
+  if (maxDate && date > maxDate) {
+    return `Tem de ser igual ou anterior ao fim ${periodLabel} da obra (${formatIsoDate(maxDate)}).`;
+  }
+  return undefined;
 }
 
 /**
@@ -128,8 +158,13 @@ export interface BudgetItemValues {
  * Regras:
  * - pago <= faturado <= contratado
  * - executado <= contratado
+ * - fim >= início e datas dentro do período da obra (quando definido)
  */
-export function budgetItemErrors(values: BudgetItemValues): Record<string, string> {
+export function budgetItemErrors(
+  values: BudgetItemValues,
+  workPeriod?: WorkPeriodBounds,
+  validCategories?: readonly string[],
+): Record<string, string> {
   const errors: Record<string, string> = {};
 
   const cat = values.categoryName.trim();
@@ -137,6 +172,8 @@ export function budgetItemErrors(values: BudgetItemValues): Record<string, strin
     errors.categoryName = "Indique a categoria.";
   } else if (cat.length > WORK_TEXT_LIMITS.categoryName) {
     errors.categoryName = `Máximo de ${WORK_TEXT_LIMITS.categoryName} caracteres.`;
+  } else if (validCategories && !validCategories.some((c) => c.toLowerCase() === cat.toLowerCase())) {
+    errors.categoryName = "Categoria inválida (consulte a folha Categorias).";
   }
 
   const contractor = values.contractorName.trim();
@@ -162,17 +199,79 @@ export function budgetItemErrors(values: BudgetItemValues): Record<string, strin
     errors.paidValue = "Valor pago inválido.";
   }
 
-  // Regras de negócio
-  if (values.executedValue > values.contractedValue) {
+  // Regras financeiras
+  if (Number.isFinite(values.executedValue) && Number.isFinite(values.contractedValue) && values.executedValue > values.contractedValue) {
     errors.executedValue = "O valor executado não pode exceder o valor contratado.";
   }
 
-  if (values.invoicedValue > values.contractedValue) {
+  if (Number.isFinite(values.invoicedValue) && Number.isFinite(values.contractedValue) && values.invoicedValue > values.contractedValue) {
     errors.invoicedValue = "O valor faturado não pode exceder o valor contratado.";
   }
 
-  if (values.paidValue > values.invoicedValue) {
+  if (Number.isFinite(values.paidValue) && Number.isFinite(values.invoicedValue) && values.paidValue > values.invoicedValue) {
     errors.paidValue = "O valor pago não pode exceder o valor faturado.";
+  }
+
+  // Regras de datas
+  if (values.plannedStartDate && !isValidIsoDate(values.plannedStartDate)) {
+    errors.plannedStartDate = "Data de início previsto inválida.";
+  }
+  if (values.plannedEndDate && !isValidIsoDate(values.plannedEndDate)) {
+    errors.plannedEndDate = "Data de fim previsto inválida.";
+  }
+  if (!errors.plannedStartDate && !errors.plannedEndDate) {
+    const plannedOrderErr = datesError(values.plannedStartDate, values.plannedEndDate);
+    if (plannedOrderErr) errors.plannedEndDate = plannedOrderErr;
+  }
+
+  if (values.realStartDate && !isValidIsoDate(values.realStartDate)) {
+    errors.realStartDate = "Data de início real inválida.";
+  }
+  if (values.realEndDate && !isValidIsoDate(values.realEndDate)) {
+    errors.realEndDate = "Data de fim real inválida.";
+  }
+  if (!errors.realStartDate && !errors.realEndDate) {
+    const realOrderErr = datesError(values.realStartDate, values.realEndDate);
+    if (realOrderErr) errors.realEndDate = realOrderErr;
+  }
+
+  if (workPeriod) {
+    if (!errors.plannedStartDate) {
+      const boundErr = dateWithinPeriodError(
+        values.plannedStartDate,
+        workPeriod.plannedStartDate,
+        workPeriod.plannedEndDate,
+        "previsto",
+      );
+      if (boundErr) errors.plannedStartDate = boundErr;
+    }
+    if (!errors.plannedEndDate) {
+      const boundErr = dateWithinPeriodError(
+        values.plannedEndDate,
+        workPeriod.plannedStartDate,
+        workPeriod.plannedEndDate,
+        "previsto",
+      );
+      if (boundErr) errors.plannedEndDate = boundErr;
+    }
+    if (!errors.realStartDate) {
+      const boundErr = dateWithinPeriodError(
+        values.realStartDate,
+        workPeriod.realStartDate,
+        workPeriod.realEndDate,
+        "real",
+      );
+      if (boundErr) errors.realStartDate = boundErr;
+    }
+    if (!errors.realEndDate) {
+      const boundErr = dateWithinPeriodError(
+        values.realEndDate,
+        workPeriod.realStartDate,
+        workPeriod.realEndDate,
+        "real",
+      );
+      if (boundErr) errors.realEndDate = boundErr;
+    }
   }
 
   return errors;
@@ -182,18 +281,13 @@ export function budgetItemErrors(values: BudgetItemValues): Record<string, strin
 export function calcWorkDeviation(
   plannedEndDate?: string,
   realEndDate?: string,
-  isCompleted?: boolean,
+  _isCompleted?: boolean,
 ): { days: number; label: string; tone: "green" | "red" | "neutral" } {
   if (!plannedEndDate) {
     return { days: 0, label: "—", tone: "neutral" };
   }
 
-  const targetDate = realEndDate
-    ? new Date(realEndDate)
-    : isCompleted
-      ? new Date()
-      : new Date();
-
+  const targetDate = realEndDate ? new Date(realEndDate) : new Date();
   const planned = new Date(plannedEndDate);
   const diffMs = targetDate.getTime() - planned.getTime();
   const days = Math.round(diffMs / (1000 * 60 * 60 * 24));
@@ -205,4 +299,123 @@ export function calcWorkDeviation(
     return { days, label: `${days} dias`, tone: "green" };
   }
   return { days: 0, label: "Sem desvio", tone: "neutral" };
+}
+
+export interface PlanningProgress {
+  hasPlan: boolean;
+  totalDays: number;
+  elapsedDays: number;
+  timePercent: number;
+  executedPercent: number;
+  isOverdue: boolean;
+  overdueDays: number;
+  behindSchedule: boolean;
+  summary: string;
+}
+
+/**
+ * Calcula o progresso temporal vs. execução física de uma obra.
+ *
+ * Exemplos:
+ * - Obra em dia (dia 45 de 120, 30% executado):
+ *   `planningProgress({ plannedStartDate: "2026-08-01", plannedEndDate: "2026-11-29", executedPercent: 30, state: "Em curso" }, "2026-09-15")`
+ *   → `timePercent: 38, executedPercent: 30, summary: "Dia 45 de 120 · 38 % do prazo · 30 % executado"`
+ * - Obra atrasada (prazo já passou e não concluída):
+ *   `planningProgress({ plannedStartDate: "2026-08-01", plannedEndDate: "2026-11-01", executedPercent: 57, state: "Atrasada" }, "2026-11-11")`
+ *   → `isOverdue: true, overdueDays: 10, summary: "Atrasada 10 dias · 57 % executado"`
+ * - Sem datas planeadas:
+ *   `planningProgress({ executedPercent: 0 }, "2026-11-11")`
+ *   → `hasPlan: false, summary: "Sem planeamento definido"`
+ */
+export function planningProgress(
+  work: {
+    plannedStartDate?: string;
+    plannedEndDate?: string;
+    executedPercent: number;
+    state?: WorkState;
+  },
+  today: string = todayIso(),
+): PlanningProgress {
+  const executedPercent = Math.min(100, Math.max(0, Math.round(work.executedPercent || 0)));
+
+  if (
+    !work.plannedStartDate ||
+    !work.plannedEndDate ||
+    !isValidIsoDate(work.plannedStartDate) ||
+    !isValidIsoDate(work.plannedEndDate) ||
+    work.plannedEndDate < work.plannedStartDate
+  ) {
+    return {
+      hasPlan: false,
+      totalDays: 0,
+      elapsedDays: 0,
+      timePercent: 0,
+      executedPercent,
+      isOverdue: false,
+      overdueDays: 0,
+      behindSchedule: false,
+      summary: "Sem planeamento definido",
+    };
+  }
+
+  const totalDays = Math.max(1, daysBetween(work.plannedStartDate, work.plannedEndDate));
+  const rawElapsed = daysBetween(work.plannedStartDate, today);
+  const elapsedDays = Math.min(totalDays, Math.max(0, rawElapsed));
+  const timePercent = Math.min(100, Math.max(0, Math.round((elapsedDays / totalDays) * 100)));
+
+  const isCompleted = work.state === "Concluída";
+  const overdueDays = !isCompleted && today > work.plannedEndDate ? daysBetween(work.plannedEndDate, today) : 0;
+  const isOverdue = overdueDays > 0;
+  const behindSchedule = !isCompleted && (isOverdue || executedPercent < timePercent);
+
+  const summary = isOverdue
+    ? `Atrasada ${overdueDays} ${overdueDays === 1 ? "dia" : "dias"} · ${executedPercent} % executado`
+    : `Dia ${elapsedDays} de ${totalDays} · ${timePercent} % do prazo · ${executedPercent} % executado`;
+
+  return {
+    hasPlan: true,
+    totalDays,
+    elapsedDays,
+    timePercent,
+    executedPercent,
+    isOverdue,
+    overdueDays,
+    behindSchedule,
+    summary,
+  };
+}
+
+/**
+ * Converte um valor numérico vindo do Excel (número ou texto com vírgula ou ponto decimal).
+ * Células vazias devolvem 0; texto não numérico devolve NaN (para ser apanhado por `budgetItemErrors`).
+ */
+export function parseExcelDecimal(raw: unknown): number {
+  if (raw === null || raw === undefined) return 0;
+  if (typeof raw === "number") return Number.isFinite(raw) ? raw : NaN;
+  const cleaned = String(raw)
+    .replace(/€/g, "")
+    .replace(/[\s\u00A0]/g, "")
+    .trim();
+  if (!cleaned) return 0;
+
+  let normalized = cleaned;
+  if (/^-?\d{1,3}(\.\d{3})+(,\d+)?$/.test(cleaned)) {
+    normalized = cleaned.replace(/\./g, "").replace(",", ".");
+  } else if (/^-?\d{1,3}(,\d{3})+(\.\d+)?$/.test(cleaned)) {
+    normalized = cleaned.replace(/,/g, "");
+  } else if (cleaned.includes(",") && !cleaned.includes(".")) {
+    normalized = cleaned.replace(",", ".");
+  }
+
+  if (!/^-?\d+(\.\d+)?$/.test(normalized)) return NaN;
+  const value = Number(normalized);
+  return Number.isFinite(value) ? value : NaN;
+}
+
+/** Formata os erros de uma linha importada com o prefixo "Linha N: ...". */
+export function formatBudgetImportRowErrors(rowNumber: number, errors: Record<string, string>): string[] {
+  return Object.values(errors).map((message) => {
+    const lower = message.charAt(0).toLowerCase() + message.slice(1);
+    return `Linha ${rowNumber}: ${lower.replace(/\.$/, "")}`;
+  });
 }

@@ -2,6 +2,7 @@ import { budgetItemErrors, workFormErrors } from "../../lib/workRules";
 import { workOptionsFixture, worksFixture } from "../../temp";
 import { ApiError } from "../client";
 import type {
+  BudgetImportMode,
   BudgetItem,
   NewWorkInput,
   UpdateWorkInput,
@@ -215,51 +216,102 @@ export async function markCompleted(id: number): Promise<WorkDetail> {
   return structuredClone(work);
 }
 
+function validateAndNormalizeBudgetItem(
+  work: WorkDetail,
+  item: Omit<BudgetItem, "id"> & { id?: number },
+): Omit<BudgetItem, "id"> & { id?: number } {
+  const errors = budgetItemErrors(
+    {
+      categoryName: item.categoryName,
+      contractorName: item.contractorName,
+      budgetedValue: item.budgetedValue,
+      contractedValue: item.contractedValue,
+      executedValue: item.executedValue,
+      invoicedValue: item.invoicedValue,
+      paidValue: item.paidValue,
+      plannedStartDate: item.plannedStartDate,
+      plannedEndDate: item.plannedEndDate,
+      realStartDate: item.realStartDate,
+      realEndDate: item.realEndDate,
+    },
+    work,
+  );
+
+  if (Object.keys(errors).length > 0) {
+    throw new ApiError(422, Object.values(errors)[0]);
+  }
+
+  const contractorMatch = workOptionsFixture.contractors.find(
+    (c) => c.name.toLowerCase() === item.contractorName.trim().toLowerCase(),
+  );
+
+  return {
+    ...item,
+    categoryName: item.categoryName.trim(),
+    contractorId: item.contractorId ?? contractorMatch?.id,
+    contractorName: item.contractorName.trim(),
+    plannedStartDate: item.plannedStartDate || undefined,
+    plannedEndDate: item.plannedEndDate || undefined,
+    realStartDate: item.realStartDate || undefined,
+    realEndDate: item.realEndDate || undefined,
+  };
+}
+
 export async function saveBudgetItem(
   workId: number,
   item: Omit<BudgetItem, "id"> & { id?: number },
 ): Promise<WorkDetail> {
   await respond(null);
   const work = find(workId);
+  const normalized = validateAndNormalizeBudgetItem(work, item);
 
-  const errors = budgetItemErrors({
-    categoryName: item.categoryName,
-    contractorName: item.contractorName,
-    budgetedValue: item.budgetedValue,
-    contractedValue: item.contractedValue,
-    executedValue: item.executedValue,
-    invoicedValue: item.invoicedValue,
-    paidValue: item.paidValue,
-  });
-
-  if (Object.keys(errors).length > 0) {
-    throw new ApiError(422, Object.values(errors)[0]);
-  }
-
-  if (item.id) {
-    const existingIndex = work.budgetItems.findIndex((b) => b.id === item.id);
+  if (normalized.id) {
+    const existingIndex = work.budgetItems.findIndex((b) => b.id === normalized.id);
     if (existingIndex >= 0) {
       work.budgetItems[existingIndex] = {
         ...work.budgetItems[existingIndex],
-        ...item,
-        id: item.id,
+        ...normalized,
+        id: normalized.id,
       };
     } else {
       work.budgetItems.push({
-        ...item,
-        id: item.id,
+        ...normalized,
+        id: normalized.id,
       });
     }
   } else {
     const newId = nextBudgetId++;
     work.budgetItems.push({
-      ...item,
+      ...normalized,
       id: newId,
     });
   }
 
   recalculateTotals(work);
   return structuredClone(work);
+}
+
+export async function importBudgetItems(
+  workId: number,
+  items: (Omit<BudgetItem, "id"> & { id?: number })[],
+  mode: BudgetImportMode,
+): Promise<WorkDetail> {
+  const work = find(workId);
+  // Valida todas as linhas antes de alterar o orçamento existente.
+  for (const item of items) {
+    validateAndNormalizeBudgetItem(work, item);
+  }
+
+  if (mode === "replace") {
+    work.budgetItems = [];
+  }
+
+  let updated = work;
+  for (const item of items) {
+    updated = await saveBudgetItem(workId, item);
+  }
+
+  return structuredClone(updated);
 }
 
 export async function deleteBudgetItem(workId: number, itemId: number): Promise<WorkDetail> {

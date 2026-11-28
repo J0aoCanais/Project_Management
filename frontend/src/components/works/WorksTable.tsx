@@ -6,6 +6,7 @@ import type { WorkState } from "../../lib/workRules";
 import Pill, { type PillTone } from "../ui/Pill";
 import StackedTrack from "../ui/StackedTrack";
 import Table, { type TableColumn } from "../ui/Table";
+import PlanningBar from "./PlanningBar";
 
 interface Props {
   works: WorkCard[];
@@ -79,6 +80,11 @@ function WorksTable({ works, onRowClick, hideOperationColumn = false }: Props) {
             </div>
           );
         },
+      },
+      {
+        key: "planning",
+        header: "Planeamento",
+        render: (work) => <PlanningBar work={work} compact />,
       },
     );
 

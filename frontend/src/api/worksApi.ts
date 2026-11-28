@@ -11,6 +11,10 @@ export interface BudgetItem {
   executedValue: number;
   invoicedValue: number;
   paidValue: number;
+  plannedStartDate?: string;
+  plannedEndDate?: string;
+  realStartDate?: string;
+  realEndDate?: string;
 }
 
 export interface WorkCard {
@@ -79,6 +83,8 @@ export interface WorkFilterParams {
   operation?: string;
 }
 
+export type BudgetImportMode = "append" | "replace";
+
 // TODO: trocar pelo endpoint quando existir. Cada função indica o pedido previsto.
 
 export async function getWorks(filters?: WorkFilterParams): Promise<WorkCard[]> {
@@ -120,6 +126,16 @@ export async function saveBudgetItem(
 ): Promise<WorkDetail> {
   // POST /api/v1/works/:id/budget-items ou PATCH /api/v1/budget-items/:id
   return store.saveBudgetItem(workId, item);
+}
+
+export async function importBudgetItems(
+  workId: number,
+  items: (Omit<BudgetItem, "id"> & { id?: number })[],
+  mode: BudgetImportMode,
+): Promise<WorkDetail> {
+  // POST /api/works/:id/budget-items/import
+  // Enquanto não existe no backend, grava linha a linha via worksStore.saveBudgetItem.
+  return store.importBudgetItems(workId, items, mode);
 }
 
 export async function deleteBudgetItem(workId: number, itemId: number): Promise<WorkDetail> {

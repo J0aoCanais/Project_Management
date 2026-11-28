@@ -1,4 +1,4 @@
-import { useSearchParams } from "react-router-dom";
+import { Link, useSearchParams } from "react-router-dom";
 
 import LoginForm from "../components/auth/LoginForm";
 import LoginShowcase from "../components/auth/LoginShowcase";
@@ -24,6 +24,11 @@ function LoginPage() {
           <LoginForm onSuccess={goToApp} />
         </div>
         <p className="mt-4 max-w-[380px] text-center text-[11px] text-muted">Não tem conta ou esqueceu-se da palavra-passe? Fale com o administrador.</p>
+        <p className="mt-2 max-w-[380px] text-center text-[11px] text-muted">
+          <Link to="/politica-de-privacidade" className="text-brand hover:underline">
+            Política de Privacidade
+          </Link>
+        </p>
       </main>
     </div>
   );

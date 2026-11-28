@@ -6,13 +6,14 @@ import { useEscape } from "./useEscape";
 interface Props {
   title: string;
   subtitle?: string;
+  wide?: boolean;
   onClose: () => void;
   footer?: ReactNode;
   children: ReactNode;
 }
 
 /** Painel lateral. Em telemóvel ocupa o ecrã inteiro. Fecha com Esc e com clique fora. */
-function Drawer({ title, subtitle, onClose, footer, children }: Props) {
+function Drawer({ title, subtitle, wide = false, onClose, footer, children }: Props) {
   useEscape(onClose);
   return (
     <div className="fixed inset-0 z-50 bg-backdrop" onMouseDown={onClose}>
@@ -21,7 +22,9 @@ function Drawer({ title, subtitle, onClose, footer, children }: Props) {
         aria-modal="true"
         aria-label={title}
         onMouseDown={(e) => e.stopPropagation()}
-        className="absolute inset-y-0 right-0 flex w-full flex-col border-l border-line bg-surface min-[721px]:w-[420px]"
+        className={`absolute inset-y-0 right-0 flex w-full flex-col border-l border-line bg-surface ${
+          wide ? "min-[721px]:w-[min(860px,92vw)]" : "min-[721px]:w-[420px]"
+        }`}
       >
         <header className="flex h-16 shrink-0 items-center justify-between border-b border-line bg-white px-[18px]">
           <div>
